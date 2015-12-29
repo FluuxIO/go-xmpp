@@ -1,0 +1,2 @@
+# gox
+Go XMPP library
