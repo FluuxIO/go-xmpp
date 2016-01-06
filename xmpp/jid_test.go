@@ -4,25 +4,43 @@ import (
 	"testing"
 )
 
-func TestBareJid(t *testing.T) {
+func TestValidJids(t *testing.T) {
 	var jid *Jid
 	var err error
 
-	bareJid := "test@domain.com"
+	goodJids := []string{"test@domain.com", "test@domain.com/resource"}
 
-	if jid, err = NewJid(bareJid); err != nil {
-		t.Error("could not parse bare jid")
+	for i, sjid := range goodJids {
+		if jid, err = NewJid(sjid); err != nil {
+			t.Error("could not parse correct jid")
+		}
+
+		if jid.username != "test" {
+			t.Error("incorrect jid username")
+		}
+
+		if jid.domain != "domain.com" {
+			t.Error("incorrect jid domain")
+		}
+
+		if i == 0 && jid.resource != "" {
+			t.Error("bare jid resource should be empty")
+		}
+
+		if i == 1 && jid.resource != "resource" {
+			t.Error("incorrect full jid resource")
+		}
 	}
+}
 
-	if jid.username != "test" {
-		t.Error("incorrect bare jid username")
-	}
+// TODO: Check if resource cannot contain a /
+func TestIncorrectJids(t *testing.T) {
+	badJids := []string{"test@domain.com@otherdomain.com",
+		"test@domain.com/test/test"}
 
-	if jid.domain != "domain.com" {
-		t.Error("incorrect bare jid domain")
-	}
-
-	if jid.resource != "" {
-		t.Error("bare jid resource should be empty")
+	for _, sjid := range badJids {
+		if _, err := NewJid(sjid); err == nil {
+			t.Error("parsing incorrect jid should return error: " + sjid)
+		}
 	}
 }
