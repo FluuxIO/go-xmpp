@@ -38,7 +38,9 @@ func NewSession(conn net.Conn, o Options) (net.Conn, *Session, error) {
 	// starttls
 	var tlsConn net.Conn
 	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.domain)
-	s.reset(conn, tlsConn, o)
+	if s.TlsEnabled {
+		s.reset(conn, tlsConn, o)
+	}
 
 	// auth
 	s.auth(o)
