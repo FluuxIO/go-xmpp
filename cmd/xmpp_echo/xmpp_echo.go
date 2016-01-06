@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mremond/gox/xmpp"
+	"github.com/processone/gox/xmpp"
 )
 
 func main() {
