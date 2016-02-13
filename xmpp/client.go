@@ -22,7 +22,10 @@ type Client struct {
 Setting up the client / Checking the parameters
 */
 
-// TODO: better options check
+// NewClient generates a new XMPP client, based on Options passed as parameters.
+// If host is not specified, the  DNS SRV should be used to find the host from the domainpart of the JID.
+// Default the port to 5222.
+// TODO: better options checks
 func NewClient(options Options) (c *Client, err error) {
 	// TODO: If option address is nil, use the Jid domain to compose the address
 	if options.Address, err = checkAddress(options.Address); err != nil {
@@ -62,9 +65,7 @@ func checkAddress(addr string) (string, error) {
 	return strings.Join([]string{hostport[0], "5222"}, ":"), err
 }
 
-// NewClient creates a new connection to a host given as "hostname" or "hostname:port".
-// If host is not specified, the  DNS SRV should be used to find the host from the domainpart of the JID.
-// Default the port to 5222.
+// Connect triggers actual TCP connection, based on previously defined parameters.
 func (c *Client) Connect() (*Session, error) {
 	var tcpconn net.Conn
 	var err error
@@ -98,7 +99,8 @@ func (c *Client) recv(receiver chan<- interface{}) (err error) {
 	panic("unreachable")
 }
 
-// Channel allow client to receive / dispatch packets in for range loop
+// Recv abstracts receiving preparsed XMPP packets from a channel.
+// Channel allow client to receive / dispatch packets in for range loop.
 func (c *Client) Recv() <-chan interface{} {
 	ch := make(chan interface{})
 	go c.recv(ch)
