@@ -29,6 +29,9 @@ func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		if attr.Name.Local == "id" {
 			iq.Id = attr.Value
 		}
+		if attr.Name.Local == "type" {
+			iq.Type = attr.Value
+		}
 		if attr.Name.Local == "to" {
 			iq.To = attr.Value
 		}
@@ -75,6 +78,8 @@ func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 }
 
+// XMPPFormat returns the string representation of the XMPP packet.
+// TODO: Should I simply rely on xml.Marshal ?
 func (iq *ClientIQ) XMPPFormat() string {
 	if iq.Payload != nil {
 		var payload []byte
