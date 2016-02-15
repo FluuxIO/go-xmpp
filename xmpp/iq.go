@@ -2,6 +2,7 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"fmt"
 
 	"github.com/processone/gox/xmpp/iot"
 )
@@ -72,4 +73,23 @@ func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			}
 		}
 	}
+}
+
+func (iq *ClientIQ) XMPPFormat() string {
+	if iq.Payload != nil {
+		var payload []byte
+		var err error
+		if payload, err = xml.Marshal(iq.Payload); err != nil {
+			return fmt.Sprintf("<iq to='%s' type='%s' id='%s' xml:lang='en'>"+
+				"</iq>",
+				iq.To, iq.Type, iq.Id)
+		}
+		return fmt.Sprintf("<iq to='%s' type='%s' id='%s' xml:lang='en'>"+
+			"%s</iq>",
+			iq.To, iq.Type, iq.Id, payload)
+	}
+	return fmt.Sprintf("<iq to='%s' type='%s' id='%s' xml:lang='en'>"+
+		"%s</iq>",
+		iq.To, iq.Type, iq.Id,
+		iq.RawXML)
 }

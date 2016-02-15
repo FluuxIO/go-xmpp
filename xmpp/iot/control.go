@@ -2,16 +2,6 @@ package iot
 
 import "encoding/xml"
 
-/*
-type Control struct {
-	ControlSet     ControlSet     `xml:",omitempty"`
-	ControlGetForm ControlGetForm `xml:",omitempty"`
-}
-
-func (*Control) IQPayload() {
-}
-*/
-
 type ControlSet struct {
 	XMLName xml.Name       `xml:"urn:xmpp:iot:control set"`
 	Fields  []ControlField `xml:",any"`
@@ -28,4 +18,11 @@ type ControlField struct {
 	XMLName xml.Name
 	Name    string `xml:"name,attr,omitempty"`
 	Value   string `xml:"value,attr,omitempty"`
+}
+
+type ControlSetResponse struct {
+	XMLName xml.Name `xml:"urn:xmpp:iot:control setResponse"`
+}
+
+func (*ControlSetResponse) IsIQPayload() {
 }
