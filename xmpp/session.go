@@ -154,11 +154,18 @@ func (s *Session) bind(o Options) {
 	}
 
 	var iq ClientIQ
-	if s.err = s.decoder.Decode(&iq); s.err != nil || &iq.Bind == nil {
-		s.err = errors.New("iq bind result missing: " + s.err.Error())
+	if s.err = s.decoder.Decode(&iq); s.err != nil {
+		s.err = errors.New("error decoding iq bind result: " + s.err.Error())
 		return
 	}
-	s.BindJid = iq.Bind.Jid // our local id (with possibly randomly generated resource
+
+	switch payload := iq.Payload.(type) {
+	case *bindBind:
+		s.BindJid = payload.Jid // our local id (with possibly randomly generated resource
+	default:
+		s.err = errors.New("iq bind result missing")
+	}
+
 	return
 }
 

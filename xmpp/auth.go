@@ -66,8 +66,11 @@ type saslFailure struct {
 
 type bindBind struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
-	Resource string
-	Jid      string
+	Resource string   `xml:"resource,omitempty"`
+	Jid      string   `xml:"jid,omitempty"`
+}
+
+func (*bindBind) IsIQPayload() {
 }
 
 // Session is obsolete in RFC 6121.
