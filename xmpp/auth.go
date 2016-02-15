@@ -18,7 +18,7 @@ func authSASL(socket io.ReadWriter, decoder *xml.Decoder, f streamFeatures, user
 		}
 	}
 	if !havePlain {
-		return errors.New(fmt.Sprintf("PLAIN authentication is not supported by server: %v", f.Mechanisms.Mechanism))
+		return fmt.Errorf("PLAIN authentication is not supported by server: %v", f.Mechanisms.Mechanism)
 	}
 
 	return authPlain(socket, decoder, user, password)
