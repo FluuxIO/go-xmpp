@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+// Client is the main structure use to connect as a client on an XMPP
+// server.
 type Client struct {
 	// Store user defined options
 	options Options
