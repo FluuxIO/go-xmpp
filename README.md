@@ -1,6 +1,6 @@
 # Go XMPP library
 
-[![Build Status](https://travis-ci.org/processone/gox.svg?branch=master)](https://travis-ci.org/processone/gox) [![Coverage Status](https://coveralls.io/github/processone/gox?branch=master)](https://coveralls.io/github/processone/gox?branch=master)
+[![Build Status](https://travis-ci.org/processone/gox.svg?branch=master)](https://travis-ci.org/processone/gox) [![Coverage Status](https://coveralls.io/repos/processone/gox/badge.svg?branch=master&service=github)](https://coveralls.io/github/processone/gox?branch=master)
 
 Gox is a Go XMPP library, focusing on simplicity, simple automation, and IoT.
 
