@@ -82,7 +82,7 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 	case nsClient + " presence":
 		nv = &clientPresence{}
 	case nsClient + " iq":
-		nv = &clientIQ{}
+		nv = &ClientIQ{}
 	default:
 		return xml.Name{}, nil, errors.New("unexpected XMPP message " +
 			se.Name.Space + " <" + se.Name.Local + "/>")

@@ -1,5 +1,6 @@
 package xmpp
 
+// Packet represents the root default structure for an XMPP packet.
 type Packet struct {
 	Id   string `xml:"id,attr,omitempty"`
 	From string `xml:"from,attr,omitempty"`

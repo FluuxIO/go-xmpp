@@ -153,7 +153,7 @@ func (s *Session) bind(o Options) {
 		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'/></iq>", s.PacketId(), nsBind)
 	}
 
-	var iq clientIQ
+	var iq ClientIQ
 	if s.err = s.decoder.Decode(&iq); s.err != nil || &iq.Bind == nil {
 		s.err = errors.New("iq bind result missing: " + s.err.Error())
 		return
@@ -169,7 +169,7 @@ func (s *Session) rfc3921Session(o Options) {
 		return
 	}
 
-	var iq clientIQ
+	var iq ClientIQ
 
 	// TODO: Do no send unconditionally, check if session is optional and omit it
 	fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), nsSession)
