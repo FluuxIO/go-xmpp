@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 )
 
 // Client is the main structure use to connect as a client on an XMPP
@@ -47,6 +48,9 @@ func NewClient(options Options) (c *Client, err error) {
 		return
 	}
 
+	if c.options.ConnectTimeout == 0 {
+		c.options.ConnectTimeout = 15 // 15 second as default
+	}
 	return
 }
 
@@ -71,10 +75,21 @@ func checkAddress(addr string) (string, error) {
 func (c *Client) Connect() (*Session, error) {
 	var tcpconn net.Conn
 	var err error
-	if tcpconn, err = net.Dial("tcp", c.options.Address); err != nil {
+
+	// TODO: Refactor = abstract retry loop in capped exponential back-off function
+	var try = 0
+	var success bool
+	for try <= c.options.Retry || !success {
+		if tcpconn, err = net.DialTimeout("tcp", c.options.Address, time.Duration(c.options.ConnectTimeout)*time.Second); err == nil {
+			success = true
+		}
+		try++
+	}
+	if err != nil {
 		return nil, err
 	}
 
+	// Connection is ok, we now open XMPP session
 	c.conn = tcpconn
 	if c.conn, c.Session, err = NewSession(c.conn, c.options); err != nil {
 		return c.Session, err

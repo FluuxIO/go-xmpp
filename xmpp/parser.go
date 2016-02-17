@@ -80,7 +80,7 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 	case nsClient + " message":
 		nv = &ClientMessage{}
 	case nsClient + " presence":
-		nv = &clientPresence{}
+		nv = &ClientPresence{}
 	case nsClient + " iq":
 		nv = &ClientIQ{}
 	default:
