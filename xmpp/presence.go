@@ -3,7 +3,7 @@ package xmpp
 import "encoding/xml"
 
 // XMPP Packet Parsing
-type clientPresence struct {
+type ClientPresence struct {
 	XMLName xml.Name `xml:"jabber:client presence"`
 	Packet
 	Show     string `xml:"show,attr,omitempty"` // away, chat, dnd, xa
