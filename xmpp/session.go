@@ -100,7 +100,7 @@ func (s *Session) open(domain string) (f streamFeatures) {
 }
 
 func (s *Session) startTlsIfSupported(conn net.Conn, options Options) net.Conn {
-	domain := options.parsedJid.domain
+    domain := options.parsedJid.domain
 	if s.err != nil {
 		return conn
 	}
@@ -118,7 +118,7 @@ func (s *Session) startTlsIfSupported(conn net.Conn, options Options) net.Conn {
 		// TODO: add option to accept all TLS certificates: insecureSkipTlsVerify (DefaultTlsConfig.InsecureSkipVerify)
 		DefaultTlsConfig.ServerName = domain
 		if options.SkipVerify {
-			DefaultTlsConfig.InsecureSkipVerify = true
+		    DefaultTlsConfig.InsecureSkipVerify = true
 		}
 		var tlsConn *tls.Conn = tls.Client(conn, &DefaultTlsConfig)
 		// We convert existing connection to TLS
@@ -128,7 +128,7 @@ func (s *Session) startTlsIfSupported(conn net.Conn, options Options) net.Conn {
 
 		// We check that cert matches hostname
 		if !options.SkipVerify {
-			s.err = tlsConn.VerifyHostname(domain)
+		    s.err = tlsConn.VerifyHostname(domain)
 		}
 		//s.err = tlsConn.VerifyHostname(domain)
 		return tlsConn
