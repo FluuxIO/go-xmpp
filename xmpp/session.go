@@ -82,7 +82,7 @@ func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Options) {
 
 func (s *Session) open(domain string) (f streamFeatures) {
 	// Send stream open tag
-	if _, s.err = fmt.Fprintf(s.socketProxy, xmppStreamOpen, domain, nsClient, nsStream); s.err != nil {
+	if _, s.err = fmt.Fprintf(s.socketProxy, xmppStreamOpen, domain, NSClient, NSStream); s.err != nil {
 		return
 	}
 
@@ -177,11 +177,11 @@ func (s *Session) rfc3921Session(o Options) {
 	}
 
 	var iq ClientIQ
-
-	// TODO: Do no send unconditionally, check if session is optional and omit it
-	fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), nsSession)
-	if s.err = s.decoder.Decode(&iq); s.err != nil {
-		s.err = errors.New("expecting iq result after session open: " + s.err.Error())
-		return
+	if s.Features.Session.optional.Local != "" {
+		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), nsSession)
+		if s.err = s.decoder.Decode(&iq); s.err != nil {
+			s.err = errors.New("expecting iq result after session open: " + s.err.Error())
+			return
+		}
 	}
 }

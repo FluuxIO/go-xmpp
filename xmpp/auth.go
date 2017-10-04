@@ -61,7 +61,12 @@ type saslSuccess struct {
 type saslFailure struct {
 	XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl failure"`
 	Any     xml.Name // error reason is a subelement
+}
 
+type auth struct {
+	XMLName   xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl auth"`
+	Mechanism string   `xml:"mecanism,attr"`
+	Value     string   `xml:",innerxml"`
 }
 
 type bindBind struct {

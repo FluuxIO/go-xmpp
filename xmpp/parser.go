@@ -23,7 +23,7 @@ func initDecoder(p *xml.Decoder) (sessionID string, err error) {
 
 		switch elem := t.(type) {
 		case xml.StartElement:
-			if elem.Name.Space != nsStream || elem.Name.Local != "stream" {
+			if elem.Name.Space != NSStream || elem.Name.Local != "stream" {
 				err = errors.New("xmpp: expected <stream> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
 				return
 			}
@@ -77,11 +77,11 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 		nv = &saslSuccess{}
 	case nsSASL + " failure":
 		nv = &saslFailure{}
-	case nsClient + " message":
+	case NSClient + " message":
 		nv = &ClientMessage{}
-	case nsClient + " presence":
+	case NSClient + " presence":
 		nv = &ClientPresence{}
-	case nsClient + " iq":
+	case NSClient + " iq":
 		nv = &ClientIQ{}
 	default:
 		return xml.Name{}, nil, errors.New("unexpected XMPP message " +
