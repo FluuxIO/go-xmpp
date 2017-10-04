@@ -54,6 +54,8 @@ func NewClient(options Options) (c *Client, err error) {
 	return
 }
 
+// TODO Pass JID to be able to add default address based on JID, if
+// addr is empty
 func checkAddress(addr string) (string, error) {
 	var err error
 	hostport := strings.Split(addr, ":")
