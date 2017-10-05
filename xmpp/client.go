@@ -98,10 +98,10 @@ func (c *Client) Connect() (*Session, error) {
 	}
 
 	// We're connected and can now receive and send messages.
-	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
+	fmt.Fprintf(c.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	fmt.Fprintf(c.Session.socketProxy, "<presence/>")
+	//fmt.Fprintf(c.Session.socketProxy, "<presence/>")
 
 	return c.Session, err
 }

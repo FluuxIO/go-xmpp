@@ -1,6 +1,9 @@
 package xmpp
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"fmt"
+)
 
 // XMPP Packet Parsing
 type ClientPresence struct {
@@ -10,4 +13,9 @@ type ClientPresence struct {
 	Status   string `xml:"status,attr,omitempty"`
 	Priority string `xml:"priority,attr,omitempty"`
 	//Error    *clientError
+}
+
+func (message *ClientPresence) XMPPFormat() string {
+	return fmt.Sprintf("<presence xml:lang='en' from='%s' to='%s'><show>%s</show><status>%s</status></presence>",
+		message.From, message.To, message.Show, message.Status)
 }
