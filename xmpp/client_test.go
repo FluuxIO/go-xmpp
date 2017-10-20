@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 )
 
 const (
 	// Default port is not standard XMPP port to avoid interfering
 	// with local running XMPP server
 	testXMPPAddress = "localhost:15222"
+
+	defaultTimeout = 2 * time.Second
 )
 
 func TestClient_Connect(t *testing.T) {
@@ -44,17 +47,20 @@ func handlerConnectSuccess(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
 	checkOpenStream(t, c, decoder)
 
-	sendStreamFeatures(t, c, decoder)
+	sendStreamFeatures(t, c, decoder) // Send initial features
 	readAuth(t, decoder)
 	fmt.Fprintln(c, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
 
-	checkOpenStream(t, c, decoder)
-	sendBindFeature(t, c, decoder)
+	checkOpenStream(t, c, decoder) // Reset stream
+	sendBindFeature(t, c, decoder) // Send post auth features
 	bind(t, c, decoder)
 }
 
 func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
-	for {
+	c.SetDeadline(time.Now().Add(defaultTimeout))
+	defer c.SetDeadline(time.Time{})
+
+	for { // TODO clean up. That for loop is not elegant and I prefer bounded recursion.
 		var token xml.Token
 		token, err := decoder.Token()
 		if err != nil {
@@ -76,7 +82,7 @@ func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 	}
 }
 
-func sendStreamFeatures(t *testing.T, c net.Conn, decoder *xml.Decoder) {
+func sendStreamFeatures(t *testing.T, c net.Conn, _ *xml.Decoder) {
 	// This is a basic server, supporting only 1 stream feature: SASL Plain Auth
 	features := `<stream:features>
   <mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl">
@@ -111,7 +117,7 @@ func readAuth(t *testing.T, decoder *xml.Decoder) string {
 	return ""
 }
 
-func sendBindFeature(t *testing.T, c net.Conn, decoder *xml.Decoder) {
+func sendBindFeature(t *testing.T, c net.Conn, _ *xml.Decoder) {
 	// This is a basic server, supporting only 1 stream feature: SASL Plain Auth
 	features := `<stream:features>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
@@ -135,14 +141,13 @@ func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 		return
 	}
 
-	switch payload := iq.Payload.(type) {
+	switch iq.Payload.(type) {
 	case *bindBind:
-		fmt.Println("JID:", payload.Jid)
-	}
-	result := `<iq id='%s' type='result'>
+		result := `<iq id='%s' type='result'>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
   	<jid>%s</jid>
   </bind>
 </iq>`
-	fmt.Fprintf(c, result, iq.Id, "test@localhost/test") // TODO use real JID
+		fmt.Fprintf(c, result, iq.Id, "test@localhost/test") // TODO use real JID
+	}
 }
