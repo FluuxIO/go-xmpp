@@ -23,7 +23,7 @@ func TestClient_Connect(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerConnectSuccess)
 
 	// Test / Check result
-	options := Options{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
+	options := Options{Address: testXMPPAddress, Jid: "test@localhost", Password: "test", Insecure: true}
 
 	var client *Client
 	var err error
@@ -33,6 +33,28 @@ func TestClient_Connect(t *testing.T) {
 
 	if _, err = client.Connect(); err != nil {
 		t.Errorf("XMPP connection failed: %s", err)
+	}
+
+	mock.Stop()
+}
+
+func TestClient_NoInsecure(t *testing.T) {
+	// Setup Mock server
+	mock := ServerMock{}
+	mock.Start(t, testXMPPAddress, handlerConnectSuccess)
+
+	// Test / Check result
+	options := Options{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
+
+	var client *Client
+	var err error
+	if client, err = NewClient(options); err != nil {
+		t.Errorf("cannot create XMPP client: %s", err)
+	}
+
+	if _, err = client.Connect(); err == nil {
+		// When insecure is not allowed:
+		t.Errorf("should fail as insecure connection is not allowed and server does not support TLS")
 	}
 
 	mock.Stop()

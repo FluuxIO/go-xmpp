@@ -42,6 +42,10 @@ func NewSession(conn net.Conn, o Options) (net.Conn, *Session, error) {
 		s.reset(conn, tlsConn, o)
 	}
 
+	if !s.TlsEnabled && !o.Insecure {
+		return nil, nil, errors.New("failed to negotiate TLS")
+	}
+
 	// auth
 	s.auth(o)
 	s.reset(tlsConn, tlsConn, o)
