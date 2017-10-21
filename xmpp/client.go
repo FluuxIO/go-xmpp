@@ -17,7 +17,7 @@ type Client struct {
 	options Options
 	// Session gather data that can be accessed by users of this library
 	Session *Session
-	// TCP level connection / can be replace by a TLS session after starttls
+	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
 }
 
