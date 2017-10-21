@@ -41,7 +41,7 @@ func TestClient_Connect(t *testing.T) {
 func TestClient_NoInsecure(t *testing.T) {
 	// Setup Mock server
 	mock := ServerMock{}
-	mock.Start(t, testXMPPAddress, handlerConnectSuccess)
+	mock.Start(t, testXMPPAddress, handlerAbortTLS)
 
 	// Test / Check result
 	options := Options{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
@@ -76,6 +76,16 @@ func handlerConnectSuccess(t *testing.T, c net.Conn) {
 	checkOpenStream(t, c, decoder) // Reset stream
 	sendBindFeature(t, c, decoder) // Send post auth features
 	bind(t, c, decoder)
+}
+
+// We expect client will abort on TLS
+func handlerAbortTLS(t *testing.T, c net.Conn) {
+	decoder := xml.NewDecoder(c)
+
+	checkOpenStream(t, c, decoder)
+
+	sendStreamFeatures(t, c, decoder) // Send initial features
+	readAuth(t, decoder)
 }
 
 func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {

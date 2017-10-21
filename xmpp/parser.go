@@ -3,8 +3,8 @@ package xmpp
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
-	"log"
 )
 
 // Reads and checks the opening XMPP stream element.
@@ -49,7 +49,7 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 			return xml.StartElement{}, nil
 		}
 		if err != nil {
-			log.Fatal("token:", err)
+			return xml.StartElement{}, fmt.Errorf("nextStart %s", err)
 		}
 		switch t := t.(type) {
 		case xml.StartElement:
