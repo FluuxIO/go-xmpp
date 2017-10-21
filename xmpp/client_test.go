@@ -81,11 +81,8 @@ func handlerConnectSuccess(t *testing.T, c net.Conn) {
 // We expect client will abort on TLS
 func handlerAbortTLS(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
-
 	checkOpenStream(t, c, decoder)
-
 	sendStreamFeatures(t, c, decoder) // Send initial features
-	readAuth(t, decoder)
 }
 
 func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
