@@ -1,4 +1,4 @@
 build:
   build:
     image: fluux/build
-    dockerfile: docker/build/Dockerfile
+    dockerfile: Dockerfile
