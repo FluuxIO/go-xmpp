@@ -27,3 +27,7 @@ coverage.out
 .idea/
 *.iml
 .DS_Store
+
+# Do not commit codeship key
+codeship.aes
+codeship.env

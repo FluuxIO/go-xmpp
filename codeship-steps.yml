@@ -2,4 +2,7 @@
   steps:
   - name: test
     service: build
-    command: go test -v ./...
+    command: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+  - name: codecov
+    service: build
+    command: bash -c "curl -s https://codecov.io/bash"
