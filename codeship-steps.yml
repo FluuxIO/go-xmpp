@@ -5,4 +5,4 @@
     command: ./test.sh
   - name: codecov
     service: build
-    command: bash -c "curl -s https://codecov.io/bash"
+    command: bash <(curl -s https://codecov.io/bash)
