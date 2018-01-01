@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/processone/gox/xmpp"
-	"github.com/processone/gox/xmpp/iot"
-	"github.com/processone/gox/xmpp/pep"
+	"fluux.io/xmpp"
+	"fluux.io/xmpp/iot"
+	"fluux.io/xmpp/pep"
 	"github.com/processone/mpg123"
 	"github.com/processone/soundcloud"
 )

@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/processone/gox.svg?branch=master)](https://travis-ci.org/processone/gox) [![Coverage Status](https://coveralls.io/repos/github/processone/gox/badge.svg?branch=master)](https://coveralls.io/github/processone/gox?branch=master)
 
-Gox is a Go XMPP library, focusing on simplicity, simple automation, and IoT.
+Fluux XMPP is a Go XMPP library, focusing on simplicity, simple automation, and IoT.
 
 The goal is to make simple to write simple adhoc XMPP clients:
 

@@ -1,4 +1,4 @@
-package xmpp
+package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/base64"

@@ -1,4 +1,4 @@
-package xmpp
+package xmpp // import "fluux.io/xmpp"
 
 // Packet represents the root default structure for an XMPP packet.
 type Packet struct {

@@ -1,4 +1,4 @@
-package pep
+package pep // import "fluux.io/xmpp/pep"
 
 import (
 	"encoding/xml"

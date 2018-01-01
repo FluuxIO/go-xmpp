@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/processone/gox/xmpp"
+	"fluux.io/xmpp"
 )
 
 func main() {
