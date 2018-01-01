@@ -3,7 +3,7 @@ package pep // import "fluux.io/xmpp/pep"
 import (
 	"encoding/xml"
 
-	"github.com/processone/gox/xmpp"
+	"fluux.io/xmpp"
 )
 
 type iq struct {

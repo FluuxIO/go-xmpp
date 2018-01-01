@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/processone/gox/xmpp/iot"
+	"fluux.io/xmpp/iot"
 )
 
 // info/query
