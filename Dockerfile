@@ -1,9 +1,5 @@
 FROM golang:1.9
 WORKDIR /go/src/fluux.io/xmpp
+RUN curl -o codecov.sh -s https://codecov.io/bash && chmod +x codecov.sh
 COPY . ./
-RUN apt-get update \
-    && apt-get install -y \
-    git \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-RUN go get -t -v ./...
+RUN go get -t  ./...

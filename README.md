@@ -1,6 +1,6 @@
 # Go XMPP library
 
-[ ![Codeship Status for FluuxIO/xmpp](https://app.codeship.com/projects/dba7f300-d145-0135-6c51-26e28af241d2/status?branch=master)](https://app.codeship.com/projects/262399)
+[ ![Codeship Status for FluuxIO/xmpp](https://app.codeship.com/projects/dba7f300-d145-0135-6c51-26e28af241d2/status?branch=master)](https://app.codeship.com/projects/262399) [![codecov](https://codecov.io/gh/FluuxIO/xmpp/branch/master/graph/badge.svg)](https://codecov.io/gh/FluuxIO/xmpp)
 
 Fluux XMPP is a Go XMPP library, focusing on simplicity, simple automation, and IoT.
 
