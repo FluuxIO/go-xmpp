@@ -8,11 +8,12 @@ import (
 )
 
 // Reads and checks the opening XMPP stream element.
-// It returns a stream structure containing:
+// TODO It returns a stream structure containing:
 // - Host: You can check the host against the host you were expecting to connect to
 // - Id: the Stream ID is a temporary shared secret used for some hash calculation. It is also used by ProcessOne
 //       reattach features (allowing to resume an existing stream at the point the connection was interrupted, without
 //       getting through the authentication process.
+// TODO We should handle stream error from XEP-0114 ( <conflict/> or <host-unknown/> )
 func initDecoder(p *xml.Decoder) (sessionID string, err error) {
 	for {
 		var t xml.Token
@@ -72,7 +73,9 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 	// Put it in an interface and allocate one.
 	var nv interface{}
 	switch se.Name.Space + " " + se.Name.Local {
-	// TODO: general case = Parse IQ / presence / message => split SASL case
+	case NSStream + " error":
+		nv = &StreamError{}
+		// TODO: general case = Parse IQ / presence / message => split SASL case
 	case nsSASL + " success":
 		nv = &saslSuccess{}
 	case nsSASL + " failure":

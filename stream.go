@@ -13,6 +13,11 @@ type streamFeatures struct {
 	Any        []xml.Name `xml:",any"`
 }
 
+type StreamError struct {
+	XMLName xml.Name `xml:"http://etherx.jabber.org/streams error"`
+	Error   xml.Name `xml:",any"`
+}
+
 type Caps struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/caps c"`
 	Hash    string   `xml:"hash,attr"`
