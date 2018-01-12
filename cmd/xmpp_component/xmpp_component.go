@@ -3,5 +3,6 @@ package main
 import "fluux.io/xmpp"
 
 func main() {
-	xmpp.Open("mqtt.localhost")
+	component := xmpp.Component{Host: "mqtt.localhost", Secret: "mypass"}
+	component.Connect("localhost:8888")
 }
