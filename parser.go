@@ -86,6 +86,8 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 		nv = &ClientPresence{}
 	case NSClient + " iq":
 		nv = &ClientIQ{}
+	case NSComponent + " handshake":
+		nv = &Handshake{}
 	default:
 		return xml.Name{}, nil, errors.New("unexpected XMPP message " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
