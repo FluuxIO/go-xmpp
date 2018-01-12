@@ -88,6 +88,12 @@ func (c *Component) Connect(connStr string) error {
 	panic("unreachable")
 }
 
+// ReadPacket reads next incoming XMPP packet
+// TODO use defined interface Packet
+func (c *Component) ReadPacket() (xml.Name, interface{}, error) {
+	return next(c.decoder)
+}
+
 // ============================================================================
 // XMPP packets struct
 

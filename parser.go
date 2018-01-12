@@ -63,6 +63,7 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 // Scan XML token stream for next element and save into val.
 // If val == nil, allocate new element based on proto map.
 // Either way, return val.
+// TODO Use an interface to return packets interface xmppDecoder
 func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 	// Read start element to find out what type we want.
 	se, err := nextStart(p)
