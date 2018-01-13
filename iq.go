@@ -73,11 +73,10 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			switch tt.Name.Space + " " + tt.Name.Local {
 			case "urn:ietf:params:xml:ns:xmpp-bind bind":
 				p = new(bindBind)
-			case "http://jabber.org/protocol/disco#items query":
-				p = new(Query)
 			case "urn:xmpp:iot:control set":
 				p = new(iot.ControlSet)
-				// TODO: Add a default Type that passes RawXML
+			default:
+				p = new(Node)
 			}
 			if p != nil {
 				err = d.DecodeElement(p, &tt)
@@ -118,10 +117,12 @@ func (iq *IQ) XMPPFormat() string {
 }
 
 // ============================================================================
-// IQ Query subelement
+// Genery IQ Node
 
-type Query struct {
-	XMLName xml.Name `xml:"http://jabber.org/protocol/disco#items query"`
+type Node struct {
+	XMLName xml.Name
+	Content []byte `xml:",innerxml"`
+	Nodes   []Node `xml:",any"`
 }
 
-func (*Query) IsIQPayload() {}
+func (*Node) IsIQPayload() {}

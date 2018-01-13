@@ -19,9 +19,11 @@ func main() {
 
 		switch p := packet.(type) {
 		case xmpp.IQ:
-			switch p.Payload.(type) {
-			case *xmpp.Query:
-				fmt.Println("Received query:", p.Type)
+			switch inner := p.Payload.(type) {
+			case *xmpp.Node:
+				fmt.Println("Node:", inner.XMLName.Space, inner.XMLName.Local)
+			default:
+				fmt.Println("default")
 			}
 		default:
 			fmt.Println("Packet unhandled packet:", packet)
