@@ -163,7 +163,7 @@ func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 		return
 	}
 
-	iq := &ClientIQ{}
+	iq := &IQ{}
 	// Decode element into pointer storage
 	if err = decoder.DecodeElement(&iq, &se); err != nil {
 		t.Errorf("cannot decode bind iq: %s", err)

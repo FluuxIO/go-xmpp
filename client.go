@@ -108,7 +108,7 @@ func (c *Client) Connect() (*Session, error) {
 
 func (c *Client) recv(receiver chan<- interface{}) (err error) {
 	for {
-		_, val, err := next(c.Session.decoder)
+		val, err := next(c.Session.decoder)
 		if err != nil {
 			return err
 		}
@@ -128,7 +128,7 @@ func (c *Client) Recv() <-chan interface{} {
 
 // Send sends message text.
 func (c *Client) Send(packet string) error {
-	fmt.Fprintf(c.Session.socketProxy, packet)
+	fmt.Fprintf(c.Session.socketProxy, packet) // TODO handle errors
 	return nil
 }
 

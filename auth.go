@@ -32,36 +32,71 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, password
 	fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='PLAIN'>%s</auth>", nsSASL, enc)
 
 	// Next message should be either success or failure.
-	name, val, err := next(decoder)
+	val, err := next(decoder)
 	if err != nil {
 		return err
 	}
 
 	switch v := val.(type) {
-	case *saslSuccess:
-	case *saslFailure:
+	case SASLSuccess:
+	case SASLFailure:
 		// v.Any is type of sub-element in failure, which gives a description of what failed.
 		return errors.New("auth failure: " + v.Any.Local)
 	default:
-		return errors.New("expected success or failure, got " + name.Local + " in " + name.Space)
+		return errors.New("expected SASL success or failure, got " + v.Name())
 	}
 	return err
 }
 
-// XMPP Packet Parsing
 type saslMechanisms struct {
 	XMLName   xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanisms"`
 	Mechanism []string `xml:"mechanism"`
 }
 
-type saslSuccess struct {
+// ============================================================================
+// SASLSuccess
+
+type SASLSuccess struct {
 	XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl success"`
 }
 
-type saslFailure struct {
+func (SASLSuccess) Name() string {
+	return "sasl:success"
+}
+
+type saslSuccessDecoder struct{}
+
+var saslSuccess saslSuccessDecoder
+
+func (saslSuccessDecoder) decode(p *xml.Decoder, se xml.StartElement) (SASLSuccess, error) {
+	var packet SASLSuccess
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
+}
+
+// ============================================================================
+// SASLFailure
+
+type SASLFailure struct {
 	XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl failure"`
 	Any     xml.Name // error reason is a subelement
 }
+
+func (SASLFailure) Name() string {
+	return "sasl:failure"
+}
+
+type saslFailureDecoder struct{}
+
+var saslFailure saslFailureDecoder
+
+func (saslFailureDecoder) decode(p *xml.Decoder, se xml.StartElement) (SASLFailure, error) {
+	var packet SASLFailure
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
+}
+
+// ============================================================================
 
 type auth struct {
 	XMLName   xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl auth"`

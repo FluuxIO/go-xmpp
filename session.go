@@ -157,7 +157,7 @@ func (s *Session) bind(o Options) {
 		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'/></iq>", s.PacketId(), nsBind)
 	}
 
-	var iq ClientIQ
+	var iq IQ
 	if s.err = s.decoder.Decode(&iq); s.err != nil {
 		s.err = errors.New("error decoding iq bind result: " + s.err.Error())
 		return
@@ -180,7 +180,7 @@ func (s *Session) rfc3921Session(o Options) {
 		return
 	}
 
-	var iq ClientIQ
+	var iq IQ
 	if s.Features.Session.optional.Local != "" {
 		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), nsSession)
 		if s.err = s.decoder.Decode(&iq); s.err != nil {

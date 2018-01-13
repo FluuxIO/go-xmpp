@@ -7,9 +7,9 @@ import (
 )
 
 type iq struct {
-	XMLName     xml.Name `xml:"jabber:client iq"`
-	C           pubSub   // c for "contains"
-	xmpp.Packet          // Rename h for "header" ?
+	XMLName          xml.Name `xml:"jabber:client iq"`
+	C                pubSub   // c for "contains"
+	xmpp.PacketAttrs          // Rename h for "header" ?
 }
 
 type pubSub struct {
@@ -68,7 +68,7 @@ type Tune struct {
 */
 
 func (t *Tune) XMPPFormat() (s string) {
-	packet, _ := xml.Marshal(iq{Packet: xmpp.Packet{Id: "tunes", Type: "set"}, C: pubSub{Publish: publish{Node: "http://jabber.org/protocol/tune", Item: item{Tune: *t}}}})
+	packet, _ := xml.Marshal(iq{PacketAttrs: xmpp.PacketAttrs{Id: "tunes", Type: "set"}, C: pubSub{Publish: publish{Node: "http://jabber.org/protocol/tune", Item: item{Tune: *t}}}})
 	return string(packet)
 }
 

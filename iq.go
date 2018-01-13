@@ -7,14 +7,30 @@ import (
 	"fluux.io/xmpp/iot"
 )
 
-// info/query
-type ClientIQ struct {
-	XMLName xml.Name `xml:"jabber:client iq"`
-	Packet
+// ============================================================================
+// IQ Packet
+
+type IQ struct { // Info/Query
+	XMLName xml.Name `xml:"iq"`
+	PacketAttrs
 	Payload IQPayload `xml:",omitempty"`
 	RawXML  string    `xml:",innerxml"`
 	// TODO We need to support detecting the IQ namespace / Query packet
 	// 	Error   clientError
+}
+
+func (IQ) Name() string {
+	return "iq"
+}
+
+type iqDecoder struct{}
+
+var iq iqDecoder
+
+func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (IQ, error) {
+	var packet IQ
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
 }
 
 type IQPayload interface {
@@ -22,7 +38,7 @@ type IQPayload interface {
 }
 
 // UnmarshalXML implements custom parsing for IQs
-func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	iq.XMLName = start.Name
 	// Extract IQ attributes
 	for _, attr := range start.Attr {
@@ -59,7 +75,8 @@ func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				p = new(bindBind)
 			case "urn:xmpp:iot:control set":
 				p = new(iot.ControlSet)
-				// TODO: Add a default Type that passes RawXML
+			default:
+				p = new(Node)
 			}
 			if p != nil {
 				err = d.DecodeElement(p, &tt)
@@ -80,7 +97,7 @@ func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // XMPPFormat returns the string representation of the XMPP packet.
 // TODO: Should I simply rely on xml.Marshal ?
-func (iq *ClientIQ) XMPPFormat() string {
+func (iq *IQ) XMPPFormat() string {
 	if iq.Payload != nil {
 		var payload []byte
 		var err error
@@ -98,3 +115,14 @@ func (iq *ClientIQ) XMPPFormat() string {
 		iq.To, iq.Type, iq.Id,
 		iq.RawXML)
 }
+
+// ============================================================================
+// Genery IQ Node
+
+type Node struct {
+	XMLName xml.Name
+	Content []byte `xml:",innerxml"`
+	Nodes   []Node `xml:",any"`
+}
+
+func (*Node) IsIQPayload() {}
