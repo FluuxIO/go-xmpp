@@ -60,9 +60,8 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 	panic("unreachable")
 }
 
-// Scan XML token stream for next element and save into val.
-// If val == nil, allocate new element based on proto map.
-// Either way, return val.
+// next scans XML token stream for next element and then assign a structure to decode
+// that elements.
 // TODO Use an interface to return packets interface xmppDecoder
 func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 	// Read start element to find out what type we want.
@@ -71,26 +70,28 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 		return xml.Name{}, nil, err
 	}
 
-	// Put it in an interface and allocate one.
+	// Put it in an interface and allocate the right structure
 	var nv interface{}
-	switch se.Name.Space + " " + se.Name.Local {
-	case NSStream + " error":
-		nv = &StreamError{}
-		// TODO: general case = Parse IQ / presence / message => split SASL case
-	case nsSASL + " success":
-		nv = &saslSuccess{}
-	case nsSASL + " failure":
-		nv = &saslFailure{}
-	case NSClient + " message":
-		nv = &ClientMessage{}
-	case NSClient + " presence":
-		nv = &ClientPresence{}
-	case NSClient + " iq":
-		nv = &ClientIQ{}
-	case NSComponent + " handshake":
-		nv = &Handshake{}
+	// TODO: general case = Parse IQ / presence / message => split SASL Stream and component cases
+	switch se.Name.Space {
+	case NSStream:
+		if nv, err = decodeStream(se); err != nil {
+			return xml.Name{}, nil, err
+		}
+	case nsSASL:
+		if nv, err = decodeSASL(se); err != nil {
+			return xml.Name{}, nil, err
+		}
+	case NSClient:
+		if nv, err = decodeClient(se); err != nil {
+			return xml.Name{}, nil, err
+		}
+	case NSComponent:
+		if nv, err = decodeComponent(se); err != nil {
+			return xml.Name{}, nil, err
+		}
 	default:
-		return xml.Name{}, nil, errors.New("unexpected XMPP message " +
+		return xml.Name{}, nil, errors.New("unknown namespace " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 
@@ -99,4 +100,52 @@ func next(p *xml.Decoder) (xml.Name, interface{}, error) {
 		return xml.Name{}, nil, err
 	}
 	return se.Name, nv, err
+}
+
+func decodeStream(se xml.StartElement) (interface{}, error) {
+	switch se.Name.Local {
+	case "error":
+		return &StreamError{}, nil
+	default:
+		return nil, errors.New("unexpected XMPP packet " +
+			se.Name.Space + " <" + se.Name.Local + "/>")
+	}
+}
+
+func decodeSASL(se xml.StartElement) (interface{}, error) {
+	switch se.Name.Local {
+	case "success":
+		return &saslSuccess{}, nil
+	case "failure":
+		return &saslFailure{}, nil
+	default:
+		return nil, errors.New("unexpected XMPP packet " +
+			se.Name.Space + " <" + se.Name.Local + "/>")
+	}
+}
+
+func decodeClient(se xml.StartElement) (interface{}, error) {
+	switch se.Name.Local {
+	case "message":
+		return &ClientMessage{}, nil
+	case "presence":
+		return &ClientPresence{}, nil
+	case "iq":
+		return &ClientIQ{}, nil
+	default:
+		return nil, errors.New("unexpected XMPP packet " +
+			se.Name.Space + " <" + se.Name.Local + "/>")
+	}
+}
+
+func decodeComponent(se xml.StartElement) (interface{}, error) {
+	switch se.Name.Local {
+	case "handshake":
+		return &Handshake{}, nil
+	case "iq":
+		return &ClientIQ{}, nil
+	default:
+		return nil, errors.New("unexpected XMPP packet " +
+			se.Name.Space + " <" + se.Name.Local + "/>")
+	}
 }

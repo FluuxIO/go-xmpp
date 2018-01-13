@@ -13,6 +13,7 @@ func main() {
 	for {
 		_, packet, err := component.ReadPacket()
 		if err != nil {
+			fmt.Println("read error", err)
 			return
 		}
 		fmt.Println("Packet received: ", packet)
