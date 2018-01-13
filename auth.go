@@ -38,8 +38,8 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, password
 	}
 
 	switch v := val.(type) {
-	case *SASLSuccess:
-	case *SASLFailure:
+	case SASLSuccess:
+	case SASLFailure:
 		// v.Any is type of sub-element in failure, which gives a description of what failed.
 		return errors.New("auth failure: " + v.Any.Local)
 	default:
