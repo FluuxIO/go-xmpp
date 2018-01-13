@@ -8,7 +8,7 @@ import (
 // XMPP Packet Parsing
 type ClientMessage struct {
 	XMLName xml.Name `xml:"jabber:client message"`
-	Packet
+	PacketAttrs
 	Subject string `xml:"subject,omitempty"`
 	Body    string `xml:"body,omitempty"`
 	Thread  string `xml:"thread,omitempty"`

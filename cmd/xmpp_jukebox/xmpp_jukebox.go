@@ -76,7 +76,7 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.ClientIQ) {
 
 		playSCURL(p, url)
 		setResponse := new(iot.ControlSetResponse)
-		reply := xmpp.ClientIQ{Packet: xmpp.Packet{To: packet.From, Type: "result", Id: packet.Id}, Payload: setResponse}
+		reply := xmpp.ClientIQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: setResponse}
 		client.Send(reply.XMPPFormat())
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(client, "Radiohead", "Spectre")

@@ -12,8 +12,8 @@ func TestUnmarshalIqs(t *testing.T) {
 		iqString string
 		parsedIQ ClientIQ
 	}{
-		{"<iq id=\"1\" type=\"set\" to=\"test@localhost\"/>", ClientIQ{XMLName: xml.Name{Space: "", Local: "iq"}, Packet: Packet{To: "test@localhost", Type: "set", Id: "1"}}},
-		//{"<iq xmlns=\"jabber:client\" id=\"2\" type=\"set\" to=\"test@localhost\" from=\"server\"><set xmlns=\"urn:xmpp:iot:control\"/></iq>", ClientIQ{XMLName: xml.Name{Space: "jabber:client", Local: "iq"}, Packet: Packet{To: "test@localhost", From: "server", Type: "set", Id: "2"}, Payload: cs1}},
+		{"<iq id=\"1\" type=\"set\" to=\"test@localhost\"/>", ClientIQ{XMLName: xml.Name{Space: "", Local: "iq"}, PacketAttrs: PacketAttrs{To: "test@localhost", Type: "set", Id: "1"}}},
+		//{"<iq xmlns=\"jabber:client\" id=\"2\" type=\"set\" to=\"test@localhost\" from=\"server\"><set xmlns=\"urn:xmpp:iot:control\"/></iq>", ClientIQ{XMLName: xml.Name{Space: "jabber:client", Local: "iq"}, PacketAttrs: PacketAttrs{To: "test@localhost", From: "server", Type: "set", Id: "2"}, Payload: cs1}},
 	}
 
 	for _, test := range tests {

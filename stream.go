@@ -2,7 +2,7 @@ package xmpp // import "fluux.io/xmpp"
 
 import "encoding/xml"
 
-// XMPP Packet Parsing
+// XMPP PacketAttrs Parsing
 type streamFeatures struct {
 	XMLName    xml.Name `xml:"http://etherx.jabber.org/streams features"`
 	StartTLS   tlsStartTLS

@@ -10,7 +10,7 @@ import (
 // info/query
 type ClientIQ struct {
 	XMLName xml.Name `xml:"jabber:client iq"`
-	Packet
+	PacketAttrs
 	Payload IQPayload `xml:",omitempty"`
 	RawXML  string    `xml:",innerxml"`
 	// TODO We need to support detecting the IQ namespace / Query packet

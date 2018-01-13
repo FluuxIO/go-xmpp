@@ -33,7 +33,7 @@ func main() {
 		switch packet := packet.(type) {
 		case *xmpp.ClientMessage:
 			fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
-			reply := xmpp.ClientMessage{Packet: xmpp.Packet{To: packet.From}, Body: packet.Body}
+			reply := xmpp.ClientMessage{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
 			client.Send(reply.XMPPFormat())
 		default:
 			fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
