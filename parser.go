@@ -63,87 +63,71 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 // next scans XML token stream for next element and then assign a structure to decode
 // that elements.
 // TODO Use an interface to return packets interface xmppDecoder
-func next(p *xml.Decoder) (xml.Name, interface{}, error) {
-	// Read start element to find out what type we want.
+func next(p *xml.Decoder) (Packet, error) {
+	// Read start element to find out how we want to parse the XMPP packet
 	se, err := nextStart(p)
 	if err != nil {
-		return xml.Name{}, nil, err
+		return nil, err
 	}
 
-	// Put it in an interface and allocate the right structure
-	var nv interface{}
 	// TODO: general case = Parse IQ / presence / message => split SASL Stream and component cases
 	switch se.Name.Space {
 	case NSStream:
-		if nv, err = decodeStream(se); err != nil {
-			return xml.Name{}, nil, err
-		}
+		return decodeStream(p, se)
 	case nsSASL:
-		if nv, err = decodeSASL(se); err != nil {
-			return xml.Name{}, nil, err
-		}
+		return decodeSASL(p, se)
 	case NSClient:
-		if nv, err = decodeClient(se); err != nil {
-			return xml.Name{}, nil, err
-		}
+		return decodeClient(p, se)
 	case NSComponent:
-		if nv, err = decodeComponent(se); err != nil {
-			return xml.Name{}, nil, err
-		}
+		return decodeComponent(p, se)
 	default:
-		return xml.Name{}, nil, errors.New("unknown namespace " +
+		return nil, errors.New("unknown namespace " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
-
-	// Decode element into pointer storage
-	if err = p.DecodeElement(nv, &se); err != nil {
-		return xml.Name{}, nil, err
-	}
-	return se.Name, nv, err
 }
 
-func decodeStream(se xml.StartElement) (interface{}, error) {
+func decodeStream(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "error":
-		return &StreamError{}, nil
+		return streamError.decode(p, se)
 	default:
 		return nil, errors.New("unexpected XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }
 
-func decodeSASL(se xml.StartElement) (interface{}, error) {
+func decodeSASL(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "success":
-		return &saslSuccess{}, nil
+		return saslSuccess.decode(p, se)
 	case "failure":
-		return &saslFailure{}, nil
+		return saslFailure.decode(p, se)
 	default:
 		return nil, errors.New("unexpected XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }
 
-func decodeClient(se xml.StartElement) (interface{}, error) {
+func decodeClient(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "message":
-		return &ClientMessage{}, nil
+		return message.decode(p, se)
 	case "presence":
-		return &ClientPresence{}, nil
+		return presence.decode(p, se)
 	case "iq":
-		return &ClientIQ{}, nil
+		return iq.decode(p, se)
 	default:
 		return nil, errors.New("unexpected XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }
 
-func decodeComponent(se xml.StartElement) (interface{}, error) {
+func decodeComponent(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "handshake":
-		return &Handshake{}, nil
+		return handshake.decode(p, se)
 	case "iq":
-		return &ClientIQ{}, nil
+		return iq.decode(p, se)
 	default:
 		return nil, errors.New("unexpected XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")

@@ -7,9 +7,11 @@ import (
 	"fluux.io/xmpp/iot"
 )
 
-// info/query
-type ClientIQ struct {
-	XMLName xml.Name `xml:"jabber:client iq"`
+// ============================================================================
+// IQ Packet
+
+type IQ struct { // Info/Query
+	XMLName xml.Name `xml:"iq"`
 	PacketAttrs
 	Payload IQPayload `xml:",omitempty"`
 	RawXML  string    `xml:",innerxml"`
@@ -17,12 +19,26 @@ type ClientIQ struct {
 	// 	Error   clientError
 }
 
+func (IQ) Name() string {
+	return "iq"
+}
+
+type iqDecoder struct{}
+
+var iq iqDecoder
+
+func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (IQ, error) {
+	var packet IQ
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
+}
+
 type IQPayload interface {
 	IsIQPayload()
 }
 
 // UnmarshalXML implements custom parsing for IQs
-func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	iq.XMLName = start.Name
 	// Extract IQ attributes
 	for _, attr := range start.Attr {
@@ -80,7 +96,7 @@ func (iq *ClientIQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // XMPPFormat returns the string representation of the XMPP packet.
 // TODO: Should I simply rely on xml.Marshal ?
-func (iq *ClientIQ) XMPPFormat() string {
+func (iq *IQ) XMPPFormat() string {
 	if iq.Payload != nil {
 		var payload []byte
 		var err error

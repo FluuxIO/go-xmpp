@@ -1,8 +1,12 @@
 package xmpp // import "fluux.io/xmpp"
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
-// XMPP PacketAttrs Parsing
+// ============================================================================
+// StreamFeatures Packet
+
 type streamFeatures struct {
 	XMLName    xml.Name `xml:"http://etherx.jabber.org/streams features"`
 	StartTLS   tlsStartTLS
@@ -13,10 +17,30 @@ type streamFeatures struct {
 	Any        []xml.Name `xml:",any"`
 }
 
+// ============================================================================
+// StreamError Packet
+
 type StreamError struct {
 	XMLName xml.Name `xml:"http://etherx.jabber.org/streams error"`
 	Error   xml.Name `xml:",any"`
 }
+
+func (StreamError) Name() string {
+	return "stream:error"
+}
+
+type streamErrorDecoder struct{}
+
+var streamError streamErrorDecoder
+
+func (streamErrorDecoder) decode(p *xml.Decoder, se xml.StartElement) (StreamError, error) {
+	var packet StreamError
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
+}
+
+// ============================================================================
+// Caps subElement
 
 type Caps struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/caps c"`

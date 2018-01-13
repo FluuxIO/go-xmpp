@@ -40,11 +40,11 @@ func main() {
 	for packet := range client.Recv() {
 
 		switch packet := packet.(type) {
-		case *xmpp.ClientMessage:
+		case *xmpp.Message:
 			processMessage(client, p, packet)
-		case *xmpp.ClientIQ:
+		case *xmpp.IQ:
 			processIq(client, p, packet)
-		case *xmpp.ClientPresence:
+		case *xmpp.Presence:
 			// Do nothing with received presence
 		default:
 			fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
@@ -52,7 +52,7 @@ func main() {
 	}
 }
 
-func processMessage(client *xmpp.Client, p *mpg123.Player, packet *xmpp.ClientMessage) {
+func processMessage(client *xmpp.Client, p *mpg123.Player, packet *xmpp.Message) {
 	command := strings.Trim(packet.Body, " ")
 	if command == "stop" {
 		p.Stop()
@@ -62,7 +62,7 @@ func processMessage(client *xmpp.Client, p *mpg123.Player, packet *xmpp.ClientMe
 	}
 }
 
-func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.ClientIQ) {
+func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 	switch payload := packet.Payload.(type) {
 	// We support IOT Control IQ
 	case *iot.ControlSet:
@@ -76,7 +76,7 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.ClientIQ) {
 
 		playSCURL(p, url)
 		setResponse := new(iot.ControlSetResponse)
-		reply := xmpp.ClientIQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: setResponse}
+		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: setResponse}
 		client.Send(reply.XMPPFormat())
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(client, "Radiohead", "Spectre")

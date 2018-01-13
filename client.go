@@ -108,7 +108,7 @@ func (c *Client) Connect() (*Session, error) {
 
 func (c *Client) recv(receiver chan<- interface{}) (err error) {
 	for {
-		_, val, err := next(c.Session.decoder)
+		val, err := next(c.Session.decoder)
 		if err != nil {
 			return err
 		}

@@ -72,7 +72,7 @@ func (c *Component) Connect(connStr string) error {
 	}
 
 	// 4. Check server response for authentication
-	name, val, err := next(c.decoder)
+	val, err := next(c.decoder)
 	if err != nil {
 		return err
 	}
@@ -83,20 +83,34 @@ func (c *Component) Connect(connStr string) error {
 	case *Handshake:
 		return nil
 	default:
-		return errors.New("unexpected packet, got " + name.Local + " in " + name.Space)
+		return errors.New("unexpected packet, got " + v.Name())
 	}
 	panic("unreachable")
 }
 
 // ReadPacket reads next incoming XMPP packet
 // TODO use defined interface Packet
-func (c *Component) ReadPacket() (xml.Name, interface{}, error) {
+func (c *Component) ReadPacket() (Packet, error) {
 	return next(c.decoder)
 }
 
 // ============================================================================
-// XMPP packets struct
+// Handshake Packet
 
 type Handshake struct {
 	XMLName xml.Name `xml:"jabber:component:accept handshake"`
+}
+
+func (Handshake) Name() string {
+	return "component:handshake"
+}
+
+type handshakeDecoder struct{}
+
+var handshake handshakeDecoder
+
+func (handshakeDecoder) decode(p *xml.Decoder, se xml.StartElement) (Handshake, error) {
+	var packet Handshake
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
 }

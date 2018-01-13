@@ -11,11 +11,18 @@ func main() {
 	component.Connect("localhost:8888")
 
 	for {
-		_, packet, err := component.ReadPacket()
+		packet, err := component.ReadPacket()
 		if err != nil {
 			fmt.Println("read error", err)
 			return
 		}
-		fmt.Println("Packet received: ", packet)
+
+		switch p := packet.(type) {
+		case xmpp.IQ:
+			fmt.Println("IQ received: ", p)
+			fmt.Println("IQ type:", p.Type)
+		default:
+			fmt.Println("Packet unhandled packet:", packet)
+		}
 	}
 }

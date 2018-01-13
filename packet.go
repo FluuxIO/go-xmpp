@@ -1,5 +1,9 @@
 package xmpp // import "fluux.io/xmpp"
 
+type Packet interface {
+	Name() string
+}
+
 // PacketAttrs represents the common structure for base XMPP packets.
 type PacketAttrs struct {
 	Id   string `xml:"id,attr,omitempty"`
