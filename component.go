@@ -94,6 +94,13 @@ func (c *Component) ReadPacket() (Packet, error) {
 	return next(c.decoder)
 }
 
+func (c *Component) Send(packet string) error {
+	if _, err := fmt.Fprintf(c.conn, packet); err != nil {
+		return errors.New("cannot send packet " + err.Error())
+	}
+	return nil
+}
+
 // ============================================================================
 // Handshake Packet
 
