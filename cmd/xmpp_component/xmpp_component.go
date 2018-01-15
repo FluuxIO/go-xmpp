@@ -21,7 +21,7 @@ func main() {
 
 		switch p := packet.(type) {
 		case xmpp.IQ:
-			switch inner := p.Payload.(type) {
+			switch inner := p.Payload[0].(type) {
 			case *xmpp.Node:
 				fmt.Printf("%q\n", inner)
 
