@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 
 	"fluux.io/xmpp"
@@ -22,6 +23,13 @@ func main() {
 		case xmpp.IQ:
 			switch inner := p.Payload.(type) {
 			case *xmpp.Node:
+				fmt.Printf("%q\n", inner)
+
+				data, err := xml.Marshal(inner)
+				if err != nil {
+					fmt.Println("cannot marshall payload")
+				}
+				fmt.Println("data=", string(data))
 				component.processIQ(p.Type, p.Id, p.From, inner)
 			default:
 				fmt.Println("default")

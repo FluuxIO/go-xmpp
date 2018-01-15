@@ -7,16 +7,55 @@ import (
 	"fluux.io/xmpp/iot"
 )
 
+/*
+TODO I would like to be able to write
+
+	newIQ(Id, From, To, Type, Lang).AddPayload(IQPayload)
+
+	xmpp.IQ{
+		XMLName: xml.Name{
+			Space: "",
+			Local: "",
+		},
+		PacketAttrs: xmpp.PacketAttrs{
+			Id:   "",
+			From: "",
+			To:   "",
+			Type: "",
+			Lang: "",
+		},
+		Payload: nil,
+		RawXML:  "",
+	}
+
+*/
+
 // ============================================================================
 // IQ Packet
 
 type IQ struct { // Info/Query
 	XMLName xml.Name `xml:"iq"`
 	PacketAttrs
-	Payload IQPayload `xml:",omitempty"`
-	RawXML  string    `xml:",innerxml"`
-	// TODO We need to support detecting the IQ namespace / Query packet
+	Payload []IQPayload `xml:",omitempty"`
+	RawXML  string      `xml:",innerxml"`
 	// 	Error   clientError
+}
+
+func NewIQ(iqtype, from, to, id, lang string) IQ {
+	return IQ{
+		XMLName: xml.Name{Local: "iq"},
+		PacketAttrs: PacketAttrs{
+			Id:   id,
+			From: from,
+			To:   to,
+			Type: iqtype,
+			Lang: lang,
+		},
+	}
+}
+
+func (iq *IQ) AddPayload(payload IQPayload) {
+	iq.Payload = append(iq.Payload, payload)
 }
 
 func (IQ) Name() string {
@@ -31,10 +70,6 @@ func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (IQ, error) {
 	var packet IQ
 	err := p.DecodeElement(&packet, &se)
 	return packet, err
-}
-
-type IQPayload interface {
-	IsIQPayload()
 }
 
 // UnmarshalXML implements custom parsing for IQs
@@ -83,7 +118,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				if err != nil {
 					return err
 				}
-				iq.Payload = p
+				iq.Payload = []IQPayload{p}
 				p = nil
 			}
 
@@ -117,12 +152,32 @@ func (iq *IQ) XMPPFormat() string {
 }
 
 // ============================================================================
-// Genery IQ Node
+// Generic IQ Payload
+
+type IQPayload interface {
+	IsIQPayload()
+}
 
 type Node struct {
 	XMLName xml.Name
-	Content []byte `xml:",innerxml"`
-	Nodes   []Node `xml:",any"`
+	Attrs   []xml.Attr `xml:"-"`
+	// Content []byte     `xml:",innerxml"`
+	Nodes []Node `xml:",any"`
+}
+
+func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	n.Attrs = start.Attr
+	type node Node
+	return d.DecodeElement((*node)(n), &start)
+}
+
+func (n *Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	start.Attr = n.Attrs
+	start.Name = n.XMLName
+
+	err = e.EncodeToken(start)
+	e.EncodeElement(n.Nodes, xml.StartElement{Name: n.XMLName})
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
 func (*Node) IsIQPayload() {}
