@@ -166,7 +166,13 @@ type Node struct {
 }
 
 func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	n.Attrs = start.Attr
+	// Assign	"n.Attrs = start.Attr", without repeating xmlns in attributes
+	for _, attr := range start.Attr {
+		// Do not repeat xmlns
+		if attr.Name.Local != "xmlns" {
+			n.Attrs = append(n.Attrs, attr)
+		}
+	}
 	type node Node
 	return d.DecodeElement((*node)(n), &start)
 }

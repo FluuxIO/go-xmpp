@@ -37,6 +37,7 @@ func TestGenerateIq(t *testing.T) {
 		},
 		Nodes: []Node{
 			{XMLName: xml.Name{
+				Space: "http://jabber.org/protocol/disco#info",
 				Local: "identity",
 			},
 				Attrs: []xml.Attr{
