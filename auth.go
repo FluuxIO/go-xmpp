@@ -104,13 +104,13 @@ type auth struct {
 	Value     string   `xml:",innerxml"`
 }
 
-type bindBind struct {
+type BindBind struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 	Resource string   `xml:"resource,omitempty"`
 	Jid      string   `xml:"jid,omitempty"`
 }
 
-func (*bindBind) IsIQPayload() {
+func (*BindBind) IsIQPayload() {
 }
 
 // Session is obsolete in RFC 6121.

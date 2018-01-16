@@ -172,7 +172,7 @@ func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 
 	// TODO Check all elements
 	switch iq.Payload[0].(type) {
-	case *bindBind:
+	case *BindBind:
 		result := `<iq id='%s' type='result'>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
   	<jid>%s</jid>

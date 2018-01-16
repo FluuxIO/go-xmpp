@@ -2,6 +2,7 @@ package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/xml"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -42,11 +43,48 @@ func TestGenerateIq(t *testing.T) {
 			},
 				Attrs: []xml.Attr{
 					{Name: xml.Name{Local: "category"}, Value: "gateway"},
-					{Name: xml.Name{Local: "type"}, Value: "skype"},
+					{Name: xml.Name{Local: "type"}, Value: "mqtt"},
 					{Name: xml.Name{Local: "name"}, Value: "Test Gateway"},
 				},
 				Nodes: nil,
 			}},
+	}
+	iq.AddPayload(&payload)
+	data, err := xml.Marshal(iq)
+	if err != nil {
+		t.Errorf("cannot marshal xml structure")
+	}
+
+	fmt.Printf("XML Struct: %s\n", data)
+
+	var parsedIQ = new(IQ)
+	if err = xml.Unmarshal(data, parsedIQ); err != nil {
+		t.Errorf("Unmarshal(%s) returned error", data)
+	}
+
+	if !reflect.DeepEqual(parsedIQ.Payload[0], iq.Payload[0]) {
+		t.Errorf("expecting result %+v = %+v", parsedIQ.Payload[0], iq.Payload[0])
+	}
+
+	fmt.Println("ParsedIQ", parsedIQ)
+}
+
+func TestGenerateIqNew(t *testing.T) {
+	iq := NewIQ("get", "admin@localhost", "test@localhost", "1", "en")
+	payload := DiscoInfo{
+		XMLName: xml.Name{
+			Space: "http://jabber.org/protocol/disco#info",
+			Local: "query",
+		},
+		Identity: Identity{
+			XMLName: xml.Name{
+				Space: "http://jabber.org/protocol/disco#info",
+				Local: "identity",
+			},
+			Name:     "Test Gateway",
+			Category: "gateway",
+			Type:     "mqtt",
+		},
 	}
 	iq.AddPayload(&payload)
 	data, err := xml.Marshal(iq)
