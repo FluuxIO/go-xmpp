@@ -2,9 +2,10 @@ package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/xml"
-	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestUnmarshalIqs(t *testing.T) {
@@ -30,63 +31,20 @@ func TestUnmarshalIqs(t *testing.T) {
 }
 
 func TestGenerateIq(t *testing.T) {
-	iq := NewIQ("get", "admin@localhost", "test@localhost", "1", "en")
-	payload := Node{
-		XMLName: xml.Name{
-			Space: "http://jabber.org/protocol/disco#info",
-			Local: "query",
-		},
-		Nodes: []Node{
-			{XMLName: xml.Name{
-				Space: "http://jabber.org/protocol/disco#info",
-				Local: "identity",
-			},
-				Attrs: []xml.Attr{
-					{Name: xml.Name{Local: "category"}, Value: "gateway"},
-					{Name: xml.Name{Local: "type"}, Value: "mqtt"},
-					{Name: xml.Name{Local: "name"}, Value: "Test Gateway"},
-				},
-				Nodes: nil,
-			}},
-	}
-	iq.AddPayload(&payload)
-	data, err := xml.Marshal(iq)
-	if err != nil {
-		t.Errorf("cannot marshal xml structure")
-	}
-
-	fmt.Printf("XML Struct: %s\n", data)
-
-	var parsedIQ = new(IQ)
-	if err = xml.Unmarshal(data, parsedIQ); err != nil {
-		t.Errorf("Unmarshal(%s) returned error", data)
-	}
-
-	if !reflect.DeepEqual(parsedIQ.Payload[0], iq.Payload[0]) {
-		t.Errorf("expecting result %+v = %+v", parsedIQ.Payload[0], iq.Payload[0])
-	}
-
-	fmt.Println("ParsedIQ", parsedIQ)
-}
-
-func TestGenerateIqNew(t *testing.T) {
-	iq := NewIQ("get", "admin@localhost", "test@localhost", "1", "en")
+	iq := NewIQ("result", "admin@localhost", "test@localhost", "1", "en")
 	payload := DiscoInfo{
-		XMLName: xml.Name{
-			Space: "http://jabber.org/protocol/disco#info",
-			Local: "query",
-		},
 		Identity: Identity{
-			XMLName: xml.Name{
-				Space: "http://jabber.org/protocol/disco#info",
-				Local: "identity",
-			},
 			Name:     "Test Gateway",
 			Category: "gateway",
 			Type:     "mqtt",
 		},
+		Features: []Feature{
+			{Var: "http://jabber.org/protocol/disco#info"},
+			{Var: "http://jabber.org/protocol/disco#item"},
+		},
 	}
 	iq.AddPayload(&payload)
+
 	data, err := xml.Marshal(iq)
 	if err != nil {
 		t.Errorf("cannot marshal xml structure")
@@ -97,7 +55,29 @@ func TestGenerateIqNew(t *testing.T) {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 
-	if !reflect.DeepEqual(parsedIQ.Payload[0], iq.Payload[0]) {
-		t.Errorf("expecting result %+v = %+v", parsedIQ.Payload[0], iq.Payload[0])
+	if !xmlEqual(parsedIQ.Payload, iq.Payload) {
+		t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ.Payload, iq.Payload))
 	}
+}
+
+// Compare iq structure but ignore empty namespace as they are set properly on
+// marshal / unmarshal. There is no need to manage them on the manually
+// crafted structure.
+func xmlEqual(x, y interface{}) bool {
+	alwaysEqual := cmp.Comparer(func(_, _ interface{}) bool { return true })
+	opts := cmp.Options{
+		cmp.FilterValues(func(x, y interface{}) bool {
+			xx, xok := x.(xml.Name)
+			yy, yok := y.(xml.Name)
+			if xok && yok {
+				zero := xml.Name{}
+				if xx == zero || yy == zero {
+					return true
+				}
+			}
+			return false
+		}, alwaysEqual),
+	}
+
+	return cmp.Equal(x, y, opts)
 }

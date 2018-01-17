@@ -152,7 +152,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 					if err != nil {
 						return err
 					}
-					iq.Payload = append(iq.Payload, iqPl) // []IQPayload{iqPl}
+					iq.Payload = append(iq.Payload, iqPl)
 				}
 			}
 
@@ -232,17 +232,23 @@ func (*Node) IsIQPayload() {}
 // Disco
 
 type DiscoInfo struct {
-	XMLName  xml.Name `xml:"http://jabber.org/protocol/disco#info query"`
-	Identity Identity
+	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
+	Identity Identity  `xml:"identity"`
+	Features []Feature `xml:"feature"`
 }
 
 func (*DiscoInfo) IsIQPayload() {}
 
 type Identity struct {
-	XMLName  xml.Name `xml:"identity"`
-	Name     string   `xml:"name,attr"`
-	Category string   `xml:"category,attr"`
-	Type     string   `xml:"type,attr"`
+	XMLName  xml.Name `xml:"identity,omitempty"`
+	Name     string   `xml:"name,attr,omitempty"`
+	Category string   `xml:"category,attr,omitempty"`
+	Type     string   `xml:"type,attr,omitempty"`
+}
+
+type Feature struct {
+	XMLName xml.Name `xml:"feature"`
+	Var     string   `xml:"var,attr"`
 }
 
 // ============================================================================

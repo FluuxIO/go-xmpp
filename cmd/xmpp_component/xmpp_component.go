@@ -58,20 +58,21 @@ func (c MyComponent) processIQ(iqType, id, from string, inner *xmpp.Node) {
 	switch inner.XMLName.Space + " " + iqType {
 	case NSDiscoInfo + " get":
 		fmt.Println("Send Disco Info")
-		result := fmt.Sprintf(`<iq type='result'
-    from='%s'
-    to='%s'
-    id='%s'>
-  <query xmlns='http://jabber.org/protocol/disco#info'>
-    <identity
-        category='%s'
-        type='%s'
-        name='%s'/>
-    <feature var='http://jabber.org/protocol/disco#info'/>
-    <feature var='http://jabber.org/protocol/disco#items'/>
-  </query>
-</iq>`, c.xmpp.Host, from, id, c.Category, c.Type, c.Name)
-		c.xmpp.Send(result)
+
+		iq := xmpp.NewIQ("result", "admin@localhost", "test@localhost", "1", "en")
+		payload := xmpp.DiscoInfo{
+			Identity: xmpp.Identity{
+				Name:     "Test Gateway",
+				Category: "gateway",
+				Type:     "mqtt",
+			},
+			Features: []xmpp.Feature{
+				{Var: "http://jabber.org/protocol/disco#info"},
+				{Var: "http://jabber.org/protocol/disco#item"},
+			},
+		}
+		iq.AddPayload(&payload)
+		c.xmpp.Send(iq)
 	default:
 		iqErr := fmt.Sprintf(`<iq type='error'
     from='%s'
@@ -81,6 +82,6 @@ func (c MyComponent) processIQ(iqType, id, from string, inner *xmpp.Node) {
       <feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
      </error>
 </iq>`, c.xmpp.Host, from, id)
-		c.xmpp.Send(iqErr)
+		c.xmpp.SendOld(iqErr) // FIXME Remove that method
 	}
 }

@@ -127,6 +127,7 @@ func (c *Client) Recv() <-chan interface{} {
 }
 
 // Send sends message text.
+// TODO Move to Go XML Marshaller
 func (c *Client) Send(packet string) error {
 	fmt.Fprintf(c.Session.socketProxy, packet) // TODO handle errors
 	return nil
