@@ -2,7 +2,6 @@ package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/xml"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -19,14 +18,16 @@ func TestUnmarshalIqs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		var parsedIQ = new(IQ)
-		err := xml.Unmarshal([]byte(test.iqString), parsedIQ)
+		parsedIQ := IQ{}
+		err := xml.Unmarshal([]byte(test.iqString), &parsedIQ)
 		if err != nil {
 			t.Errorf("Unmarshal(%s) returned error", test.iqString)
 		}
-		if !reflect.DeepEqual(parsedIQ, &test.parsedIQ) {
-			t.Errorf("Unmarshal(%s) expecting result %+v = %+v", test.iqString, parsedIQ, &test.parsedIQ)
+
+		if !xmlEqual(parsedIQ, test.parsedIQ) {
+			t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ, test.parsedIQ))
 		}
+
 	}
 }
 
@@ -50,8 +51,8 @@ func TestGenerateIq(t *testing.T) {
 		t.Errorf("cannot marshal xml structure")
 	}
 
-	var parsedIQ = new(IQ)
-	if err = xml.Unmarshal(data, parsedIQ); err != nil {
+	parsedIQ := IQ{}
+	if err = xml.Unmarshal(data, &parsedIQ); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 

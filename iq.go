@@ -105,7 +105,7 @@ func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (IQ, error) {
 // UnmarshalXML implements custom parsing for IQs
 func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	iq.XMLName = start.Name
-	fmt.Println("IQ Name", iq.XMLName)
+
 	// Extract IQ attributes
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "id" {
