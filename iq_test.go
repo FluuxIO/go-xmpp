@@ -61,6 +61,30 @@ func TestGenerateIq(t *testing.T) {
 	}
 }
 
+func TestErrorTag(t *testing.T) {
+	xError := Err{
+		XMLName: xml.Name{Local: "error"},
+		Code:    503,
+		Type:    "cancel",
+		Reason:  "service-unavailable",
+		Text:    "User session not found",
+	}
+
+	data, err := xml.Marshal(xError)
+	if err != nil {
+		t.Errorf("cannot marshal xml structure: %s", err)
+	}
+
+	parsedError := Err{}
+	if err = xml.Unmarshal(data, &parsedError); err != nil {
+		t.Errorf("Unmarshal(%s) returned error", data)
+	}
+
+	if !xmlEqual(parsedError, xError) {
+		t.Errorf("non matching items\n%s", cmp.Diff(parsedError, xError))
+	}
+}
+
 // Compare iq structure but ignore empty namespace as they are set properly on
 // marshal / unmarshal. There is no need to manage them on the manually
 // crafted structure.

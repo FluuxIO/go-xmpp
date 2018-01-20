@@ -6,6 +6,8 @@ import (
 
 	"reflect"
 
+	"strconv"
+
 	"fluux.io/xmpp/iot"
 )
 
@@ -61,6 +63,92 @@ TODO support ability to put Raw payload
 */
 
 // ============================================================================
+// XMPP Errors
+
+type Err struct {
+	XMLName xml.Name `xml:"error"`
+	Reason  string
+	Code    int    `xml:"code,attr,omitempty"`
+	Type    string `xml:"type,attr,omitempty"`
+	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text"`
+}
+
+// UnmarshalXML implements custom parsing for IQs
+func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	x.XMLName = start.Name
+
+	// Extract attributes
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "type" {
+			x.Type = attr.Value
+		}
+		if attr.Name.Local == "code" {
+			if code, err := strconv.Atoi(attr.Value); err == nil {
+				x.Code = code
+			}
+		}
+	}
+
+	for {
+		t, err := d.Token()
+		if err != nil {
+			return err
+		}
+
+		switch tt := t.(type) {
+
+		case xml.StartElement:
+			elt := new(Node)
+
+			err = d.DecodeElement(elt, &tt)
+			if err != nil {
+				return err
+			}
+
+			textName := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: "text"}
+			if elt.XMLName == textName {
+				x.Text = string(elt.Content)
+			} else if elt.XMLName.Space == "urn:ietf:params:xml:ns:xmpp-stanzas" {
+				x.Reason = elt.XMLName.Local
+			}
+
+		case xml.EndElement:
+			if tt == start.End() {
+				return nil
+			}
+		}
+	}
+}
+
+func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	code := xml.Attr{
+		Name:  xml.Name{Local: "code"},
+		Value: strconv.Itoa(x.Code),
+	}
+	typ := xml.Attr{
+		Name:  xml.Name{Local: "type"},
+		Value: x.Type,
+	}
+	start.Name = xml.Name{Local: "error"}
+	start.Attr = append(start.Attr, code, typ)
+	err = e.EncodeToken(start)
+
+	// Subtags
+	// Reason
+	reason := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: x.Reason}
+	e.EncodeToken(xml.StartElement{Name: reason})
+	e.EncodeToken(xml.EndElement{Name: reason})
+
+	// Text
+	text := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: "text"}
+	e.EncodeToken(xml.StartElement{Name: text})
+	e.EncodeToken(xml.CharData(x.Text))
+	e.EncodeToken(xml.EndElement{Name: text})
+
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
+}
+
+// ============================================================================
 // IQ Packet
 
 type IQ struct { // Info/Query
@@ -68,7 +156,7 @@ type IQ struct { // Info/Query
 	PacketAttrs
 	Payload []IQPayload `xml:",omitempty"`
 	RawXML  string      `xml:",innerxml"`
-	// 	Error   clientError
+	Error   Err         `xml:"error,omitempty"`
 }
 
 func NewIQ(iqtype, from, to, id, lang string) IQ {
@@ -196,8 +284,8 @@ type IQPayload interface {
 type Node struct {
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
-	// Content []byte     `xml:",innerxml"`
-	Nodes []Node `xml:",any"`
+	Content string     `xml:",innerxml"`
+	Nodes   []Node     `xml:",any"`
 }
 
 type Attr struct {
@@ -217,7 +305,7 @@ func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.DecodeElement((*node)(n), &start)
 }
 
-func (n *Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start.Attr = n.Attrs
 	start.Name = n.XMLName
 
@@ -230,6 +318,10 @@ func (*Node) IsIQPayload() {}
 
 // ============================================================================
 // Disco
+
+const (
+	NSDiscoInfo = "http://jabber.org/protocol/disco#info"
+)
 
 type DiscoInfo struct {
 	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
