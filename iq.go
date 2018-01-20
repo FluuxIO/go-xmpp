@@ -67,11 +67,13 @@ TODO support ability to put Raw payload
 
 type Err struct {
 	XMLName xml.Name `xml:"error"`
+	Code    int      `xml:"code,attr,omitempty"`
+	Type    string   `xml:"type,attr,omitempty"`
 	Reason  string
-	Code    int    `xml:"code,attr,omitempty"`
-	Type    string `xml:"type,attr,omitempty"`
-	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text"`
+	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text,omitempty"`
 }
+
+func (*Err) IsIQPayload() {}
 
 // UnmarshalXML implements custom parsing for IQs
 func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -135,15 +137,19 @@ func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 
 	// Subtags
 	// Reason
-	reason := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: x.Reason}
-	e.EncodeToken(xml.StartElement{Name: reason})
-	e.EncodeToken(xml.EndElement{Name: reason})
+	if x.Reason != "" {
+		reason := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: x.Reason}
+		e.EncodeToken(xml.StartElement{Name: reason})
+		e.EncodeToken(xml.EndElement{Name: reason})
+	}
 
 	// Text
-	text := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: "text"}
-	e.EncodeToken(xml.StartElement{Name: text})
-	e.EncodeToken(xml.CharData(x.Text))
-	e.EncodeToken(xml.EndElement{Name: text})
+	if x.Text != "" {
+		text := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: "text"}
+		e.EncodeToken(xml.StartElement{Name: text})
+		e.EncodeToken(xml.CharData(x.Text))
+		e.EncodeToken(xml.EndElement{Name: text})
+	}
 
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
@@ -174,6 +180,18 @@ func NewIQ(iqtype, from, to, id, lang string) IQ {
 
 func (iq *IQ) AddPayload(payload IQPayload) {
 	iq.Payload = append(iq.Payload, payload)
+}
+
+func (iq IQ) MakeError(xerror Err) IQ {
+	from := iq.From
+	to := iq.To
+
+	iq.Type = "error"
+	iq.From = to
+	iq.To = from
+	iq.Error = xerror
+
+	return iq
 }
 
 func (IQ) Name() string {

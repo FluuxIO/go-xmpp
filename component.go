@@ -106,13 +106,6 @@ func (c *Component) Send(packet Packet) error {
 	return nil
 }
 
-func (c *Component) SendOld(packet string) error {
-	if _, err := fmt.Fprintf(c.conn, packet); err != nil {
-		return errors.New("cannot send packet " + err.Error())
-	}
-	return nil
-}
-
 // ============================================================================
 // Handshake Packet
 
