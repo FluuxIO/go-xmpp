@@ -94,8 +94,13 @@ func (c *Component) ReadPacket() (Packet, error) {
 	return next(c.decoder)
 }
 
-func (c *Component) Send(packet string) error {
-	if _, err := fmt.Fprintf(c.conn, packet); err != nil {
+func (c *Component) Send(packet Packet) error {
+	data, err := xml.Marshal(packet)
+	if err != nil {
+		return errors.New("cannot marshal packet " + err.Error())
+	}
+
+	if _, err := fmt.Fprintf(c.conn, string(data)); err != nil {
 		return errors.New("cannot send packet " + err.Error())
 	}
 	return nil

@@ -165,7 +165,7 @@ func (s *Session) bind(o Options) {
 
 	// TODO Check all elements
 	switch payload := iq.Payload[0].(type) {
-	case *bindBind:
+	case *BindBind:
 		s.BindJid = payload.Jid // our local id (with possibly randomly generated resource
 	default:
 		s.err = errors.New("iq bind result missing")

@@ -4,31 +4,155 @@ import (
 	"encoding/xml"
 	"fmt"
 
+	"reflect"
+
+	"strconv"
+
 	"fluux.io/xmpp/iot"
 )
 
 /*
 TODO I would like to be able to write
 
-	newIQ(Id, From, To, Type, Lang).AddPayload(IQPayload)
+	NewIQ(Id, From, To, Type, Lang).AddPayload(IQPayload)
+	Payload would be:
 
-	xmpp.IQ{
-		XMLName: xml.Name{
-			Space: "",
-			Local: "",
-		},
-		PacketAttrs: xmpp.PacketAttrs{
-			Id:   "",
-			From: "",
-			To:   "",
-			Type: "",
-			Lang: "",
-		},
-		Payload: nil,
-		RawXML:  "",
-	}
+	payload := Node{
+			Ns: "http://jabber.org/protocol/disco#info",
+			Tag: "identity",
+			Attrs: map[string]string{
+		    	"category":"gateway",
+			    "type": "skype",
+			    "name": "Test Gateway",
+      },
+			Nodes: []Node{},
+   }
+
+		AddPayload(Ns, Tag, Attrs)
+
+ex:
+
+NewIQ("get", "test@localhost", "admin@localhost", "en")
+	.AddPayload("http://jabber.org/protocol/disco#info",
+									"identity",
+                  map[string]string{
+		               	"category":"gateway",
+                    "type": "skype",
+			              "name": "Test Gateway",
+                  })
+
+	NewNode(Ns, Tag, Attrs)
+	NewNodeWithChildren(Ns, Tag, Attrs, Nodes)
+
+Attr {
+   K string
+   V string
+}
+
+xmpp.Elt.DiscoInfo("identity", "gateway", "skype", "Test Gateway")
+xmppElt.DiscoInfo.identity("
+import xmpp/node/discoinfo
+
+discoinfo.Identity("gateway", "skype", "Test Gateway")
+
+
+[]Attr{{"category", "gateway"}
+
+TODO support ability to put Raw payload
 
 */
+
+// ============================================================================
+// XMPP Errors
+
+type Err struct {
+	XMLName xml.Name `xml:"error"`
+	Code    int      `xml:"code,attr,omitempty"`
+	Type    string   `xml:"type,attr,omitempty"`
+	Reason  string
+	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text,omitempty"`
+}
+
+func (*Err) IsIQPayload() {}
+
+// UnmarshalXML implements custom parsing for IQs
+func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	x.XMLName = start.Name
+
+	// Extract attributes
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "type" {
+			x.Type = attr.Value
+		}
+		if attr.Name.Local == "code" {
+			if code, err := strconv.Atoi(attr.Value); err == nil {
+				x.Code = code
+			}
+		}
+	}
+
+	for {
+		t, err := d.Token()
+		if err != nil {
+			return err
+		}
+
+		switch tt := t.(type) {
+
+		case xml.StartElement:
+			elt := new(Node)
+
+			err = d.DecodeElement(elt, &tt)
+			if err != nil {
+				return err
+			}
+
+			textName := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: "text"}
+			if elt.XMLName == textName {
+				x.Text = string(elt.Content)
+			} else if elt.XMLName.Space == "urn:ietf:params:xml:ns:xmpp-stanzas" {
+				x.Reason = elt.XMLName.Local
+			}
+
+		case xml.EndElement:
+			if tt == start.End() {
+				return nil
+			}
+		}
+	}
+}
+
+func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	code := xml.Attr{
+		Name:  xml.Name{Local: "code"},
+		Value: strconv.Itoa(x.Code),
+	}
+	typ := xml.Attr{
+		Name:  xml.Name{Local: "type"},
+		Value: x.Type,
+	}
+	start.Name = xml.Name{Local: "error"}
+	start.Attr = append(start.Attr, code, typ)
+	err = e.EncodeToken(start)
+
+	// Subtags
+	// Reason
+	if x.Reason != "" {
+		reason := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: x.Reason}
+		e.EncodeToken(xml.StartElement{Name: reason})
+		e.EncodeToken(xml.EndElement{Name: reason})
+	}
+
+	// Text
+	if x.Text != "" {
+		text := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: "text"}
+		e.EncodeToken(xml.StartElement{Name: text})
+		e.EncodeToken(xml.CharData(x.Text))
+		e.EncodeToken(xml.EndElement{Name: text})
+	}
+
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
+}
 
 // ============================================================================
 // IQ Packet
@@ -38,7 +162,7 @@ type IQ struct { // Info/Query
 	PacketAttrs
 	Payload []IQPayload `xml:",omitempty"`
 	RawXML  string      `xml:",innerxml"`
-	// 	Error   clientError
+	Error   Err         `xml:"error,omitempty"`
 }
 
 func NewIQ(iqtype, from, to, id, lang string) IQ {
@@ -58,6 +182,18 @@ func (iq *IQ) AddPayload(payload IQPayload) {
 	iq.Payload = append(iq.Payload, payload)
 }
 
+func (iq IQ) MakeError(xerror Err) IQ {
+	from := iq.From
+	to := iq.To
+
+	iq.Type = "error"
+	iq.From = to
+	iq.To = from
+	iq.Error = xerror
+
+	return iq
+}
+
 func (IQ) Name() string {
 	return "iq"
 }
@@ -75,6 +211,7 @@ func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (IQ, error) {
 // UnmarshalXML implements custom parsing for IQs
 func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	iq.XMLName = start.Name
+
 	// Extract IQ attributes
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "id" {
@@ -95,34 +232,38 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 
 	// decode inner elements
+	level := 0
 	for {
 		t, err := d.Token()
 		if err != nil {
 			return err
 		}
 
-		var p IQPayload
 		switch tt := t.(type) {
 
 		case xml.StartElement:
-			switch tt.Name.Space + " " + tt.Name.Local {
-			case "urn:ietf:params:xml:ns:xmpp-bind bind":
-				p = new(bindBind)
-			case "urn:xmpp:iot:control set":
-				p = new(iot.ControlSet)
-			default:
-				p = new(Node)
-			}
-			if p != nil {
-				err = d.DecodeElement(p, &tt)
-				if err != nil {
-					return err
+			level++
+			if level <= 1 {
+				var elt interface{}
+				payloadType := tt.Name.Space + " " + tt.Name.Local
+				if payloadType := typeRegistry[payloadType]; payloadType != nil {
+					val := reflect.New(payloadType)
+					elt = val.Interface()
+				} else {
+					elt = new(Node)
 				}
-				iq.Payload = []IQPayload{p}
-				p = nil
+
+				if iqPl, ok := elt.(IQPayload); ok {
+					err = d.DecodeElement(elt, &tt)
+					if err != nil {
+						return err
+					}
+					iq.Payload = append(iq.Payload, iqPl)
+				}
 			}
 
 		case xml.EndElement:
+			level--
 			if tt == start.End() {
 				return nil
 			}
@@ -161,14 +302,19 @@ type IQPayload interface {
 type Node struct {
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
-	// Content []byte     `xml:",innerxml"`
-	Nodes []Node `xml:",any"`
+	Content string     `xml:",innerxml"`
+	Nodes   []Node     `xml:",any"`
+}
+
+type Attr struct {
+	K string
+	V string
 }
 
 func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	// Assign	"n.Attrs = start.Attr", without repeating xmlns in attributes
+	// Assign	"n.Attrs = start.Attr", without repeating xmlns in attributes:
 	for _, attr := range start.Attr {
-		// Do not repeat xmlns
+		// Do not repeat xmlns, it is already in XMLName
 		if attr.Name.Local != "xmlns" {
 			n.Attrs = append(n.Attrs, attr)
 		}
@@ -177,7 +323,7 @@ func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.DecodeElement((*node)(n), &start)
 }
 
-func (n *Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start.Attr = n.Attrs
 	start.Name = n.XMLName
 
@@ -187,3 +333,40 @@ func (n *Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 }
 
 func (*Node) IsIQPayload() {}
+
+// ============================================================================
+// Disco
+
+const (
+	NSDiscoInfo = "http://jabber.org/protocol/disco#info"
+)
+
+type DiscoInfo struct {
+	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
+	Identity Identity  `xml:"identity"`
+	Features []Feature `xml:"feature"`
+}
+
+func (*DiscoInfo) IsIQPayload() {}
+
+type Identity struct {
+	XMLName  xml.Name `xml:"identity,omitempty"`
+	Name     string   `xml:"name,attr,omitempty"`
+	Category string   `xml:"category,attr,omitempty"`
+	Type     string   `xml:"type,attr,omitempty"`
+}
+
+type Feature struct {
+	XMLName xml.Name `xml:"feature"`
+	Var     string   `xml:"var,attr"`
+}
+
+// ============================================================================
+
+var typeRegistry = make(map[string]reflect.Type)
+
+func init() {
+	typeRegistry["http://jabber.org/protocol/disco#info query"] = reflect.TypeOf(DiscoInfo{})
+	typeRegistry["urn:ietf:params:xml:ns:xmpp-bind bind"] = reflect.TypeOf(BindBind{})
+	typeRegistry["urn:xmpp:iot:control set"] = reflect.TypeOf(iot.ControlSet{})
+}

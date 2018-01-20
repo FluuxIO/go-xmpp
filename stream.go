@@ -12,7 +12,7 @@ type streamFeatures struct {
 	StartTLS   tlsStartTLS
 	Caps       Caps
 	Mechanisms saslMechanisms
-	Bind       bindBind
+	Bind       BindBind
 	Session    sessionSession
 	Any        []xml.Name `xml:",any"`
 }

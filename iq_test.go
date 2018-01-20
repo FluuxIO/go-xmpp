@@ -2,8 +2,9 @@ package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/xml"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestUnmarshalIqs(t *testing.T) {
@@ -17,49 +18,91 @@ func TestUnmarshalIqs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		var parsedIQ = new(IQ)
-		err := xml.Unmarshal([]byte(test.iqString), parsedIQ)
+		parsedIQ := IQ{}
+		err := xml.Unmarshal([]byte(test.iqString), &parsedIQ)
 		if err != nil {
 			t.Errorf("Unmarshal(%s) returned error", test.iqString)
 		}
-		if !reflect.DeepEqual(parsedIQ, &test.parsedIQ) {
-			t.Errorf("Unmarshal(%s) expecting result %+v = %+v", test.iqString, parsedIQ, &test.parsedIQ)
+
+		if !xmlEqual(parsedIQ, test.parsedIQ) {
+			t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ, test.parsedIQ))
 		}
+
 	}
 }
 
 func TestGenerateIq(t *testing.T) {
-	iq := NewIQ("get", "admin@localhost", "test@localhost", "1", "en")
-	payload := Node{
-		XMLName: xml.Name{
-			Space: "http://jabber.org/protocol/disco#info",
-			Local: "query",
+	iq := NewIQ("result", "admin@localhost", "test@localhost", "1", "en")
+	payload := DiscoInfo{
+		Identity: Identity{
+			Name:     "Test Gateway",
+			Category: "gateway",
+			Type:     "mqtt",
 		},
-		Nodes: []Node{
-			{XMLName: xml.Name{
-				Space: "http://jabber.org/protocol/disco#info",
-				Local: "identity",
-			},
-				Attrs: []xml.Attr{
-					{Name: xml.Name{Local: "category"}, Value: "gateway"},
-					{Name: xml.Name{Local: "type"}, Value: "skype"},
-					{Name: xml.Name{Local: "name"}, Value: "Test Gateway"},
-				},
-				Nodes: nil,
-			}},
+		Features: []Feature{
+			{Var: "http://jabber.org/protocol/disco#info"},
+			{Var: "http://jabber.org/protocol/disco#item"},
+		},
 	}
 	iq.AddPayload(&payload)
+
 	data, err := xml.Marshal(iq)
 	if err != nil {
 		t.Errorf("cannot marshal xml structure")
 	}
 
-	var parsedIQ = new(IQ)
-	if err = xml.Unmarshal(data, parsedIQ); err != nil {
+	parsedIQ := IQ{}
+	if err = xml.Unmarshal(data, &parsedIQ); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 
-	if !reflect.DeepEqual(parsedIQ.Payload[0], iq.Payload[0]) {
-		t.Errorf("expecting result %+v = %+v", parsedIQ.Payload[0], iq.Payload[0])
+	if !xmlEqual(parsedIQ.Payload, iq.Payload) {
+		t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ.Payload, iq.Payload))
 	}
+}
+
+func TestErrorTag(t *testing.T) {
+	xError := Err{
+		XMLName: xml.Name{Local: "error"},
+		Code:    503,
+		Type:    "cancel",
+		Reason:  "service-unavailable",
+		Text:    "User session not found",
+	}
+
+	data, err := xml.Marshal(xError)
+	if err != nil {
+		t.Errorf("cannot marshal xml structure: %s", err)
+	}
+
+	parsedError := Err{}
+	if err = xml.Unmarshal(data, &parsedError); err != nil {
+		t.Errorf("Unmarshal(%s) returned error", data)
+	}
+
+	if !xmlEqual(parsedError, xError) {
+		t.Errorf("non matching items\n%s", cmp.Diff(parsedError, xError))
+	}
+}
+
+// Compare iq structure but ignore empty namespace as they are set properly on
+// marshal / unmarshal. There is no need to manage them on the manually
+// crafted structure.
+func xmlEqual(x, y interface{}) bool {
+	alwaysEqual := cmp.Comparer(func(_, _ interface{}) bool { return true })
+	opts := cmp.Options{
+		cmp.FilterValues(func(x, y interface{}) bool {
+			xx, xok := x.(xml.Name)
+			yy, yok := y.(xml.Name)
+			if xok && yok {
+				zero := xml.Name{}
+				if xx == zero || yy == zero {
+					return true
+				}
+			}
+			return false
+		}, alwaysEqual),
+	}
+
+	return cmp.Equal(x, y, opts)
 }

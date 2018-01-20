@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
 
 	"fluux.io/xmpp"
@@ -22,27 +21,27 @@ func main() {
 		switch p := packet.(type) {
 		case xmpp.IQ:
 			switch inner := p.Payload[0].(type) {
-			case *xmpp.Node:
-				fmt.Printf("%q\n", inner)
-
-				data, err := xml.Marshal(inner)
-				if err != nil {
-					fmt.Println("cannot marshall payload")
+			case *xmpp.DiscoInfo:
+				fmt.Println("Disco Info")
+				if p.Type == "get" {
+					DiscoResult(component, p.From, p.To, p.Id)
 				}
-				fmt.Println("data=", string(data))
-				component.processIQ(p.Type, p.Id, p.From, inner)
+
 			default:
-				fmt.Println("default")
+				fmt.Println("ignoring iq packet", inner)
+				xerror := xmpp.Err{
+					Code:   501,
+					Reason: "feature-not-implemented",
+					Type:   "cancel",
+				}
+				reply := p.MakeError(xerror)
+				component.xmpp.Send(&reply)
 			}
 		default:
-			fmt.Println("Packet unhandled packet:", packet)
+			fmt.Println("ignoring packet:", packet)
 		}
 	}
 }
-
-const (
-	NSDiscoInfo = "http://jabber.org/protocol/disco#info"
-)
 
 type MyComponent struct {
 	Name string
@@ -53,34 +52,19 @@ type MyComponent struct {
 	xmpp *xmpp.Component
 }
 
-func (c MyComponent) processIQ(iqType, id, from string, inner *xmpp.Node) {
-	fmt.Println("Node:", inner.XMLName.Space, inner.XMLName.Local)
-	switch inner.XMLName.Space + " " + iqType {
-	case NSDiscoInfo + " get":
-		fmt.Println("Send Disco Info")
-		result := fmt.Sprintf(`<iq type='result'
-    from='%s'
-    to='%s'
-    id='%s'>
-  <query xmlns='http://jabber.org/protocol/disco#info'>
-    <identity
-        category='%s'
-        type='%s'
-        name='%s'/>
-    <feature var='http://jabber.org/protocol/disco#info'/>
-    <feature var='http://jabber.org/protocol/disco#items'/>
-  </query>
-</iq>`, c.xmpp.Host, from, id, c.Category, c.Type, c.Name)
-		c.xmpp.Send(result)
-	default:
-		iqErr := fmt.Sprintf(`<iq type='error'
-    from='%s'
-    to='%s'
-    id='%s'>
-     <error type="cancel" code="501">
-      <feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
-     </error>
-</iq>`, c.xmpp.Host, from, id)
-		c.xmpp.Send(iqErr)
+func DiscoResult(c MyComponent, from, to, id string) {
+	iq := xmpp.NewIQ("result", to, from, id, "en")
+	payload := xmpp.DiscoInfo{
+		Identity: xmpp.Identity{
+			Name:     c.Name,
+			Category: c.Category,
+			Type:     c.Type,
+		},
+		Features: []xmpp.Feature{
+			{Var: "http://jabber.org/protocol/disco#info"},
+			{Var: "http://jabber.org/protocol/disco#item"},
+		},
 	}
+	iq.AddPayload(&payload)
+	c.xmpp.Send(iq)
 }
