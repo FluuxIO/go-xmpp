@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	component := MyComponent{Name: "MQTT Component", Category: "gateway", Type: "mqtt"}
-	component.xmpp = &xmpp.Component{Host: "mqtt.localhost", Secret: "mypass"}
+	component := MyComponent{Name: "Facebook Gateway", Category: "gateway", Type: "facebook"}
+	component.xmpp = &xmpp.Component{Host: "facebook.localhost", Secret: "mypass"}
 	component.xmpp.Connect("localhost:8888")
 
 	for {
@@ -29,12 +29,12 @@ func main() {
 
 			default:
 				fmt.Println("ignoring iq packet", inner)
-				xerror := xmpp.Err{
+				xError := xmpp.Err{
 					Code:   501,
 					Reason: "feature-not-implemented",
 					Type:   "cancel",
 				}
-				reply := p.MakeError(xerror)
+				reply := p.MakeError(xError)
 				component.xmpp.Send(&reply)
 			}
 		default:

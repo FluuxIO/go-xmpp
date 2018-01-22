@@ -135,7 +135,7 @@ func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start.Attr = append(start.Attr, code, typ)
 	err = e.EncodeToken(start)
 
-	// Subtags
+	// SubTags
 	// Reason
 	if x.Reason != "" {
 		reason := xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-stanzas", Local: x.Reason}
