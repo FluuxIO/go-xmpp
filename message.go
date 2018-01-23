@@ -14,6 +14,7 @@ type Message struct {
 	Subject string `xml:"subject,omitempty"`
 	Body    string `xml:"body,omitempty"`
 	Thread  string `xml:"thread,omitempty"`
+	Error   Err    `xml:"error,omitempty"`
 }
 
 func (Message) Name() string {

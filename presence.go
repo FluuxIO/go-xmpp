@@ -11,7 +11,7 @@ type Presence struct {
 	Show     string `xml:"show,attr,omitempty"` // away, chat, dnd, xa
 	Status   string `xml:"status,attr,omitempty"`
 	Priority string `xml:"priority,attr,omitempty"`
-	//Error    *clientError
+	Error    Err    `xml:"error,omitempty"`
 }
 
 func (Presence) Name() string {
