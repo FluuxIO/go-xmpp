@@ -44,6 +44,10 @@ func main() {
 				reply := p.MakeError(xError)
 				component.xmpp.Send(&reply)
 			}
+		case xmpp.Message:
+			fmt.Println("Received message:", p.Body)
+		case xmpp.Presence:
+			fmt.Println("Received presence:", p.Type)
 		default:
 			fmt.Println("ignoring packet:", packet)
 		}

@@ -70,7 +70,7 @@ func next(p *xml.Decoder) (Packet, error) {
 		return nil, err
 	}
 
-	// TODO: general case = Parse IQ / presence / message => split SASL Stream and component cases
+	// Decode one of the top level XMPP namespace
 	switch se.Name.Space {
 	case NSStream:
 		return decodeStream(p, se)

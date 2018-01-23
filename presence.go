@@ -25,5 +25,6 @@ var presence presenceDecoder
 func (presenceDecoder) decode(p *xml.Decoder, se xml.StartElement) (Presence, error) {
 	var packet Presence
 	err := p.DecodeElement(&packet, &se)
+	// TODO Add default presence type (when omitted)
 	return packet, err
 }

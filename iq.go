@@ -3,63 +3,14 @@ package xmpp // import "fluux.io/xmpp"
 import (
 	"encoding/xml"
 	"fmt"
-
 	"reflect"
-
 	"strconv"
 
 	"fluux.io/xmpp/iot"
 )
 
 /*
-TODO I would like to be able to write
-
-	NewIQ(Id, From, To, Type, Lang).AddPayload(IQPayload)
-	Payload would be:
-
-	payload := Node{
-			Ns: "http://jabber.org/protocol/disco#info",
-			Tag: "identity",
-			Attrs: map[string]string{
-		    	"category":"gateway",
-			    "type": "skype",
-			    "name": "Test Gateway",
-      },
-			Nodes: []Node{},
-   }
-
-		AddPayload(Ns, Tag, Attrs)
-
-ex:
-
-NewIQ("get", "test@localhost", "admin@localhost", "en")
-	.AddPayload("http://jabber.org/protocol/disco#info",
-									"identity",
-                  map[string]string{
-		               	"category":"gateway",
-                    "type": "skype",
-			              "name": "Test Gateway",
-                  })
-
-	NewNode(Ns, Tag, Attrs)
-	NewNodeWithChildren(Ns, Tag, Attrs, Nodes)
-
-Attr {
-   K string
-   V string
-}
-
-xmpp.Elt.DiscoInfo("identity", "gateway", "skype", "Test Gateway")
-xmppElt.DiscoInfo.identity("
-import xmpp/node/discoinfo
-
-discoinfo.Identity("gateway", "skype", "Test Gateway")
-
-
-[]Attr{{"category", "gateway"}
-
 TODO support ability to put Raw payload
-
 */
 
 // ============================================================================
