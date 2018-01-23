@@ -126,6 +126,10 @@ func decodeComponent(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "handshake":
 		return handshake.decode(p, se)
+	case "message":
+		return message.decode(p, se)
+	case "presence":
+		return presence.decode(p, se)
 	case "iq":
 		return iq.decode(p, se)
 	default:
