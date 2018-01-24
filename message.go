@@ -21,6 +21,19 @@ func (Message) Name() string {
 	return "message"
 }
 
+func NewMessage(msgtype, from, to, id, lang string) Message {
+	return Message{
+		XMLName: xml.Name{Local: "message"},
+		PacketAttrs: PacketAttrs{
+			Id:   id,
+			From: from,
+			To:   to,
+			Type: msgtype,
+			Lang: lang,
+		},
+	}
+}
+
 type messageDecoder struct{}
 
 var message messageDecoder
