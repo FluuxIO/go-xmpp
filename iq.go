@@ -16,6 +16,9 @@ TODO support ability to put Raw payload
 // ============================================================================
 // XMPP Errors
 
+// Err is an XMPP stanza payload that is used to report error on message,
+// presence or iq stanza.
+// It is intended to be added in the payload of the erroneous stanza.
 type Err struct {
 	XMLName xml.Name `xml:"error"`
 	Code    int      `xml:"code,attr,omitempty"`
@@ -250,6 +253,8 @@ type IQPayload interface {
 	IsIQPayload()
 }
 
+// Node is a generic structure to represent XML data. It is used to parse
+// unreferenced or custom stanza payload.
 type Node struct {
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
@@ -257,11 +262,15 @@ type Node struct {
 	Nodes   []Node     `xml:",any"`
 }
 
+// Attr represents generic XML attributes, as used on the generic XML Node
+// representation.
 type Attr struct {
 	K string
 	V string
 }
 
+// UnmarshalXML is a custom unmarshal function used by xml.Unmarshal to
+// transform generic XML content into hierarchical Node structure.
 func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	// Assign	"n.Attrs = start.Attr", without repeating xmlns in attributes:
 	for _, attr := range start.Attr {
@@ -274,6 +283,8 @@ func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.DecodeElement((*node)(n), &start)
 }
 
+// MarshalXML is a custom XML serializer used by xml.Marshal to serialize a
+// Node structure to XML.
 func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start.Attr = n.Attrs
 	start.Name = n.XMLName
