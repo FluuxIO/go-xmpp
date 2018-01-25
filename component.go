@@ -28,23 +28,7 @@ type Component struct {
 	decoder     *xml.Decoder
 }
 
-// handshake generates an authentication token based on StreamID and shared secret.
-func (c *Component) handshake(streamId string) string {
-	// 1. Concatenate the Stream ID received from the server with the shared secret.
-	concatStr := streamId + c.Secret
-
-	// 2. Hash the concatenated string according to the SHA1 algorithm, i.e., SHA1( concat (sid, password)).
-	h := sha1.New()
-	h.Write([]byte(concatStr))
-	hash := h.Sum(nil)
-
-	// 3. Ensure that the hash output is in hexadecimal format, not binary or base64.
-	// 4. Convert the hash output to all lowercase characters.
-	encodedStr := hex.EncodeToString(hash)
-
-	return encodedStr
-}
-
+// Connect triggers component connection to XMPP server component port.
 // TODO Helper to prepare connection string
 func (c *Component) Connect(connStr string) error {
 	var conn net.Conn
@@ -106,16 +90,39 @@ func (c *Component) Send(packet Packet) error {
 	return nil
 }
 
-// ============================================================================
-// Handshake Packet
+// handshake generates an authentication token based on StreamID and shared secret.
+func (c *Component) handshake(streamId string) string {
+	// 1. Concatenate the Stream ID received from the server with the shared secret.
+	concatStr := streamId + c.Secret
 
+	// 2. Hash the concatenated string according to the SHA1 algorithm, i.e., SHA1( concat (sid, password)).
+	h := sha1.New()
+	h.Write([]byte(concatStr))
+	hash := h.Sum(nil)
+
+	// 3. Ensure that the hash output is in hexadecimal format, not binary or base64.
+	// 4. Convert the hash output to all lowercase characters.
+	encodedStr := hex.EncodeToString(hash)
+
+	return encodedStr
+}
+
+// ============================================================================
+// Handshake Stanza
+
+// Handshake is a stanza used by XMPP components to authenticate on XMPP
+// component port.
 type Handshake struct {
 	XMLName xml.Name `xml:"jabber:component:accept handshake"`
+	// TODO Add handshake value with test for proper serialization
+	// Value string     `xml:",innerxml"`
 }
 
 func (Handshake) Name() string {
 	return "component:handshake"
 }
+
+// Handshake decoding wrapper
 
 type handshakeDecoder struct{}
 

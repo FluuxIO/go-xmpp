@@ -16,3 +16,7 @@ func TestHandshake(t *testing.T) {
 		t.Errorf("incorrect handshake calculation '%s' != '%s'", result, expected)
 	}
 }
+
+func TestGenerateHandshake(t *testing.T) {
+	// TODO
+}
