@@ -50,5 +50,3 @@ func (msg *Message) XMPPFormat() string {
 		msg.To,
 		xmlEscape(msg.Body))
 }
-
-// TODO: Func new message to create an empty message structure without the XML tag matching elements

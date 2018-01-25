@@ -18,6 +18,18 @@ func (Presence) Name() string {
 	return "presence"
 }
 
+func NewPresence(from, to, id, lang string) Presence {
+	return Presence{
+		XMLName: xml.Name{Local: "presence"},
+		PacketAttrs: PacketAttrs{
+			Id:   id,
+			From: from,
+			To:   to,
+			Lang: lang,
+		},
+	}
+}
+
 type presenceDecoder struct{}
 
 var presence presenceDecoder

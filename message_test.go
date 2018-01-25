@@ -22,7 +22,7 @@ func TestGenerateMessage(t *testing.T) {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 
-	if !xmlEqual(parsedMessage.Body, message.Body) {
-		t.Errorf("non matching items\n%s", cmp.Diff(parsedMessage.Body, message.Body))
+	if !xmlEqual(parsedMessage, message) {
+		t.Errorf("non matching items\n%s", cmp.Diff(parsedMessage, message))
 	}
 }
