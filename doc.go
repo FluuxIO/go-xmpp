@@ -23,7 +23,7 @@ connections.
 
 Compliance
 
-Fluux XMPP has been primarily tested with [ejabberd](https://www.ejabberd.im)
+Fluux XMPP has been primarily tested with ejabberd (https://www.ejabberd.im)
 but it should work with any XMPP compliant server.
 
 */
