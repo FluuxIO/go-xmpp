@@ -316,6 +316,7 @@ const (
 
 type DiscoInfo struct {
 	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
+	Node     string    `xml:"node,attr,omitempty"`
 	Identity Identity  `xml:"identity"`
 	Features []Feature `xml:"feature"`
 }
