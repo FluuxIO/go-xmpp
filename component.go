@@ -73,11 +73,12 @@ func (c *Component) Connect(connStr string) error {
 }
 
 // ReadPacket reads next incoming XMPP packet
-// TODO use defined interface Packet
 func (c *Component) ReadPacket() (Packet, error) {
+	// TODO use defined interface Packet
 	return next(c.decoder)
 }
 
+// Send marshalls XMPP stanza and sends it to the server.
 func (c *Component) Send(packet Packet) error {
 	data, err := xml.Marshal(packet)
 	if err != nil {
@@ -87,6 +88,15 @@ func (c *Component) Send(packet Packet) error {
 	if _, err := fmt.Fprintf(c.conn, string(data)); err != nil {
 		return errors.New("cannot send packet " + err.Error())
 	}
+	return nil
+}
+
+// SendRaw sends an XMPP stanza as a string to the server.
+// It can be invalid XML or XMPP content. In that case, the server will
+// disconnect the component. It is up to the user of this method to
+// carefully craft the XML content to produce valid XMPP.
+func (c *Component) SendRaw(packet string) error {
+	fmt.Fprintf(c.conn, packet) // TODO handle errors
 	return nil
 }
 

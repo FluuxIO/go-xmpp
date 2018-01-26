@@ -126,9 +126,24 @@ func (c *Client) Recv() <-chan interface{} {
 	return ch
 }
 
-// Send sends message text.
-// TODO Move to Go XML Marshaller
-func (c *Client) Send(packet string) error {
+// Send marshalls XMPP stanza and sends it to the server.
+func (c *Client) Send(packet Packet) error {
+	data, err := xml.Marshal(packet)
+	if err != nil {
+		return errors.New("cannot marshal packet " + err.Error())
+	}
+
+	if _, err := fmt.Fprintf(c.conn, string(data)); err != nil {
+		return errors.New("cannot send packet " + err.Error())
+	}
+	return nil
+}
+
+// SendRaw sends an XMPP stanza as a string to the server.
+// It can be invalid XML or XMPP content. In that case, the server will
+// disconnect the client. It is up to the user of this method to
+// carefully craft the XML content to produce valid XMPP.
+func (c *Client) SendRaw(packet string) error {
 	fmt.Fprintf(c.Session.socketProxy, packet) // TODO handle errors
 	return nil
 }

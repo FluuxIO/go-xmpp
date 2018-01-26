@@ -13,7 +13,13 @@ import (
 )
 
 func main() {
-	options := xmpp.Options{Address: "localhost:5222", Jid: "test@localhost", Password: "test", PacketLogger: os.Stdout}
+	options := xmpp.Options{
+		Address:      "localhost:5222",
+		Jid:          "test@localhost",
+		Password:     "test",
+		PacketLogger: os.Stdout,
+		Insecure:     true,
+	}
 
 	var client *xmpp.Client
 	var err error
@@ -34,7 +40,7 @@ func main() {
 		case *xmpp.Message:
 			fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
 			reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
-			client.Send(reply.XMPPFormat())
+			client.Send(reply)
 		default:
 			fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
 		}
