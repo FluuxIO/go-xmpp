@@ -85,6 +85,28 @@ func TestErrorTag(t *testing.T) {
 	}
 }
 
+func TestDiscoItems(t *testing.T) {
+	iq := NewIQ("get", "romeo@montague.net/orchard", "catalog.shakespeare.lit", "items3", "en")
+	payload := DiscoItems{
+		Node: "music",
+	}
+	iq.AddPayload(&payload)
+
+	data, err := xml.Marshal(iq)
+	if err != nil {
+		t.Errorf("cannot marshal xml structure")
+	}
+
+	parsedIQ := IQ{}
+	if err = xml.Unmarshal(data, &parsedIQ); err != nil {
+		t.Errorf("Unmarshal(%s) returned error", data)
+	}
+
+	if !xmlEqual(parsedIQ.Payload, iq.Payload) {
+		t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ.Payload, iq.Payload))
+	}
+}
+
 // Compare iq structure but ignore empty namespace as they are set properly on
 // marshal / unmarshal. There is no need to manage them on the manually
 // crafted structure.
