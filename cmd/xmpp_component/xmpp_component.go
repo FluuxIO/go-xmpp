@@ -31,9 +31,13 @@ func main() {
 			case *xmpp.DiscoInfo:
 				fmt.Println("Disco Info")
 				if p.Type == "get" {
-					DiscoResult(component, p.From, p.To, p.Id)
+					DiscoResult(component, p.PacketAttrs, inner)
 				}
-
+			case *xmpp.DiscoItems:
+				fmt.Println("DiscoItems")
+				if p.Type == "get" {
+					DiscoItems(component, p.PacketAttrs, inner)
+				}
 			default:
 				fmt.Println("ignoring iq packet", inner)
 				xError := xmpp.Err{
@@ -63,18 +67,39 @@ type MyComponent struct {
 	xmpp *xmpp.Component
 }
 
-func DiscoResult(c MyComponent, from, to, id string) {
-	iq := xmpp.NewIQ("result", to, from, id, "en")
-	payload := xmpp.DiscoInfo{
-		Identity: xmpp.Identity{
+func DiscoResult(c MyComponent, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
+	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+	var identity xmpp.Identity
+	if info.Node == "" {
+		identity = xmpp.Identity{
 			Name:     c.Name,
 			Category: c.Category,
 			Type:     c.Type,
-		},
+		}
+	}
+
+	payload := xmpp.DiscoInfo{
+		Identity: identity,
 		Features: []xmpp.Feature{
 			{Var: "http://jabber.org/protocol/disco#info"},
 			{Var: "http://jabber.org/protocol/disco#item"},
 		},
+	}
+	iq.AddPayload(&payload)
+
+	c.xmpp.Send(iq)
+}
+
+func DiscoItems(c MyComponent, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
+	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+
+	var payload xmpp.DiscoItems
+	if items.Node == "" {
+		payload = xmpp.DiscoItems{
+			Items: []xmpp.DiscoItem{
+				{Name: "test node", JID: "facebook.localhost", Node: "node1"},
+			},
+		}
 	}
 	iq.AddPayload(&payload)
 	c.xmpp.Send(iq)
