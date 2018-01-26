@@ -6,16 +6,9 @@ import (
 	"fluux.io/xmpp"
 )
 
-const (
-	localUser = "admin@localhost"
-)
-
-// TODO add webserver listener to support receiving message from facebook and replying
-// Message will get to define localhost user and be routed only from local user
-
 func main() {
-	component := MyComponent{Name: "Facebook Gateway", Category: "gateway", Type: "facebook"}
-	component.xmpp = &xmpp.Component{Host: "facebook.localhost", Secret: "mypass"}
+	component := MyComponent{Name: "Test Component", Category: "gateway", Type: "service"}
+	component.xmpp = &xmpp.Component{Host: "service.localhost", Secret: "mypass"}
 	component.xmpp.Connect("localhost:8888")
 
 	for {
@@ -97,7 +90,7 @@ func DiscoItems(c MyComponent, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
 	if items.Node == "" {
 		payload = xmpp.DiscoItems{
 			Items: []xmpp.DiscoItem{
-				{Name: "test node", JID: "facebook.localhost", Node: "node1"},
+				{Name: "test node", JID: "service.localhost", Node: "node1"},
 			},
 		}
 	}
