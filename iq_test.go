@@ -2,6 +2,7 @@ package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/xml"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -49,6 +50,10 @@ func TestGenerateIq(t *testing.T) {
 	data, err := xml.Marshal(iq)
 	if err != nil {
 		t.Errorf("cannot marshal xml structure")
+	}
+
+	if strings.Contains(string(data), "<error ") {
+		t.Error("empty error should not be serialized")
 	}
 
 	parsedIQ := IQ{}
