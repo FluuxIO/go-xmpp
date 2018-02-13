@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Client is the main structure use to connect as a client on an XMPP
+// Client is the main structure used to connect as a client on an XMPP
 // server.
 type Client struct {
 	// Store user defined options

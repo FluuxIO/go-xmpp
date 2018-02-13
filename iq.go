@@ -10,7 +10,7 @@ import (
 )
 
 /*
-TODO support ability to put Raw payload
+TODO support ability to put Raw payload inside IQ
 */
 
 // ============================================================================
@@ -45,6 +45,7 @@ func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 	}
 
+	// Check subelements to extract error text and reason (from local namespace).
 	for {
 		t, err := d.Token()
 		if err != nil {
