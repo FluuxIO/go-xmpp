@@ -2,7 +2,6 @@ package xmpp // import "fluux.io/xmpp"
 
 import (
 	"encoding/xml"
-	"fmt"
 	"reflect"
 	"strconv"
 
@@ -234,27 +233,6 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			}
 		}
 	}
-}
-
-// XMPPFormat returns the string representation of the XMPP packet.
-// TODO: Should I simply rely on xml.Marshal ?
-func (iq *IQ) XMPPFormat() string {
-	if iq.Payload != nil {
-		var payload []byte
-		var err error
-		if payload, err = xml.Marshal(iq.Payload); err != nil {
-			return fmt.Sprintf("<iq to='%s' type='%s' id='%s' xml:lang='en'>"+
-				"</iq>",
-				iq.To, iq.Type, iq.Id)
-		}
-		return fmt.Sprintf("<iq to='%s' type='%s' id='%s' xml:lang='en'>"+
-			"%s</iq>",
-			iq.To, iq.Type, iq.Id, payload)
-	}
-	return fmt.Sprintf("<iq to='%s' type='%s' id='%s' xml:lang='en'>"+
-		"%s</iq>",
-		iq.To, iq.Type, iq.Id,
-		iq.RawXML)
 }
 
 // ============================================================================

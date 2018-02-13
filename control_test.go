@@ -1,0 +1,28 @@
+package xmpp // import "fluux.io/xmpp"
+
+import (
+	"encoding/xml"
+	"testing"
+
+	"fluux.io/xmpp/iot"
+)
+
+func TestControlSet(t *testing.T) {
+	packet := `
+<iq to='test@localhost/jukebox' from='admin@localhost/mbp' type='set' id='2'>
+ <set xmlns='urn:xmpp:iot:control' xml:lang='en'>
+	<string name='action' value='play'/>
+	<string name='url' value='https://soundcloud.com/radiohead/spectre'/>
+ </set>
+</iq>`
+
+	parsedIQ := IQ{}
+	data := []byte(packet)
+	if err := xml.Unmarshal(data, &parsedIQ); err != nil {
+		t.Errorf("Unmarshal(%s) returned error", data)
+	}
+
+	if cs, ok := parsedIQ.Payload[0].(*iot.ControlSet); !ok {
+		t.Errorf("Paylod is not an iot control set: %v", cs)
+	}
+}

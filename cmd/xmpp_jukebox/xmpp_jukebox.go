@@ -40,11 +40,11 @@ func main() {
 	for packet := range client.Recv() {
 
 		switch packet := packet.(type) {
-		case *xmpp.Message:
-			processMessage(client, p, packet)
-		case *xmpp.IQ:
-			processIq(client, p, packet)
-		case *xmpp.Presence:
+		case xmpp.Message:
+			processMessage(client, p, &packet)
+		case xmpp.IQ:
+			processIq(client, p, &packet)
+		case xmpp.Presence:
 			// Do nothing with received presence
 		default:
 			fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
@@ -77,7 +77,7 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 		playSCURL(p, url)
 		setResponse := new(iot.ControlSetResponse)
 		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: []xmpp.IQPayload{setResponse}}
-		client.SendRaw(reply.XMPPFormat())
+		client.Send(reply)
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(client, "Radiohead", "Spectre")
 	default:
@@ -100,7 +100,7 @@ func playSCURL(p *mpg123.Player, rawURL string) {
 
 func connectXmpp(jid string, password string, address string) (client *xmpp.Client, err error) {
 	xmppOptions := xmpp.Options{Address: address,
-		Jid: jid, Password: password, PacketLogger: os.Stdout,
+		Jid: jid, Password: password, PacketLogger: os.Stdout, Insecure: true,
 		Retry: 10}
 
 	if client, err = xmpp.NewClient(xmppOptions); err != nil {
