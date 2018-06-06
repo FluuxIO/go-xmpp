@@ -15,19 +15,19 @@ func TestValidJids(t *testing.T) {
 			t.Error("could not parse correct jid")
 		}
 
-		if jid.username != "test" {
+		if jid.Local != "test" {
 			t.Error("incorrect jid username")
 		}
 
-		if jid.domain != "domain.com" {
+		if jid.Domain != "domain.com" {
 			t.Error("incorrect jid domain")
 		}
 
-		if i == 0 && jid.resource != "" {
+		if i == 0 && jid.Resource != "" {
 			t.Error("bare jid resource should be empty")
 		}
 
-		if i == 1 && jid.resource != "resource" {
+		if i == 1 && jid.Resource != "resource" {
 			t.Error("incorrect full jid resource")
 		}
 	}
