@@ -26,7 +26,7 @@ Setting up the client / Checking the parameters
 */
 
 // NewClient generates a new XMPP client, based on Options passed as parameters.
-// If host is not specified, the  DNS SRV should be used to find the host from the domainpart of the JID.
+// If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
 // TODO: better options checks
 func NewClient(options Options) (c *Client, err error) {
@@ -54,8 +54,7 @@ func NewClient(options Options) (c *Client, err error) {
 	return
 }
 
-// TODO Pass JID to be able to add default address based on JID, if
-// addr is empty
+// TODO Pass JID to be able to add default address based on JID, if addr is empty
 func checkAddress(addr string) (string, error) {
 	var err error
 	hostport := strings.Split(addr, ":")
