@@ -21,14 +21,13 @@ func main() {
 		Insecure:     true,
 	}
 
-	var client *xmpp.Client
-	var err error
-	if client, err = xmpp.NewClient(options); err != nil {
+	client, err := xmpp.NewClient(options)
+	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
-	var session *xmpp.Session
-	if session, err = client.Connect(); err != nil {
+	session, err := client.Connect()
+	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
