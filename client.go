@@ -10,6 +10,42 @@ import (
 	"time"
 )
 
+// Client Metrics
+// ============================================================================
+
+type Metrics struct {
+	startTime time.Time
+	// ConnectTime returns the duration between client initiation of the TCP/IP
+	// connection to the server and actual TCP/IP session establishment.
+	// This time includes DNS resolution and can be slightly higher if the DNS
+	// resolution result was not in cache.
+	ConnectTime time.Duration
+	// LoginTime returns the between client initiation of the TCP/IP
+	// connection to the server and the return of the login result.
+	// This includes ConnectTime, but also XMPP level protocol negociation
+	// like starttls.
+	LoginTime time.Duration
+}
+
+// initMetrics set metrics with default value and define the starting point
+// for duration calculation (connect time, login time, etc).
+func initMetrics() *Metrics {
+	return &Metrics{
+		startTime: time.Now(),
+	}
+}
+
+func (m *Metrics) setConnectTime() {
+	m.ConnectTime = time.Since(m.startTime)
+}
+
+func (m *Metrics) setLoginTime() {
+	m.LoginTime = time.Since(m.startTime)
+}
+
+// Client
+// ============================================================================
+
 // Client is the main structure used to connect as a client on an XMPP
 // server.
 type Client struct {
@@ -19,6 +55,8 @@ type Client struct {
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
+	// store low level metrics
+	Metrics *Metrics
 }
 
 /*
@@ -80,8 +118,10 @@ func (c *Client) Connect() (*Session, error) {
 	// TODO: Refactor = abstract retry loop in capped exponential back-off function
 	var try = 0
 	var success bool
+	c.Metrics = initMetrics()
 	for try <= c.config.Retry || !success {
 		if tcpconn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second); err == nil {
+			c.Metrics.setConnectTime()
 			success = true
 		}
 		try++
@@ -96,6 +136,7 @@ func (c *Client) Connect() (*Session, error) {
 		return c.Session, err
 	}
 
+	c.Metrics.setLoginTime()
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
