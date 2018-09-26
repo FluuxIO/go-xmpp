@@ -6,7 +6,7 @@ import (
 )
 
 // Mediated Read / Write on socket
-// Used if logFile from Options is not nil
+// Used if logFile from Config is not nil
 type socketProxy struct {
 	socket  io.ReadWriter // Actual connection
 	logFile *os.File

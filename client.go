@@ -14,7 +14,7 @@ import (
 // server.
 type Client struct {
 	// Store user defined options
-	options Options
+	config Config
 	// Session gather data that can be accessed by users of this library
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
@@ -25,31 +25,31 @@ type Client struct {
 Setting up the client / Checking the parameters
 */
 
-// NewClient generates a new XMPP client, based on Options passed as parameters.
+// NewClient generates a new XMPP client, based on Config passed as parameters.
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
-// TODO: better options checks
-func NewClient(options Options) (c *Client, err error) {
+// TODO: better config checks
+func NewClient(config Config) (c *Client, err error) {
 	// TODO: If option address is nil, use the Jid domain to compose the address
-	if options.Address, err = checkAddress(options.Address); err != nil {
+	if config.Address, err = checkAddress(config.Address); err != nil {
 		return
 	}
 
-	if options.Password == "" {
+	if config.Password == "" {
 		err = errors.New("missing password")
 		return
 	}
 
 	c = new(Client)
-	c.options = options
+	c.config = config
 
 	// Parse JID
-	if c.options.parsedJid, err = NewJid(c.options.Jid); err != nil {
+	if c.config.parsedJid, err = NewJid(c.config.Jid); err != nil {
 		return
 	}
 
-	if c.options.ConnectTimeout == 0 {
-		c.options.ConnectTimeout = 15 // 15 second as default
+	if c.config.ConnectTimeout == 0 {
+		c.config.ConnectTimeout = 15 // 15 second as default
 	}
 	return
 }
@@ -80,8 +80,8 @@ func (c *Client) Connect() (*Session, error) {
 	// TODO: Refactor = abstract retry loop in capped exponential back-off function
 	var try = 0
 	var success bool
-	for try <= c.options.Retry || !success {
-		if tcpconn, err = net.DialTimeout("tcp", c.options.Address, time.Duration(c.options.ConnectTimeout)*time.Second); err == nil {
+	for try <= c.config.Retry || !success {
+		if tcpconn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second); err == nil {
 			success = true
 		}
 		try++
@@ -92,7 +92,7 @@ func (c *Client) Connect() (*Session, error) {
 
 	// Connection is ok, we now open XMPP session
 	c.conn = tcpconn
-	if c.conn, c.Session, err = NewSession(c.conn, c.options); err != nil {
+	if c.conn, c.Session, err = NewSession(c.conn, c.config); err != nil {
 		return c.Session, err
 	}
 

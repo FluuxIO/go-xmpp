@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	options := xmpp.Options{
+	config := xmpp.Config{
 		Address:      "localhost:5222",
 		Jid:          "test@localhost",
 		Password:     "test",
@@ -21,7 +21,7 @@ func main() {
 		Insecure:     true,
 	}
 
-	client, err := xmpp.NewClient(options)
+	client, err := xmpp.NewClient(config)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}

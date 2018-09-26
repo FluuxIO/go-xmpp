@@ -31,7 +31,7 @@ type Session struct {
 	err error
 }
 
-func NewSession(conn net.Conn, o Options) (net.Conn, *Session, error) {
+func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 	s := new(Session)
 	s.init(conn, o)
 
@@ -62,12 +62,12 @@ func (s *Session) PacketId() string {
 	return fmt.Sprintf("%x", s.lastPacketId)
 }
 
-func (s *Session) init(conn net.Conn, o Options) {
+func (s *Session) init(conn net.Conn, o Config) {
 	s.setProxy(nil, conn, o)
 	s.Features = s.open(o.parsedJid.domain)
 }
 
-func (s *Session) reset(conn net.Conn, newConn net.Conn, o Options) {
+func (s *Session) reset(conn net.Conn, newConn net.Conn, o Config) {
 	if s.err != nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (s *Session) reset(conn net.Conn, newConn net.Conn, o Options) {
 }
 
 // TODO: setProxyLogger ? better name ? This is not a TCP / HTTP proxy
-func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Options) {
+func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Config) {
 	if newConn != conn {
 		s.socketProxy = newSocketProxy(newConn, o.PacketLogger)
 	}
@@ -135,7 +135,7 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 	return conn
 }
 
-func (s *Session) auth(o Options) {
+func (s *Session) auth(o Config) {
 	if s.err != nil {
 		return
 	}
@@ -143,7 +143,7 @@ func (s *Session) auth(o Options) {
 	s.err = authSASL(s.socketProxy, s.decoder, s.Features, o.parsedJid.username, o.Password)
 }
 
-func (s *Session) bind(o Options) {
+func (s *Session) bind(o Config) {
 	if s.err != nil {
 		return
 	}
@@ -176,7 +176,7 @@ func (s *Session) bind(o Options) {
 
 // TODO: remove when ejabberd is fixed: https://github.com/processone/ejabberd/issues/869
 // After the bind, if the session is required (as per old RFC 3921), we send the session open iq
-func (s *Session) rfc3921Session(o Options) {
+func (s *Session) rfc3921Session(o Config) {
 	if s.err != nil {
 		return
 	}

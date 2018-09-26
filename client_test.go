@@ -23,11 +23,11 @@ func TestClient_Connect(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerConnectSuccess)
 
 	// Test / Check result
-	options := Options{Address: testXMPPAddress, Jid: "test@localhost", Password: "test", Insecure: true}
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test", Insecure: true}
 
 	var client *Client
 	var err error
-	if client, err = NewClient(options); err != nil {
+	if client, err = NewClient(config); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
@@ -44,11 +44,11 @@ func TestClient_NoInsecure(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerAbortTLS)
 
 	// Test / Check result
-	options := Options{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
 
 	var client *Client
 	var err error
-	if client, err = NewClient(options); err != nil {
+	if client, err = NewClient(config); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
