@@ -2,7 +2,7 @@ package xmpp // import "fluux.io/xmpp"
 
 import "os"
 
-type Options struct {
+type Config struct {
 	Address        string
 	Jid            string
 	parsedJid      *Jid // For easier manipulation
