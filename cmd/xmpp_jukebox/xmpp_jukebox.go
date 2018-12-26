@@ -9,11 +9,11 @@ import (
 	"os"
 	"strings"
 
-	"fluux.io/xmpp"
-	"fluux.io/xmpp/iot"
-	"fluux.io/xmpp/pep"
 	"github.com/processone/mpg123"
 	"github.com/processone/soundcloud"
+	"gosrc.io/xmpp"
+	"gosrc.io/xmpp/iot"
+	"gosrc.io/xmpp/pep"
 )
 
 // Get the actual song Stream URL from SoundCloud website song URL and play it with mpg123 player.
@@ -47,7 +47,7 @@ func main() {
 		case xmpp.Presence:
 			// Do nothing with received presence
 		default:
-			fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
+			_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
 		}
 	}
 }
@@ -77,17 +77,17 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 		playSCURL(p, url)
 		setResponse := new(iot.ControlSetResponse)
 		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: []xmpp.IQPayload{setResponse}}
-		client.Send(reply)
+		_ = client.Send(reply)
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(client, "Radiohead", "Spectre")
 	default:
-		fmt.Fprintf(os.Stdout, "Other IQ Payload: %T\n", packet.Payload)
+		_, _ = fmt.Fprintf(os.Stdout, "Other IQ Payload: %T\n", packet.Payload)
 	}
 }
 
 func sendUserTune(client *xmpp.Client, artist string, title string) {
 	tune := pep.Tune{Artist: artist, Title: title}
-	client.SendRaw(tune.XMPPFormat())
+	_ = client.SendRaw(tune.XMPPFormat())
 }
 
 func playSCURL(p *mpg123.Player, rawURL string) {
@@ -95,7 +95,7 @@ func playSCURL(p *mpg123.Player, rawURL string) {
 	// TODO: Maybe we need to check the track itself to get the stream URL from reply ?
 	url := soundcloud.FormatStreamURL(songID)
 
-	p.Play(url)
+	_ = p.Play(url)
 }
 
 func connectXmpp(jid string, password string, address string) (client *xmpp.Client, err error) {

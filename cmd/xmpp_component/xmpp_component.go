@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 
-	"fluux.io/xmpp"
+	"gosrc.io/xmpp"
 )
 
 func main() {
 	component := MyComponent{Name: "Test Component", Category: "gateway", Type: "service"}
 	component.xmpp = &xmpp.Component{Host: "service.localhost", Secret: "mypass"}
-	component.xmpp.Connect("localhost:8888")
+	_ = component.xmpp.Connect("localhost:8888")
 
 	for {
 		packet, err := component.xmpp.ReadPacket()
@@ -39,7 +39,7 @@ func main() {
 					Type:   "cancel",
 				}
 				reply := p.MakeError(xError)
-				component.xmpp.Send(&reply)
+				_ = component.xmpp.Send(&reply)
 			}
 
 		case xmpp.Message:
@@ -83,7 +83,7 @@ func DiscoResult(c MyComponent, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
 	}
 	iq.AddPayload(&payload)
 
-	c.xmpp.Send(iq)
+	_ = c.xmpp.Send(iq)
 }
 
 func DiscoItems(c MyComponent, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
@@ -98,5 +98,5 @@ func DiscoItems(c MyComponent, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
 		}
 	}
 	iq.AddPayload(&payload)
-	c.xmpp.Send(iq)
+	_ = c.xmpp.Send(iq)
 }

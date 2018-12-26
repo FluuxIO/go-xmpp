@@ -1,4 +1,4 @@
-package iot // import "fluux.io/xmpp/iot"
+package iot // import "gosrc.io/xmpp/iot"
 
 import "encoding/xml"
 

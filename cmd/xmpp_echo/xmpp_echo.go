@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"fluux.io/xmpp"
+	"gosrc.io/xmpp"
 )
 
 func main() {
@@ -37,11 +37,11 @@ func main() {
 	for packet := range client.Recv() {
 		switch packet := packet.(type) {
 		case *xmpp.Message:
-			fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
+			_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
 			reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
-			client.Send(reply)
+			_ = client.Send(reply)
 		default:
-			fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
+			_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
 		}
 	}
 }

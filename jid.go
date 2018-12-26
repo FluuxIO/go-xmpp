@@ -1,4 +1,4 @@
-package xmpp // import "fluux.io/xmpp"
+package xmpp // import "gosrc.io/xmpp"
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ func NewJid(sjid string) (jid *Jid, err error) {
 
 	s2 := strings.Split(s1[1], "/")
 	if len(s2) > 2 {
-		err = errors.New("invalid JID: " + sjid)
+		err = errors.New("invalid JID: " + sjidd)
 		return
 	}
 	jid.domain = s2[0]
