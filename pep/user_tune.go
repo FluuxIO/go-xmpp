@@ -3,7 +3,7 @@ package pep // import "gosrc.io/xmpp/pep"
 import (
 	"encoding/xml"
 
-	"fluux.io/xmpp"
+	"gosrc.io/xmpp"
 )
 
 type iq struct {

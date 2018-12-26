@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"fluux.io/xmpp/iot"
+	"gosrc.io/xmpp/iot"
 )
 
 /*

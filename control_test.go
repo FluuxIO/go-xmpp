@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"fluux.io/xmpp/iot"
+	"gosrc.io/xmpp/iot"
 )
 
 func TestControlSet(t *testing.T) {
