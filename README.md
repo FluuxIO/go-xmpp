@@ -11,6 +11,8 @@ The goal is to make simple to write simple adhoc XMPP clients:
 - For writing simple chatbot to control a service or a thing.
 - For writing XMPP servers components.
 
+The library is designed to have minimal dependencies. For now the library does not depends on any other library.
+
 ## Usage
 
 Please, check GoDoc for more information: [gosrc.io/xmpp](https://godoc.org/gosrc.io/xmpp)
