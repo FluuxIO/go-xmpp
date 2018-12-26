@@ -11,3 +11,6 @@ The goal is to make simple to write simple adhoc XMPP clients:
 - For writing simple chatbot to control a service or a thing.
 - For writing XMPP servers components.
 
+## Usage
+
+Please, check GoDoc for more information: [gosrc.io/xmpp](https://godoc.org/gosrc.io/xmpp)
