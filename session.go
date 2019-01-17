@@ -82,6 +82,7 @@ func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Config) {
 		s.socketProxy = newSocketProxy(newConn, o.PacketLogger)
 	}
 	s.decoder = xml.NewDecoder(s.socketProxy)
+	s.decoder.CharsetReader = o.CharsetReader
 }
 
 func (s *Session) open(domain string) (f streamFeatures) {
