@@ -8,9 +8,9 @@ import "encoding/xml"
 type Presence struct {
 	XMLName xml.Name `xml:"presence"`
 	PacketAttrs
-	Show     string `xml:"show,attr,omitempty"` // away, chat, dnd, xa
-	Status   string `xml:"status,attr,omitempty"`
-	Priority string `xml:"priority,attr,omitempty"`
+	Show     string `xml:"show,omitempty"` // away, chat, dnd, xa
+	Status   string `xml:"status,omitempty"`
+	Priority string `xml:"priority,omitempty"`
 	Error    Err    `xml:"error,omitempty"`
 }
 
