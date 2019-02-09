@@ -119,7 +119,7 @@ func (c *Client) Connect() (*Session, error) {
 	var try = 0
 	var success bool
 	c.Metrics = initMetrics()
-	for try <= c.config.Retry || !success {
+	for try <= c.config.Retry && !success {
 		if tcpconn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second); err == nil {
 			c.Metrics.setConnectTime()
 			success = true
