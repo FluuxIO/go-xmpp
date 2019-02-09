@@ -150,6 +150,7 @@ func (c *Client) recv(receiver chan<- interface{}) (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
+			close(receiver)
 			return err
 		}
 		receiver <- val
