@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
+export GO111MODULE=on
 echo "" > coverage.txt
 
 for d in $(go list ./... | grep -v vendor); do
