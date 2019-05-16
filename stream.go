@@ -7,7 +7,7 @@ import (
 // ============================================================================
 // StreamFeatures Packet
 
-type streamFeatures struct {
+type StreamFeatures struct {
 	XMLName    xml.Name `xml:"http://etherx.jabber.org/streams features"`
 	StartTLS   tlsStartTLS
 	Caps       Caps
@@ -15,6 +15,20 @@ type streamFeatures struct {
 	Bind       BindBind
 	Session    sessionSession
 	Any        []xml.Name `xml:",any"`
+}
+
+func (StreamFeatures) Name() string {
+	return "stream:features"
+}
+
+type streamFeatureDecoder struct{}
+
+var streamFeatures streamFeatureDecoder
+
+func (streamFeatureDecoder) decode(p *xml.Decoder, se xml.StartElement) (StreamFeatures, error) {
+	var packet StreamFeatures
+	err := p.DecodeElement(&packet, &se)
+	return packet, err
 }
 
 // ============================================================================

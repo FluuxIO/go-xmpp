@@ -15,7 +15,7 @@ type Session struct {
 	// Session info
 	BindJid      string // Jabber ID as provided by XMPP server
 	StreamId     string
-	Features     streamFeatures
+	Features     StreamFeatures
 	TlsEnabled   bool
 	lastPacketId int
 
@@ -85,7 +85,7 @@ func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Config) {
 	s.decoder.CharsetReader = o.CharsetReader
 }
 
-func (s *Session) open(domain string) (f streamFeatures) {
+func (s *Session) open(domain string) (f StreamFeatures) {
 	// Send stream open tag
 	if _, s.err = fmt.Fprintf(s.socketProxy, xmppStreamOpen, domain, NSClient, NSStream); s.err != nil {
 		return
@@ -121,7 +121,7 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 
 		// TODO: add option to accept all TLS certificates: insecureSkipTlsVerify (DefaultTlsConfig.InsecureSkipVerify)
 		DefaultTlsConfig.ServerName = domain
-		var tlsConn *tls.Conn = tls.Client(conn, &DefaultTlsConfig)
+		tlsConn := tls.Client(conn, &DefaultTlsConfig)
 		// We convert existing connection to TLS
 		if s.err = tlsConn.Handshake(); s.err != nil {
 			return tlsConn
