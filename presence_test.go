@@ -1,4 +1,4 @@
-package xmpp_test // import "gosrc.io/xmpp_test"
+package xmpp_test
 
 import (
 	"encoding/xml"
