@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-func authSASL(socket io.ReadWriter, decoder *xml.Decoder, f streamFeatures, user string, password string) (err error) {
+func authSASL(socket io.ReadWriter, decoder *xml.Decoder, f StreamFeatures, user string, password string) (err error) {
 	// TODO: Implement other type of SASL Authentication
 	havePlain := false
 	for _, m := range f.Mechanisms.Mechanism {

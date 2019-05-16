@@ -90,6 +90,8 @@ func decodeStream(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "error":
 		return streamError.decode(p, se)
+	case "features":
+		return streamFeatures.decode(p, se)
 	default:
 		return nil, errors.New("unexpected XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
