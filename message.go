@@ -3,6 +3,7 @@ package xmpp // import "gosrc.io/xmpp"
 import (
 	"encoding/xml"
 	"fmt"
+	"reflect"
 )
 
 // ============================================================================
@@ -11,10 +12,11 @@ import (
 type Message struct {
 	XMLName xml.Name `xml:"message"`
 	PacketAttrs
-	Subject string `xml:"subject,omitempty"`
-	Body    string `xml:"body,omitempty"`
-	Thread  string `xml:"thread,omitempty"`
-	Error   Err    `xml:"error,omitempty"`
+	Subject    string         `xml:"subject,omitempty"`
+	Body       string         `xml:"body,omitempty"`
+	Thread     string         `xml:"thread,omitempty"`
+	Error      Err            `xml:"error,omitempty"`
+	Extensions []MsgExtension `xml:",omitempty"`
 }
 
 func (Message) Name() string {
@@ -44,9 +46,109 @@ func (messageDecoder) decode(p *xml.Decoder, se xml.StartElement) (Message, erro
 	return packet, err
 }
 
+// TODO: Support missing element (thread, extensions) by using proper marshaller
 func (msg *Message) XMPPFormat() string {
 	return fmt.Sprintf("<message to='%s' type='chat' xml:lang='en'>"+
 		"<body>%s</body></message>",
 		msg.To,
 		xmlEscape(msg.Body))
+}
+
+// UnmarshalXML implements custom parsing for IQs
+func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	msg.XMLName = start.Name
+
+	// Extract packet attributes
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "id" {
+			msg.Id = attr.Value
+		}
+		if attr.Name.Local == "type" {
+			msg.Type = attr.Value
+		}
+		if attr.Name.Local == "to" {
+			msg.To = attr.Value
+		}
+		if attr.Name.Local == "from" {
+			msg.From = attr.Value
+		}
+		if attr.Name.Local == "lang" {
+			msg.Lang = attr.Value
+		}
+	}
+
+	// decode inner elements
+	for {
+		t, err := d.Token()
+		if err != nil {
+			return err
+		}
+
+		switch tt := t.(type) {
+
+		case xml.StartElement:
+			var elt interface{}
+			elementType := tt.Name.Space
+
+			if extensionType := msgTypeRegistry[elementType]; extensionType != nil {
+				val := reflect.New(extensionType)
+				elt = val.Interface()
+				if msgExt, ok := elt.(MsgExtension); ok {
+					err = d.DecodeElement(elt, &tt)
+					if err != nil {
+						return err
+					}
+					msg.Extensions = append(msg.Extensions, msgExt)
+				}
+			} else {
+				// Decode default message elements
+				var err error
+				switch tt.Name.Local {
+				case "body":
+					err = d.DecodeElement(&msg.Body, &tt)
+				case "thread":
+					err = d.DecodeElement(&msg.Thread, &tt)
+				case "subject":
+					err = d.DecodeElement(&msg.Subject, &tt)
+				case "error":
+					err = d.DecodeElement(&msg.Error, &tt)
+				}
+				if err != nil {
+					return err
+				}
+			}
+
+		case xml.EndElement:
+			if tt == start.End() {
+				return nil
+			}
+		}
+	}
+}
+
+// ============================================================================
+// Message extensions
+// Provide ability to add support to XMPP extension tags on messages
+
+type MsgExtension interface {
+	IsMsgExtension()
+}
+
+// XEP-0184
+type Receipt struct {
+	// xmlns: urn:xmpp:receipts
+	XMLName xml.Name
+	Id      string
+}
+
+func (*Receipt) IsMsgExtension() {}
+
+// ============================================================================
+// TODO: Make it configurable at to be able to easily add new XMPP extensions
+//    in separate modules
+
+var msgTypeRegistry = make(map[string]reflect.Type)
+
+func init() {
+	msgTypeRegistry["urn:xmpp:receipts"] = reflect.TypeOf(Receipt{})
 }
