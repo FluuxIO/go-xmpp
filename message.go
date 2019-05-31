@@ -130,9 +130,9 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 type MsgExtension interface {
 }
 
+// XEP-0184
 const NSSpaceXEP0184Receipt = "urn:xmpp:receipts"
 
-// XEP-0184
 type ReceiptRequest struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:receipts request"`
@@ -141,6 +141,32 @@ type ReceiptRequest struct {
 type ReceiptReceived struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:receipts received"`
+	Id      string   `xml:"id,attr"`
+}
+
+// XEP-0333
+const NSSpaceXEP0333ChatMarkers = "urn:xmpp:chat-markers:0"
+
+type ChatMarkerMarkable struct {
+	MsgExtension
+	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 markable"`
+}
+
+type ChatMarkerReceived struct {
+	MsgExtension
+	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 received"`
+	Id      string   `xml:"id,attr"`
+}
+
+type ChatMarkerDisplayed struct {
+	MsgExtension
+	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 displayed"`
+	Id      string   `xml:"id,attr"`
+}
+
+type ChatMarkerAcknowledged struct {
+	MsgExtension
+	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 acknowledged"`
 	Id      string   `xml:"id,attr"`
 }
 
@@ -154,4 +180,10 @@ func init() {
 	msgTypeRegistry[NSSpaceXEP0184Receipt] = make(map[string]reflect.Type)
 	msgTypeRegistry[NSSpaceXEP0184Receipt]["request"] = reflect.TypeOf(ReceiptRequest{})
 	msgTypeRegistry[NSSpaceXEP0184Receipt]["received"] = reflect.TypeOf(ReceiptReceived{})
+
+	msgTypeRegistry[NSSpaceXEP0333ChatMarkers] = make(map[string]reflect.Type)
+	msgTypeRegistry[NSSpaceXEP0333ChatMarkers]["markable"] = reflect.TypeOf(ChatMarkerMarkable{})
+	msgTypeRegistry[NSSpaceXEP0333ChatMarkers]["received"] = reflect.TypeOf(ChatMarkerReceived{})
+	msgTypeRegistry[NSSpaceXEP0333ChatMarkers]["displayed"] = reflect.TypeOf(ChatMarkerDisplayed{})
+	msgTypeRegistry[NSSpaceXEP0333ChatMarkers]["acknowledged"] = reflect.TypeOf(ChatMarkerAcknowledged{})
 }
