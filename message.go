@@ -2,7 +2,6 @@ package xmpp // import "gosrc.io/xmpp"
 
 import (
 	"encoding/xml"
-	"fmt"
 	"reflect"
 )
 
@@ -48,10 +47,8 @@ func (messageDecoder) decode(p *xml.Decoder, se xml.StartElement) (Message, erro
 
 // TODO: Support missing element (thread, extensions) by using proper marshaller
 func (msg *Message) XMPPFormat() string {
-	return fmt.Sprintf("<message to='%s' type='chat' xml:lang='en'>"+
-		"<body>%s</body></message>",
-		msg.To,
-		xmlEscape(msg.Body))
+	out, _ := xml.MarshalIndent(msg, "", "")
+	return string(out)
 }
 
 // UnmarshalXML implements custom parsing for IQs
@@ -90,7 +87,7 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			var elt interface{}
 			elementType := tt.Name.Space
 
-			if extensionType := msgTypeRegistry[elementType]; extensionType != nil {
+			if extensionType := msgTypeRegistry[elementType][tt.Name.Local]; extensionType != nil {
 				val := reflect.New(extensionType)
 				elt = val.Interface()
 				if msgExt, ok := elt.(MsgExtension); ok {
@@ -131,24 +128,30 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // Provide ability to add support to XMPP extension tags on messages
 
 type MsgExtension interface {
-	IsMsgExtension()
 }
+
+const NSSpaceXEP0184Receipt = "urn:xmpp:receipts"
 
 // XEP-0184
-type Receipt struct {
-	// xmlns: urn:xmpp:receipts
-	XMLName xml.Name
-	Id      string
+type ReceiptRequest struct {
+	MsgExtension
+	XMLName xml.Name `xml:"urn:xmpp:receipts request"`
 }
 
-func (*Receipt) IsMsgExtension() {}
+type ReceiptReceived struct {
+	MsgExtension
+	XMLName xml.Name `xml:"urn:xmpp:receipts received"`
+	Id      string   `xml:"id,attr"`
+}
 
 // ============================================================================
 // TODO: Make it configurable at to be able to easily add new XMPP extensions
 //    in separate modules
 
-var msgTypeRegistry = make(map[string]reflect.Type)
+var msgTypeRegistry = make(map[string]map[string]reflect.Type)
 
 func init() {
-	msgTypeRegistry["urn:xmpp:receipts"] = reflect.TypeOf(Receipt{})
+	msgTypeRegistry[NSSpaceXEP0184Receipt] = make(map[string]reflect.Type)
+	msgTypeRegistry[NSSpaceXEP0184Receipt]["request"] = reflect.TypeOf(ReceiptRequest{})
+	msgTypeRegistry[NSSpaceXEP0184Receipt]["received"] = reflect.TypeOf(ReceiptReceived{})
 }

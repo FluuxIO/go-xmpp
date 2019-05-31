@@ -71,11 +71,10 @@ func TestDecodeXEP0184(t *testing.T) {
 		return
 	}
 
-	switch ext := parsedMessage.Extensions[0].(type) {
-	case *xmpp.Receipt:
-		if ext.XMLName.Local != "request" {
-			t.Errorf("unexpected extension: %s:%s", ext.XMLName.Space, ext.XMLName.Local)
-		}
+	switch parsedMessage.Extensions[0].(type) {
+	case *xmpp.ReceiptRequest:
+	case *xmpp.ReceiptReceived:
+		t.Errorf("wrong local in receipt namespace")
 	default:
 		t.Errorf("could not find receipt extension")
 	}
