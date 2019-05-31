@@ -214,6 +214,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 					val := reflect.New(payloadType)
 					elt = val.Interface()
 				} else {
+					// TODO: Fix me. We do nothing of that element here.
 					elt = new(Node)
 				}
 
@@ -332,6 +333,8 @@ type DiscoItem struct {
 }
 
 // ============================================================================
+// TODO: Make it configurable at to be able to easily add new XMPP extensions
+//    in separate modules
 
 var typeRegistry = make(map[string]reflect.Type)
 
