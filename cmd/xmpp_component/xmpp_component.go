@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"gosrc.io/xmpp"
 )
@@ -9,7 +10,9 @@ import (
 func main() {
 	component := MyComponent{Name: "Test Component", Category: "gateway", Type: "service"}
 	component.xmpp = &xmpp.Component{Host: "service.localhost", Secret: "mypass"}
-	_ = component.xmpp.Connect("localhost:8888")
+	if err := component.xmpp.Connect("localhost:8888"); err != nil {
+		log.Fatal(err)
+	}
 
 	for {
 		packet, err := component.xmpp.ReadPacket()
