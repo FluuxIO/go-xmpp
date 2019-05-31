@@ -62,9 +62,9 @@ func (c *Component) Connect(connStr string) error {
 	}
 
 	switch v := val.(type) {
-	case *StreamError:
+	case StreamError:
 		return errors.New("handshake failed " + v.Error.Local)
-	case *Handshake:
+	case Handshake:
 		return nil
 	default:
 		return errors.New("unexpected packet, got " + v.Name())
