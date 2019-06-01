@@ -19,14 +19,13 @@ TODO support ability to put Raw payload inside IQ
 // presence or iq stanza.
 // It is intended to be added in the payload of the erroneous stanza.
 type Err struct {
+	IQPayload
 	XMLName xml.Name `xml:"error"`
 	Code    int      `xml:"code,attr,omitempty"`
 	Type    string   `xml:"type,attr,omitempty"`
 	Reason  string
 	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text,omitempty"`
 }
-
-func (*Err) IsIQPayload() {}
 
 // UnmarshalXML implements custom parsing for IQs
 func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -239,13 +238,12 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // ============================================================================
 // Generic IQ Payload
 
-type IQPayload interface {
-	IsIQPayload()
-}
+type IQPayload interface{}
 
 // Node is a generic structure to represent XML data. It is used to parse
 // unreferenced or custom stanza payload.
 type Node struct {
+	IQPayload
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
 	Content string     `xml:",innerxml"`
@@ -284,8 +282,6 @@ func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
-func (*Node) IsIQPayload() {}
-
 // ============================================================================
 // Disco
 
@@ -295,13 +291,12 @@ const (
 )
 
 type DiscoInfo struct {
+	IQPayload
 	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
 	Node     string    `xml:"node,attr,omitempty"`
 	Identity Identity  `xml:"identity"`
 	Features []Feature `xml:"feature"`
 }
-
-func (*DiscoInfo) IsIQPayload() {}
 
 type Identity struct {
 	XMLName  xml.Name `xml:"identity,omitempty"`
@@ -318,12 +313,11 @@ type Feature struct {
 // ============================================================================
 
 type DiscoItems struct {
+	IQPayload
 	XMLName xml.Name    `xml:"http://jabber.org/protocol/disco#items query"`
 	Node    string      `xml:"node,attr,omitempty"`
 	Items   []DiscoItem `xml:"item"`
 }
-
-func (*DiscoItems) IsIQPayload() {}
 
 type DiscoItem struct {
 	XMLName xml.Name `xml:"item"`
