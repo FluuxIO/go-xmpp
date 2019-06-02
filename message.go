@@ -16,6 +16,7 @@ type Message struct {
 	Thread     string         `xml:"thread,omitempty"`
 	Error      Err            `xml:"error,omitempty"`
 	Extensions []MsgExtension `xml:",omitempty"`
+	X          *MsgXOOB       `xml:",omitempty"`
 }
 
 func (Message) Name() string {
@@ -168,6 +169,13 @@ type ChatMarkerAcknowledged struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 acknowledged"`
 	Id      string   `xml:"id,attr"`
+}
+
+// XEP-0066
+type MsgXOOB struct {
+	XMLName xml.Name `xml:"jabber:x:oob x"`
+	URL     string   `xml:"url"`
+	Desc    string   `xml:"desc,omitempty"`
 }
 
 // ============================================================================
