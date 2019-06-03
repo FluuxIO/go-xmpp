@@ -3,7 +3,6 @@ package xmpp // import "gosrc.io/xmpp"
 import (
 	"encoding/xml"
 	"fmt"
-	"reflect"
 )
 
 // ============================================================================
@@ -87,21 +86,16 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		switch tt := t.(type) {
 
 		case xml.StartElement:
-			var elt interface{}
 			elementType := tt.Name.Space
-
-			if extensionType := msgTypeRegistry[elementType]; extensionType != nil {
-				val := reflect.New(extensionType)
-				elt = val.Interface()
-				if msgExt, ok := elt.(MsgExtension); ok {
-					err = d.DecodeElement(elt, &tt)
-					if err != nil {
-						return err
-					}
-					msg.Extensions = append(msg.Extensions, msgExt)
+			if msgExt := typeRegistry.getmsgType(elementType); msgExt != nil {
+				// Decode message extension
+				err = d.DecodeElement(msgExt, &tt)
+				if err != nil {
+					return err
 				}
+				msg.Extensions = append(msg.Extensions, msgExt)
 			} else {
-				// Decode default message elements
+				// Decode standard message sub-elements
 				var err error
 				switch tt.Name.Local {
 				case "body":
@@ -124,31 +118,4 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			}
 		}
 	}
-}
-
-// ============================================================================
-// Message extensions
-// Provide ability to add support to XMPP extension tags on messages
-
-type MsgExtension interface {
-	IsMsgExtension()
-}
-
-// XEP-0184
-type Receipt struct {
-	// xmlns: urn:xmpp:receipts
-	XMLName xml.Name
-	Id      string
-}
-
-func (*Receipt) IsMsgExtension() {}
-
-// ============================================================================
-// TODO: Make it configurable at to be able to easily add new XMPP extensions
-//    in separate modules
-
-var msgTypeRegistry = make(map[string]reflect.Type)
-
-func init() {
-	msgTypeRegistry["urn:xmpp:receipts"] = reflect.TypeOf(Receipt{})
 }
