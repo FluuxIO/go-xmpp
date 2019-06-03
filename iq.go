@@ -210,7 +210,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			if level <= 1 {
 				var elt interface{}
 				payloadType := tt.Name.Space + " " + tt.Name.Local
-				if payloadType := typeRegistry[payloadType]; payloadType != nil {
+				if payloadType := iqTypeRegistry[payloadType]; payloadType != nil {
 					val := reflect.New(payloadType)
 					elt = val.Interface()
 				} else {
@@ -332,15 +332,9 @@ type DiscoItem struct {
 	Node    string   `xml:"node,attr,omitempty"`
 }
 
-// ============================================================================
-// TODO: Make it configurable at to be able to easily add new XMPP extensions
-//    in separate modules
-
-var typeRegistry = make(map[string]reflect.Type)
-
 func init() {
-	typeRegistry["http://jabber.org/protocol/disco#info query"] = reflect.TypeOf(DiscoInfo{})
-	typeRegistry["http://jabber.org/protocol/disco#items query"] = reflect.TypeOf(DiscoItems{})
-	typeRegistry["urn:ietf:params:xml:ns:xmpp-bind bind"] = reflect.TypeOf(BindBind{})
-	typeRegistry["urn:xmpp:iot:control set"] = reflect.TypeOf(iot.ControlSet{})
+	iqTypeRegistry["http://jabber.org/protocol/disco#info query"] = reflect.TypeOf(DiscoInfo{})
+	iqTypeRegistry["http://jabber.org/protocol/disco#items query"] = reflect.TypeOf(DiscoItems{})
+	iqTypeRegistry["urn:ietf:params:xml:ns:xmpp-bind bind"] = reflect.TypeOf(BindBind{})
+	iqTypeRegistry["urn:xmpp:iot:control set"] = reflect.TypeOf(iot.ControlSet{})
 }
