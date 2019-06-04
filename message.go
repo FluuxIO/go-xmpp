@@ -45,12 +45,13 @@ func (messageDecoder) decode(p *xml.Decoder, se xml.StartElement) (Message, erro
 	return packet, err
 }
 
-// TODO: Support missing element (thread, extensions) by using proper marshaller
+// XMPPFormat with all Extensions
 func (msg *Message) XMPPFormat() string {
-	return fmt.Sprintf("<message to='%s' type='chat' xml:lang='en'>"+
-		"<body>%s</body></message>",
-		msg.To,
-		xmlEscape(msg.Body))
+	out, err := xml.MarshalIndent(msg, "", "")
+	if err != nil {
+		return ""
+	}
+	return string(out)
 }
 
 // UnmarshalXML implements custom parsing for IQs
