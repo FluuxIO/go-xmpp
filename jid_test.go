@@ -13,6 +13,11 @@ func TestValidJids(t *testing.T) {
 	for i, sjid := range goodJids {
 		if jid, err = NewJid(sjid); err != nil {
 			t.Error("could not parse correct jid")
+			return
+		}
+
+		if jid == nil {
+			t.Error("jid should not be nil")
 		}
 
 		if jid.username != "test" {
