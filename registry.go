@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"encoding/xml"
 	"reflect"
 	"sync"
 )
@@ -11,43 +12,76 @@ type MsgExtension interface{}
 // TODO: Move to the client init process to remove the dependency on a global variable.
 //   That should make it possible to be able to share the decoder.
 // TODO: Ensure that a client can add its own custom namespace to the registry (or overload existing ones).
+
+type packetType uint8
+
+const (
+	PKTPresence packetType = iota
+	PKTMessage
+	PKTIQ
+)
+
 var typeRegistry = newRegistry()
 
-type namespace = string
-
-type registry struct {
-	// Key is namespace of message extension
-	msgTypes     map[namespace]reflect.Type
-	msgTypesLock *sync.RWMutex
-
-	iqTypes map[namespace]reflect.Type
+// We store different registries per packet type and namespace.
+type registryKey struct {
+	packetType packetType
+	namespace  string
 }
 
-func newRegistry() registry {
-	return registry{
-		msgTypes:     make(map[namespace]reflect.Type),
+type registryForNamespace map[string]reflect.Type
+
+type registry struct {
+	// We store different registries per packet type and namespace.
+	msgTypes map[registryKey]registryForNamespace
+	// Handle concurrent access
+	msgTypesLock *sync.RWMutex
+}
+
+func newRegistry() *registry {
+	return &registry{
+		msgTypes:     make(map[registryKey]registryForNamespace),
 		msgTypesLock: &sync.RWMutex{},
-		iqTypes:      make(map[namespace]reflect.Type),
 	}
 }
 
-// Mutexes are not needed when adding a Message or IQ extension in init function.
-// However, forcing the use of the mutex protect the data structure against unexpected use
-// of the registry by developers using the library.
-func (r registry) RegisterMsgExt(namespace string, extension MsgExtension) {
+// MapExtension stores extension type for packet payload.
+// The match is done per packetType (iq, message, or presence) and XML tag name.
+// You can use the alias "*" as local XML name to be able to match all unknown tag name for that
+// packet type and namespace.
+func (r *registry) MapExtension(pktType packetType, name xml.Name, extension MsgExtension) {
+	key := registryKey{pktType, name.Space}
+	r.msgTypesLock.RLock()
+	store := r.msgTypes[key]
+	r.msgTypesLock.RUnlock()
+
 	r.msgTypesLock.Lock()
 	defer r.msgTypesLock.Unlock()
-	r.msgTypes[namespace] = reflect.TypeOf(extension)
+	if store == nil {
+		store = make(map[string]reflect.Type)
+	}
+	store[name.Local] = reflect.TypeOf(extension)
+	r.msgTypes[key] = store
 }
 
-func (r registry) getMsgExtType(namespace string) reflect.Type {
+// GetExtensionType returns extension type for packet payload, based on packet type and tag name.
+func (r *registry) GetExtensionType(pktType packetType, name xml.Name) reflect.Type {
+	key := registryKey{pktType, name.Space}
+
 	r.msgTypesLock.RLock()
 	defer r.msgTypesLock.RUnlock()
-	return r.msgTypes[namespace]
+	store := r.msgTypes[key]
+	result := store[name.Local]
+	if result == nil && name.Local != "*" {
+		return store["*"]
+	}
+	return result
 }
 
-func (r registry) getmsgType(namespace string) MsgExtension {
-	if extensionType := r.getMsgExtType(namespace); extensionType != nil {
+// GetMsgExtension returns an instance of MsgExtension, by matching packet type and XML
+// tag name against the registry.
+func (r *registry) GetMsgExtension(name xml.Name) MsgExtension {
+	if extensionType := r.GetExtensionType(PKTMessage, name); extensionType != nil {
 		val := reflect.New(extensionType)
 		elt := val.Interface()
 		if msgExt, ok := elt.(MsgExtension); ok {
@@ -57,9 +91,15 @@ func (r registry) getmsgType(namespace string) MsgExtension {
 	return nil
 }
 
-// Registry to support message extensions
-//var msgTypeRegistry = make(map[string]reflect.Type)
-
-// Registry to instantiate the right IQ payload element
-// Key is namespace and key of the payload
-var iqTypeRegistry = make(map[string]reflect.Type)
+// GetIQExtension returns an instance of IQPayload, by matching packet type and XML
+// tag name against the registry.
+func (r *registry) GetIQExtension(name xml.Name) IQPayload {
+	if extensionType := r.GetExtensionType(PKTIQ, name); extensionType != nil {
+		val := reflect.New(extensionType)
+		elt := val.Interface()
+		if iqExt, ok := elt.(IQPayload); ok {
+			return iqExt
+		}
+	}
+	return nil
+}
