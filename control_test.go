@@ -3,8 +3,6 @@ package xmpp // import "gosrc.io/xmpp"
 import (
 	"encoding/xml"
 	"testing"
-
-	"gosrc.io/xmpp/iot"
 )
 
 func TestControlSet(t *testing.T) {
@@ -22,7 +20,7 @@ func TestControlSet(t *testing.T) {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 
-	if cs, ok := parsedIQ.Payload[0].(*iot.ControlSet); !ok {
+	if cs, ok := parsedIQ.Payload[0].(*ControlSet); !ok {
 		t.Errorf("Paylod is not an iot control set: %v", cs)
 	}
 }

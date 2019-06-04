@@ -29,7 +29,6 @@ func main() {
 
 func runCheck(address, domain string) {
 	client, err := xmpp.NewChecker(address, domain)
-	// client, err := xmpp.NewChecker("mickael.m.in-app.io:5222", "mickael.m.in-app.io")
 
 	if err != nil {
 		log.Fatal("Error: ", err)

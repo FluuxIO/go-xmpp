@@ -1,13 +1,13 @@
-package iot // import "gosrc.io/xmpp/iot"
+package xmpp // import "gosrc.io/xmpp/iot"
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 type ControlSet struct {
+	IQPayload
 	XMLName xml.Name       `xml:"urn:xmpp:iot:control set"`
 	Fields  []ControlField `xml:",any"`
-}
-
-func (*ControlSet) IsIQPayload() {
 }
 
 type ControlGetForm struct {
@@ -21,8 +21,6 @@ type ControlField struct {
 }
 
 type ControlSetResponse struct {
+	IQPayload
 	XMLName xml.Name `xml:"urn:xmpp:iot:control setResponse"`
-}
-
-func (*ControlSetResponse) IsIQPayload() {
 }

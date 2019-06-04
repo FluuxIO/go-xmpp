@@ -2,10 +2,7 @@ package xmpp // import "gosrc.io/xmpp"
 
 import (
 	"encoding/xml"
-	"reflect"
 	"strconv"
-
-	"gosrc.io/xmpp/iot"
 )
 
 /*
@@ -19,14 +16,13 @@ TODO support ability to put Raw payload inside IQ
 // presence or iq stanza.
 // It is intended to be added in the payload of the erroneous stanza.
 type Err struct {
+	IQPayload
 	XMLName xml.Name `xml:"error"`
 	Code    int      `xml:"code,attr,omitempty"`
 	Type    string   `xml:"type,attr,omitempty"`
 	Reason  string
 	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text,omitempty"`
 }
-
-func (*Err) IsIQPayload() {}
 
 // UnmarshalXML implements custom parsing for IQs
 func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -208,22 +204,16 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		case xml.StartElement:
 			level++
 			if level <= 1 {
-				var elt interface{}
-				payloadType := tt.Name.Space + " " + tt.Name.Local
-				if payloadType := iqTypeRegistry[payloadType]; payloadType != nil {
-					val := reflect.New(payloadType)
-					elt = val.Interface()
-				} else {
-					// TODO: Fix me. We do nothing of that element here.
-					elt = new(Node)
-				}
-
-				if iqPl, ok := elt.(IQPayload); ok {
-					err = d.DecodeElement(elt, &tt)
+				if iqExt := typeRegistry.GetIQExtension(tt.Name); iqExt != nil {
+					// Decode payload extension
+					err = d.DecodeElement(iqExt, &tt)
 					if err != nil {
 						return err
 					}
-					iq.Payload = append(iq.Payload, iqPl)
+					iq.Payload = append(iq.Payload, iqExt)
+				} else {
+					// TODO: Fix me. We do nothing of that element here.
+					// elt = new(Node)
 				}
 			}
 
@@ -239,13 +229,12 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // ============================================================================
 // Generic IQ Payload
 
-type IQPayload interface {
-	IsIQPayload()
-}
+type IQPayload interface{}
 
 // Node is a generic structure to represent XML data. It is used to parse
 // unreferenced or custom stanza payload.
 type Node struct {
+	IQPayload
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
 	Content string     `xml:",innerxml"`
@@ -284,8 +273,6 @@ func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
-func (*Node) IsIQPayload() {}
-
 // ============================================================================
 // Disco
 
@@ -295,13 +282,12 @@ const (
 )
 
 type DiscoInfo struct {
+	IQPayload
 	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
 	Node     string    `xml:"node,attr,omitempty"`
 	Identity Identity  `xml:"identity"`
 	Features []Feature `xml:"feature"`
 }
-
-func (*DiscoInfo) IsIQPayload() {}
 
 type Identity struct {
 	XMLName  xml.Name `xml:"identity,omitempty"`
@@ -318,12 +304,11 @@ type Feature struct {
 // ============================================================================
 
 type DiscoItems struct {
+	IQPayload
 	XMLName xml.Name    `xml:"http://jabber.org/protocol/disco#items query"`
 	Node    string      `xml:"node,attr,omitempty"`
 	Items   []DiscoItem `xml:"item"`
 }
-
-func (*DiscoItems) IsIQPayload() {}
 
 type DiscoItem struct {
 	XMLName xml.Name `xml:"item"`
@@ -333,8 +318,8 @@ type DiscoItem struct {
 }
 
 func init() {
-	iqTypeRegistry["http://jabber.org/protocol/disco#info query"] = reflect.TypeOf(DiscoInfo{})
-	iqTypeRegistry["http://jabber.org/protocol/disco#items query"] = reflect.TypeOf(DiscoItems{})
-	iqTypeRegistry["urn:ietf:params:xml:ns:xmpp-bind bind"] = reflect.TypeOf(BindBind{})
-	iqTypeRegistry["urn:xmpp:iot:control set"] = reflect.TypeOf(iot.ControlSet{})
+	typeRegistry.MapExtension(PKTIQ, xml.Name{"http://jabber.org/protocol/disco#info", "query"}, DiscoInfo{})
+	typeRegistry.MapExtension(PKTIQ, xml.Name{"http://jabber.org/protocol/disco#items", "query"}, DiscoItems{})
+	typeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
+	typeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
 }

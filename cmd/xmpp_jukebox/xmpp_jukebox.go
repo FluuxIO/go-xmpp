@@ -12,8 +12,6 @@ import (
 	"github.com/processone/mpg123"
 	"github.com/processone/soundcloud"
 	"gosrc.io/xmpp"
-	"gosrc.io/xmpp/iot"
-	"gosrc.io/xmpp/pep"
 )
 
 // Get the actual song Stream URL from SoundCloud website song URL and play it with mpg123 player.
@@ -65,7 +63,7 @@ func processMessage(client *xmpp.Client, p *mpg123.Player, packet *xmpp.Message)
 func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 	switch payload := packet.Payload[0].(type) {
 	// We support IOT Control IQ
-	case *iot.ControlSet:
+	case *xmpp.ControlSet:
 		var url string
 		for _, element := range payload.Fields {
 			if element.XMLName.Local == "string" && element.Name == "url" {
@@ -75,7 +73,7 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 		}
 
 		playSCURL(p, url)
-		setResponse := new(iot.ControlSetResponse)
+		setResponse := new(xmpp.ControlSetResponse)
 		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: []xmpp.IQPayload{setResponse}}
 		_ = client.Send(reply)
 		// TODO add Soundclound artist / title retrieval
@@ -86,8 +84,11 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 }
 
 func sendUserTune(client *xmpp.Client, artist string, title string) {
-	tune := pep.Tune{Artist: artist, Title: title}
-	_ = client.SendRaw(tune.XMPPFormat())
+	tune := xmpp.Tune{Artist: artist, Title: title}
+	iq := xmpp.NewIQ("set", "", "", "usertune-1", "en")
+	payload := xmpp.PubSub{Publish: xmpp.Publish{Node: "http://jabber.org/protocol/tune", Item: xmpp.Item{Tune: tune}}}
+	iq.AddPayload(&payload)
+	_ = client.Send(iq)
 }
 
 func playSCURL(p *mpg123.Player, rawURL string) {

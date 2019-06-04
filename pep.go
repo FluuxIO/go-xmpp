@@ -1,29 +1,21 @@
-package pep // import "gosrc.io/xmpp/pep"
+package xmpp // import "gosrc.io/xmpp/pep"
 
 import (
 	"encoding/xml"
-
-	"gosrc.io/xmpp"
 )
 
-type iq struct {
-	XMLName          xml.Name `xml:"jabber:client iq"`
-	C                pubSub   // c for "contains"
-	xmpp.PacketAttrs          // Rename h for "header" ?
-}
-
-type pubSub struct {
+type PubSub struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/pubsub pubsub"`
-	Publish publish
+	Publish Publish
 }
 
-type publish struct {
+type Publish struct {
 	XMLName xml.Name `xml:"publish"`
 	Node    string   `xml:"node,attr"`
-	Item    item
+	Item    Item
 }
 
-type item struct {
+type Item struct {
 	XMLName xml.Name `xml:"item"`
 	Tune    Tune
 }
@@ -66,11 +58,6 @@ type Tune struct {
 	uri    string
 }
 */
-
-func (t *Tune) XMPPFormat() (s string) {
-	packet, _ := xml.Marshal(iq{PacketAttrs: xmpp.PacketAttrs{Id: "tunes", Type: "set"}, C: pubSub{Publish: publish{Node: "http://jabber.org/protocol/tune", Item: item{Tune: *t}}}})
-	return string(packet)
-}
 
 /*
 func (*Tune) XMPPFormat() string {
