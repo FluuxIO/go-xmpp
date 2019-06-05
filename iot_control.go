@@ -1,4 +1,4 @@
-package xmpp // import "gosrc.io/xmpp/iot"
+package xmpp // import "gosrc.io/xmpp"
 
 import (
 	"encoding/xml"
