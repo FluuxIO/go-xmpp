@@ -36,7 +36,7 @@ func main() {
 	// Iterator to receive packets coming from our XMPP connection
 	for packet := range client.Recv() {
 		switch packet := packet.(type) {
-		case *xmpp.Message:
+		case xmpp.Message:
 			_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
 			reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
 			_ = client.Send(reply)
