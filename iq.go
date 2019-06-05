@@ -318,8 +318,8 @@ type DiscoItem struct {
 }
 
 func init() {
-	typeRegistry.MapExtension(PKTIQ, xml.Name{"http://jabber.org/protocol/disco#info", "query"}, DiscoInfo{})
-	typeRegistry.MapExtension(PKTIQ, xml.Name{"http://jabber.org/protocol/disco#items", "query"}, DiscoItems{})
+	typeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoInfo, "query"}, DiscoInfo{})
+	typeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoItems, "query"}, DiscoItems{})
 	typeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
 	typeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
 }

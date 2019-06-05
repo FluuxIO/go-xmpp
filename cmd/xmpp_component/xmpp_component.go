@@ -80,8 +80,8 @@ func DiscoResult(c MyComponent, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
 	payload := xmpp.DiscoInfo{
 		Identity: identity,
 		Features: []xmpp.Feature{
-			{Var: "http://jabber.org/protocol/disco#info"},
-			{Var: "http://jabber.org/protocol/disco#item"},
+			{Var: xmpp.NSDiscoInfo},
+			{Var: xmpp.NSDiscoItems},
 		},
 	}
 	iq.AddPayload(&payload)
