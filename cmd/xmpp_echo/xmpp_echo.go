@@ -26,12 +26,8 @@ func main() {
 		log.Fatal("Error: ", err)
 	}
 
-	session, err := client.Connect()
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	fmt.Println("Stream opened, we have streamID = ", session.StreamId)
+	cm := xmpp.NewClientManager(client, nil)
+	cm.Start()
 
 	// Iterator to receive packets coming from our XMPP connection
 	for packet := range client.Recv() {

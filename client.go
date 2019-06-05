@@ -10,38 +10,29 @@ import (
 	"time"
 )
 
-// Client Metrics
-// ============================================================================
+//=============================================================================
 
-type Metrics struct {
-	startTime time.Time
-	// ConnectTime returns the duration between client initiation of the TCP/IP
-	// connection to the server and actual TCP/IP session establishment.
-	// This time includes DNS resolution and can be slightly higher if the DNS
-	// resolution result was not in cache.
-	ConnectTime time.Duration
-	// LoginTime returns the between client initiation of the TCP/IP
-	// connection to the server and the return of the login result.
-	// This includes ConnectTime, but also XMPP level protocol negociation
-	// like starttls.
-	LoginTime time.Duration
+// ConnState represents the current connection state.
+type ConnState = uint8
+
+// This is a the list of events happening on the connection that the
+// client can be notified about.
+const (
+	StateDisconnected ConnState = iota
+	StateConnected
+	StateSessionEstablished
+)
+
+// Event is a structure use to convey event changes related to client state. This
+// is for example used to notify the client when the client get disconnected.
+type Event struct {
+	State       ConnState
+	Description string
 }
 
-// initMetrics set metrics with default value and define the starting point
-// for duration calculation (connect time, login time, etc).
-func initMetrics() *Metrics {
-	return &Metrics{
-		startTime: time.Now(),
-	}
-}
-
-func (m *Metrics) setConnectTime() {
-	m.ConnectTime = time.Since(m.startTime)
-}
-
-func (m *Metrics) setLoginTime() {
-	m.LoginTime = time.Since(m.startTime)
-}
+// EventHandler is use to pass events about state of the connection to
+// client implementation.
+type EventHandler func(Event)
 
 // Client
 // ============================================================================
@@ -55,6 +46,8 @@ type Client struct {
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
+
+	// TODO: Move to ClientManager
 	// store low level metrics
 	Metrics *Metrics
 }
@@ -112,26 +105,19 @@ func checkAddress(addr string) (string, error) {
 
 // Connect triggers actual TCP connection, based on previously defined parameters.
 func (c *Client) Connect() (*Session, error) {
-	var tcpconn net.Conn
 	var err error
 
 	// TODO: Refactor = abstract retry loop in capped exponential back-off function
-	var try = 0
-	var success bool
 	c.Metrics = initMetrics()
-	for try <= c.config.Retry && !success {
-		if tcpconn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second); err == nil {
-			c.Metrics.setConnectTime()
-			success = true
-		}
-		try++
-	}
+	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
 	if err != nil {
 		return nil, err
 	}
+	if c.config.Handler != nil {
+		c.config.Handler(Event{State: StateConnected})
+	}
 
 	// Connection is ok, we now open XMPP session
-	c.conn = tcpconn
 	if c.conn, c.Session, err = NewSession(c.conn, c.config); err != nil {
 		return c.Session, err
 	}
@@ -146,21 +132,29 @@ func (c *Client) Connect() (*Session, error) {
 	return c.Session, err
 }
 
+func (c *Client) Disconnect() {
+	_ = c.SendRaw("</stream:stream>")
+	_ = c.conn.Close()
+}
+
 func (c *Client) recv(receiver chan<- interface{}) (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
+			if c.config.Handler != nil {
+				c.config.Handler(Event{State: StateDisconnected})
+			}
 			close(receiver)
 			return err
 		}
 		receiver <- val
 		val = nil
 	}
-	panic("unreachable")
 }
 
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
+// FIXME: The code will not work fine if the XMPP client calls Recv several times.
 func (c *Client) Recv() <-chan interface{} {
 	ch := make(chan interface{})
 	go c.recv(ch)

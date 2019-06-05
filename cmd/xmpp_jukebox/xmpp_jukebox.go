@@ -101,8 +101,7 @@ func playSCURL(p *mpg123.Player, rawURL string) {
 
 func connectXmpp(jid string, password string, address string) (client *xmpp.Client, err error) {
 	xmppConfig := xmpp.Config{Address: address,
-		Jid: jid, Password: password, PacketLogger: os.Stdout, Insecure: true,
-		Retry: 10}
+		Jid: jid, Password: password, PacketLogger: os.Stdout, Insecure: true}
 
 	if client, err = xmpp.NewClient(xmppConfig); err != nil {
 		return

@@ -54,6 +54,10 @@ func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 	s.bind(o)
 	s.rfc3921Session(o)
 
+	if o.Handler != nil {
+		o.Handler(Event{State: StateSessionEstablished})
+	}
+
 	return tlsConn, s, s.err
 }
 
