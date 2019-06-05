@@ -73,7 +73,7 @@ func (c *ServerCheck) Check() error {
 	case StreamError:
 		return errors.New("open stream error: " + p.Error.Local)
 	default:
-		return errors.New("expected packet received while expecting features, got " + p.Name())
+		return errors.New("expected packet received while expecting features, got " + p.Name().Local)
 	}
 
 	startTLSFeature := f.StartTLS.XMLName.Space + " " + f.StartTLS.XMLName.Local

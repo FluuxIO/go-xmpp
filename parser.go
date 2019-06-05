@@ -88,54 +88,54 @@ func next(p *xml.Decoder) (Packet, error) {
 
 func decodeStream(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
-	case "error":
+	case StreamError{}.Name().Local:
 		return streamError.decode(p, se)
-	case "features":
+	case StreamFeatures{}.Name().Local:
 		return streamFeatures.decode(p, se)
 	default:
-		return nil, errors.New("unexpected XMPP packet " +
+		return nil, errors.New("unexpected stream XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }
 
 func decodeSASL(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
-	case "success":
+	case SASLSuccess{}.Name().Local:
 		return saslSuccess.decode(p, se)
-	case "failure":
+	case SASLFailure{}.Name().Local:
 		return saslFailure.decode(p, se)
 	default:
-		return nil, errors.New("unexpected XMPP packet " +
+		return nil, errors.New("unexpected sasl XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }
 
 func decodeClient(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
-	case "message":
+	case Message{}.Name().Local:
 		return message.decode(p, se)
-	case "presence":
+	case Presence{}.Name().Local:
 		return presence.decode(p, se)
-	case "iq":
+	case IQ{}.Name().Local:
 		return iq.decode(p, se)
 	default:
-		return nil, errors.New("unexpected XMPP packet " +
+		return nil, errors.New("unexpected client XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }
 
 func decodeComponent(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
-	case "handshake":
+	case Handshake{}.Name().Local:
 		return handshake.decode(p, se)
-	case "message":
+	case Message{}.Name().Local:
 		return message.decode(p, se)
-	case "presence":
+	case Presence{}.Name().Local:
 		return presence.decode(p, se)
-	case "iq":
+	case IQ{}.Name().Local:
 		return iq.decode(p, se)
 	default:
-		return nil, errors.New("unexpected XMPP packet " +
+		return nil, errors.New("unexpected component XMPP packet " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
 	}
 }

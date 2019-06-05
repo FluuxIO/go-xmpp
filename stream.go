@@ -17,8 +17,8 @@ type StreamFeatures struct {
 	Any        []xml.Name `xml:",any"`
 }
 
-func (StreamFeatures) Name() string {
-	return "stream:features"
+func (s StreamFeatures) Name() xml.Name {
+	return s.XMLName
 }
 
 type streamFeatureDecoder struct{}
@@ -39,8 +39,8 @@ type StreamError struct {
 	Error   xml.Name `xml:",any"`
 }
 
-func (StreamError) Name() string {
-	return "stream:error"
+func (s StreamError) Name() xml.Name {
+	return s.XMLName
 }
 
 type streamErrorDecoder struct{}

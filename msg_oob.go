@@ -14,6 +14,10 @@ type OOB struct {
 	Desc    string   `xml:"desc,omitempty"`
 }
 
+func (o OOB) Name() xml.Name {
+	return o.XMLName
+}
+
 func init() {
-	typeRegistry.MapExtension(PKTMessage, xml.Name{"jabber:x:oob", "x"}, OOB{})
+	typeRegistry.MapExtension(PKTMessage, OOB{})
 }

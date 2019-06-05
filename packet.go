@@ -1,7 +1,9 @@
 package xmpp // import "gosrc.io/xmpp"
 
+import "encoding/xml"
+
 type Packet interface {
-	Name() string
+	Name() xml.Name
 }
 
 // PacketAttrs represents the common structure for base XMPP packets.

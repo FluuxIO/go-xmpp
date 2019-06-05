@@ -1,7 +1,6 @@
 package xmpp // import "gosrc.io/xmpp"
 
 import (
-	"encoding/xml"
 	"reflect"
 	"testing"
 )
@@ -11,11 +10,14 @@ func TestRegistry_RegisterMsgExt(t *testing.T) {
 	typeRegistry := newRegistry()
 
 	// Register an element
-	name := xml.Name{Space: "urn:xmpp:receipts", Local: "request"}
-	typeRegistry.MapExtension(PKTMessage, name, ReceiptRequest{})
+	req := ReceiptRequest{}
+	res := ReceiptReceived{}
+
+	typeRegistry.MapExtension(PKTMessage, req)
+	typeRegistry.MapExtension(PKTMessage, res)
 
 	// Match that element
-	receipt := typeRegistry.GetMsgExtension(name)
+	receipt := typeRegistry.GetMsgExtension(req.Name())
 	if receipt == nil {
 		t.Error("cannot read element type from registry")
 		return
@@ -33,12 +35,12 @@ func BenchmarkRegistryGet(b *testing.B) {
 	typeRegistry := newRegistry()
 
 	// Register an element
-	name := xml.Name{Space: "urn:xmpp:receipts", Local: "request"}
-	typeRegistry.MapExtension(PKTMessage, name, ReceiptRequest{})
+	req := ReceiptRequest{}
+	typeRegistry.MapExtension(PKTMessage, req)
 
 	for i := 0; i < b.N; i++ {
 		// Match that element
-		receipt := typeRegistry.GetExtensionType(PKTMessage, name)
+		receipt := typeRegistry.GetExtensionType(PKTMessage, req.Name())
 		if receipt == nil {
 			b.Error("cannot read element type from registry")
 			return
