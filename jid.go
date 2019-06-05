@@ -3,6 +3,7 @@ package xmpp // import "gosrc.io/xmpp"
 import (
 	"errors"
 	"strings"
+	"unicode"
 )
 
 type Jid struct {
@@ -11,24 +12,52 @@ type Jid struct {
 	resource string
 }
 
-func NewJid(sjid string) (jid *Jid, err error) {
-	s1 := strings.Split(sjid, "@")
+func NewJid(sjid string) (*Jid, error) {
+	s1 := strings.SplitN(sjid, "@", 2)
 	if len(s1) != 2 {
-		err = errors.New("invalid JID: " + sjid)
-		return
+		return nil, errors.New("invalid JID, missing domain: " + sjid)
 	}
-	jid = new(Jid)
+	jid := new(Jid)
 	jid.username = s1[0]
-
-	s2 := strings.Split(s1[1], "/")
-	if len(s2) > 2 {
-		err = errors.New("invalid JID: " + sjid)
-		return
+	if !isUsernameValid(jid.username) {
+		return jid, errors.New("invalid domain: " + jid.username)
 	}
+
+	s2 := strings.SplitN(s1[1], "/", 2)
+
 	jid.domain = s2[0]
+	if !isDomainValid(jid.domain) {
+		return jid, errors.New("invalid domain: " + jid.domain)
+	}
+
 	if len(s2) == 2 {
 		jid.resource = s2[1]
 	}
 
-	return
+	return jid, nil
+}
+
+func isUsernameValid(username string) bool {
+	invalidRunes := []rune{'@', '/', '\'', '"', ':', '<', '>'}
+	return strings.IndexFunc(username, isInvalid(invalidRunes)) < 0
+}
+
+func isDomainValid(domain string) bool {
+	invalidRunes := []rune{'@', '/'}
+	return strings.IndexFunc(domain, isInvalid(invalidRunes)) < 0
+}
+
+func isInvalid(invalidRunes []rune) func(c rune) bool {
+	isInvalid := func(c rune) bool {
+		if unicode.IsSpace(c) {
+			return true
+		}
+		for _, r := range invalidRunes {
+			if c == r {
+				return true
+			}
+		}
+		return false
+	}
+	return isInvalid
 }

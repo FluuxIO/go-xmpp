@@ -5,43 +5,49 @@ import (
 )
 
 func TestValidJids(t *testing.T) {
-	var jid *Jid
-	var err error
+	tests := []struct {
+		jidstr   string
+		expected Jid
+	}{
+		{jidstr: "test@domain.com", expected: Jid{"test", "domain.com", ""}},
+		{jidstr: "test@domain.com/resource", expected: Jid{"test", "domain.com", "resource"}},
+		// resource can contain '/' or '@'
+		{jidstr: "test@domain.com/a/b", expected: Jid{"test", "domain.com", "a/b"}},
+		{jidstr: "test@domain.com/a@b", expected: Jid{"test", "domain.com", "a@b"}},
+	}
 
-	goodJids := []string{"test@domain.com", "test@domain.com/resource"}
-
-	for i, sjid := range goodJids {
-		if jid, err = NewJid(sjid); err != nil {
-			t.Error("could not parse correct jid")
-			return
+	for _, tt := range tests {
+		jid, err := NewJid(tt.jidstr)
+		if err != nil {
+			t.Errorf("could not parse correct jid: %s", tt.jidstr)
+			continue
 		}
 
 		if jid == nil {
 			t.Error("jid should not be nil")
 		}
 
-		if jid.username != "test" {
-			t.Error("incorrect jid username")
+		if jid.username != tt.expected.username {
+			t.Errorf("incorrect jid username (%s): %s", tt.expected.username, jid.username)
 		}
 
-		if jid.domain != "domain.com" {
-			t.Error("incorrect jid domain")
+		if jid.username != tt.expected.username {
+			t.Errorf("incorrect jid domain (%s): %s", tt.expected.domain, jid.domain)
 		}
 
-		if i == 0 && jid.resource != "" {
-			t.Error("bare jid resource should be empty")
-		}
-
-		if i == 1 && jid.resource != "resource" {
-			t.Error("incorrect full jid resource")
+		if jid.resource != tt.expected.resource {
+			t.Errorf("incorrect jid resource (%s): %s", tt.expected.resource, jid.resource)
 		}
 	}
 }
 
-// TODO: Check if resource cannot contain a /
 func TestIncorrectJids(t *testing.T) {
-	badJids := []string{"test@domain.com@otherdomain.com",
-		"test@domain.com/test/test"}
+	badJids := []string{
+		"user:name@domain.com",
+		"user<name@domain.com",
+		"test@domain.com@otherdomain.com",
+		"test@domain com/resource",
+	}
 
 	for _, sjid := range badJids {
 		if _, err := NewJid(sjid); err == nil {
