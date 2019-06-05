@@ -14,8 +14,8 @@ type Presence struct {
 	Error    Err    `xml:"error,omitempty"`
 }
 
-func (Presence) Name() string {
-	return "presence"
+func (p Presence) Name() xml.Name {
+	return p.XMLName
 }
 
 func NewPresence(from, to, id, lang string) Presence {

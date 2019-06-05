@@ -67,7 +67,7 @@ func (c *Component) Connect(connStr string) error {
 	case Handshake:
 		return nil
 	default:
-		return errors.New("unexpected packet, got " + v.Name())
+		return errors.New("unexpected packet, got " + v.Name().Local)
 	}
 	panic("unreachable")
 }
@@ -128,8 +128,8 @@ type Handshake struct {
 	// Value string     `xml:",innerxml"`
 }
 
-func (Handshake) Name() string {
-	return "component:handshake"
+func (h Handshake) Name() xml.Name {
+	return h.XMLName
 }
 
 // Handshake decoding wrapper

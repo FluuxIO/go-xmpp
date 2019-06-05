@@ -17,8 +17,8 @@ type Message struct {
 	Extensions []MsgExtension `xml:",omitempty"`
 }
 
-func (Message) Name() string {
-	return "message"
+func (msg Message) Name() xml.Name {
+	return msg.XMLName
 }
 
 func NewMessage(msgtype, from, to, id, lang string) Message {

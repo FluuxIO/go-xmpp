@@ -43,7 +43,7 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, password
 		// v.Any is type of sub-element in failure, which gives a description of what failed.
 		return errors.New("auth failure: " + v.Any.Local)
 	default:
-		return errors.New("expected SASL success or failure, got " + v.Name())
+		return errors.New("expected SASL success or failure, got " + v.Name().Local)
 	}
 	return err
 }
@@ -60,8 +60,8 @@ type SASLSuccess struct {
 	XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl success"`
 }
 
-func (SASLSuccess) Name() string {
-	return "sasl:success"
+func (s SASLSuccess) Name() xml.Name {
+	return s.XMLName
 }
 
 type saslSuccessDecoder struct{}
@@ -82,8 +82,8 @@ type SASLFailure struct {
 	Any     xml.Name // error reason is a subelement
 }
 
-func (SASLFailure) Name() string {
-	return "sasl:failure"
+func (x SASLFailure) Name() xml.Name {
+	return x.XMLName
 }
 
 type saslFailureDecoder struct{}
@@ -109,6 +109,10 @@ type BindBind struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 	Resource string   `xml:"resource,omitempty"`
 	Jid      string   `xml:"jid,omitempty"`
+}
+
+func (b BindBind) Name() xml.Name {
+	return b.XMLName
 }
 
 // Session is obsolete in RFC 6121.

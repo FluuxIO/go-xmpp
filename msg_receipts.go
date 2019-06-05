@@ -13,13 +13,21 @@ type ReceiptRequest struct {
 	XMLName xml.Name `xml:"urn:xmpp:receipts request"`
 }
 
+func (r ReceiptRequest) Name() xml.Name {
+	return r.XMLName
+}
+
 type ReceiptReceived struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:receipts received"`
 	ID      string
 }
 
+func (r ReceiptReceived) Name() xml.Name {
+	return r.XMLName
+}
+
 func init() {
-	typeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:receipts", "request"}, ReceiptRequest{})
-	typeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:receipts", "received"}, ReceiptReceived{})
+	typeRegistry.MapExtension(PKTMessage, ReceiptRequest{})
+	typeRegistry.MapExtension(PKTMessage, ReceiptReceived{})
 }

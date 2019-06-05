@@ -154,8 +154,8 @@ func (iq IQ) MakeError(xerror Err) IQ {
 	return iq
 }
 
-func (IQ) Name() string {
-	return "iq"
+func (iq IQ) Name() xml.Name {
+	return iq.XMLName
 }
 
 type iqDecoder struct{}
@@ -289,6 +289,10 @@ type DiscoInfo struct {
 	Features []Feature `xml:"feature"`
 }
 
+func (d DiscoInfo) Name() xml.Name {
+	return d.XMLName
+}
+
 type Identity struct {
 	XMLName  xml.Name `xml:"identity,omitempty"`
 	Name     string   `xml:"name,attr,omitempty"`
@@ -310,6 +314,10 @@ type DiscoItems struct {
 	Items   []DiscoItem `xml:"item"`
 }
 
+func (d DiscoItems) Name() xml.Name {
+	return d.XMLName
+}
+
 type DiscoItem struct {
 	XMLName xml.Name `xml:"item"`
 	Name    string   `xml:"name,attr,omitempty"`
@@ -318,8 +326,8 @@ type DiscoItem struct {
 }
 
 func init() {
-	typeRegistry.MapExtension(PKTIQ, xml.Name{"http://jabber.org/protocol/disco#info", "query"}, DiscoInfo{})
-	typeRegistry.MapExtension(PKTIQ, xml.Name{"http://jabber.org/protocol/disco#items", "query"}, DiscoItems{})
-	typeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
-	typeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
+	typeRegistry.MapExtension(PKTIQ, DiscoInfo{})
+	typeRegistry.MapExtension(PKTIQ, DiscoItems{})
+	typeRegistry.MapExtension(PKTIQ, BindBind{})
+	typeRegistry.MapExtension(PKTIQ, ControlSet{})
 }

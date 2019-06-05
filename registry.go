@@ -6,7 +6,9 @@ import (
 	"sync"
 )
 
-type MsgExtension interface{}
+type MsgExtension interface {
+	Name() xml.Name
+}
 
 // The Registry for msg and IQ types is a global variable.
 // TODO: Move to the client init process to remove the dependency on a global variable.
@@ -49,7 +51,8 @@ func newRegistry() *registry {
 // The match is done per packetType (iq, message, or presence) and XML tag name.
 // You can use the alias "*" as local XML name to be able to match all unknown tag name for that
 // packet type and namespace.
-func (r *registry) MapExtension(pktType packetType, name xml.Name, extension MsgExtension) {
+func (r *registry) MapExtension(pktType packetType, extension MsgExtension) {
+	name := extension.Name()
 	key := registryKey{pktType, name.Space}
 	r.msgTypesLock.RLock()
 	store := r.msgTypes[key]
