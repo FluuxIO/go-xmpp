@@ -86,7 +86,7 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		switch tt := t.(type) {
 
 		case xml.StartElement:
-			if msgExt := typeRegistry.GetMsgExtension(tt.Name); msgExt != nil {
+			if msgExt := TypeRegistry.GetMsgExtension(tt.Name); msgExt != nil {
 				// Decode message extension
 				err = d.DecodeElement(msgExt, &tt)
 				if err != nil {

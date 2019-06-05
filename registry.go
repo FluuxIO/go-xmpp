@@ -13,19 +13,19 @@ type MsgExtension interface{}
 //   That should make it possible to be able to share the decoder.
 // TODO: Ensure that a client can add its own custom namespace to the registry (or overload existing ones).
 
-type packetType uint8
+type PacketType uint8
 
 const (
-	PKTPresence packetType = iota
+	PKTPresence PacketType = iota
 	PKTMessage
 	PKTIQ
 )
 
-var typeRegistry = newRegistry()
+var TypeRegistry = newRegistry()
 
 // We store different registries per packet type and namespace.
 type registryKey struct {
-	packetType packetType
+	packetType PacketType
 	namespace  string
 }
 
@@ -46,10 +46,10 @@ func newRegistry() *registry {
 }
 
 // MapExtension stores extension type for packet payload.
-// The match is done per packetType (iq, message, or presence) and XML tag name.
+// The match is done per PacketType (iq, message, or presence) and XML tag name.
 // You can use the alias "*" as local XML name to be able to match all unknown tag name for that
 // packet type and namespace.
-func (r *registry) MapExtension(pktType packetType, name xml.Name, extension MsgExtension) {
+func (r *registry) MapExtension(pktType PacketType, name xml.Name, extension MsgExtension) {
 	key := registryKey{pktType, name.Space}
 	r.msgTypesLock.RLock()
 	store := r.msgTypes[key]
@@ -65,7 +65,7 @@ func (r *registry) MapExtension(pktType packetType, name xml.Name, extension Msg
 }
 
 // GetExtensionType returns extension type for packet payload, based on packet type and tag name.
-func (r *registry) GetExtensionType(pktType packetType, name xml.Name) reflect.Type {
+func (r *registry) GetExtensionType(pktType PacketType, name xml.Name) reflect.Type {
 	key := registryKey{pktType, name.Space}
 
 	r.msgTypesLock.RLock()
