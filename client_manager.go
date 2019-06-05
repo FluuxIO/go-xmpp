@@ -5,20 +5,20 @@ import (
 	"time"
 )
 
-type postConnect func(c *Client)
+type PostConnect func(c *Client)
 
 // ClientManager supervises an XMPP client connection. Its role is to handle connection events and
 // apply reconnection strategy.
 type ClientManager struct {
 	Client      *Client
 	Session     *Session
-	PostConnect postConnect
+	PostConnect PostConnect
 }
 
 // NewClientManager creates a new client manager structure, intended to support
-// handling XMPP client state event changes and autotrigger reconnection
+// handling XMPP client state event changes and auto-trigger reconnection
 // based on ClientManager configuration.
-func NewClientManager(client *Client, pc postConnect) *ClientManager {
+func NewClientManager(client *Client, pc PostConnect) *ClientManager {
 	return &ClientManager{
 		Client:      client,
 		PostConnect: pc,
@@ -44,7 +44,7 @@ func (cm *ClientManager) Stop() {
 
 // connect manages the reconnection loop and apply the define backoff to avoid overloading the server.
 func (cm *ClientManager) connect() {
-	var backoff Backoff // TODO: Probably group backoff calculation features with connection manager.
+	var backoff Backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
 		var err error

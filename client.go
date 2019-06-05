@@ -46,6 +46,8 @@ type Client struct {
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
+	// Packet channel
+	RecvChannel chan interface{}
 
 	// TODO: Move to ClientManager
 	// store low level metrics
@@ -82,6 +84,10 @@ func NewClient(config Config) (c *Client, err error) {
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
+
+	// Create a default channel that developer can override
+	c.RecvChannel = make(chan interface{})
+
 	return
 }
 
@@ -129,25 +135,28 @@ func (c *Client) Connect() (*Session, error) {
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
 	fmt.Fprintf(c.Session.socketProxy, "<presence/>")
 
+	// Start the receiver go routine
+	go c.recv()
+
 	return c.Session, err
 }
 
 func (c *Client) Disconnect() {
 	_ = c.SendRaw("</stream:stream>")
+	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	_ = c.conn.Close()
 }
 
-func (c *Client) recv(receiver chan<- interface{}) (err error) {
+func (c *Client) recv() (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
 			if c.config.Handler != nil {
 				c.config.Handler(Event{State: StateDisconnected})
 			}
-			close(receiver)
 			return err
 		}
-		receiver <- val
+		c.RecvChannel <- val
 		val = nil
 	}
 }
@@ -155,10 +164,9 @@ func (c *Client) recv(receiver chan<- interface{}) (err error) {
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
 // FIXME: The code will not work fine if the XMPP client calls Recv several times.
+// TODO: Deprecate this function in favor of reading directly from the RecvChannel
 func (c *Client) Recv() <-chan interface{} {
-	ch := make(chan interface{})
-	go c.recv(ch)
-	return ch
+	return c.RecvChannel
 }
 
 // Send marshalls XMPP stanza and sends it to the server.
@@ -179,8 +187,9 @@ func (c *Client) Send(packet Packet) error {
 // disconnect the client. It is up to the user of this method to
 // carefully craft the XML content to produce valid XMPP.
 func (c *Client) SendRaw(packet string) error {
-	fmt.Fprintf(c.Session.socketProxy, packet) // TODO handle errors
-	return nil
+	var err error
+	_, err = fmt.Fprintf(c.Session.socketProxy, packet)
+	return err
 }
 
 func xmlEscape(s string) string {
