@@ -7,6 +7,8 @@ Support for:
 - XEP-0184 - Message Delivery Receipts: https://xmpp.org/extensions/xep-0184.html
 */
 
+const NSMsgReceipts = "urn:xmpp:receipts"
+
 // Used on outgoing message, to tell the recipient that you are requesting a message receipt / ack.
 type ReceiptRequest struct {
 	MsgExtension
@@ -20,6 +22,6 @@ type ReceiptReceived struct {
 }
 
 func init() {
-	typeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:receipts", "request"}, ReceiptRequest{})
-	typeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:receipts", "received"}, ReceiptReceived{})
+	typeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgReceipts, "request"}, ReceiptRequest{})
+	typeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgReceipts, "received"}, ReceiptReceived{})
 }

@@ -43,8 +43,8 @@ func TestGenerateIq(t *testing.T) {
 			Type:     "mqtt",
 		},
 		Features: []xmpp.Feature{
-			{Var: "http://jabber.org/protocol/disco#info"},
-			{Var: "http://jabber.org/protocol/disco#item"},
+			{Var: xmpp.NSDiscoInfo},
+			{Var: xmpp.NSDiscoItems},
 		},
 	}
 	iq.AddPayload(&payload)
