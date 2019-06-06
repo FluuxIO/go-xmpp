@@ -34,13 +34,28 @@ type Event struct {
 // client implementation.
 type EventHandler func(Event)
 
+type EventManager struct {
+	// Store current state
+	CurrentState ConnState
+
+	// Callback used to propagate connection state changes
+	Handler EventHandler
+}
+
+func (em EventManager) updateState(state ConnState) {
+	em.CurrentState = state
+	if em.Handler != nil {
+		em.Handler(Event{State: em.CurrentState})
+	}
+}
+
 // Client
 // ============================================================================
 
 // Client is the main structure used to connect as a client on an XMPP
 // server.
 type Client struct {
-	// Store user defined options
+	// Store user defined options and states
 	config Config
 	// Session gather data that can be accessed by users of this library
 	Session *Session
@@ -48,10 +63,8 @@ type Client struct {
 	conn net.Conn
 	// Packet channel
 	RecvChannel chan interface{}
-
-	// TODO: Move to ClientManager
-	// store low level metrics
-	Metrics *Metrics
+	// Track and broadcast connection state
+	EventManager
 }
 
 /*
@@ -113,22 +126,18 @@ func checkAddress(addr string) (string, error) {
 func (c *Client) Connect() (*Session, error) {
 	var err error
 
-	// TODO: Refactor = abstract retry loop in capped exponential back-off function
-	c.Metrics = initMetrics()
 	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
 	if err != nil {
 		return nil, err
 	}
-	if c.config.Handler != nil {
-		c.config.Handler(Event{State: StateConnected})
-	}
+	c.updateState(StateConnected)
 
 	// Connection is ok, we now open XMPP session
 	if c.conn, c.Session, err = NewSession(c.conn, c.config); err != nil {
 		return c.Session, err
 	}
+	c.updateState(StateSessionEstablished)
 
-	c.Metrics.setLoginTime()
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
@@ -151,9 +160,7 @@ func (c *Client) recv() (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
-			if c.config.Handler != nil {
-				c.config.Handler(Event{State: StateDisconnected})
-			}
+			c.updateState(StateDisconnected)
 			return err
 		}
 		c.RecvChannel <- val

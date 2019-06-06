@@ -13,6 +13,9 @@ type ClientManager struct {
 	Client      *Client
 	Session     *Session
 	PostConnect PostConnect
+
+	// Store low level metrics
+	Metrics *Metrics
 }
 
 // NewClientManager creates a new client manager structure, intended to support
@@ -27,8 +30,14 @@ func NewClientManager(client *Client, pc PostConnect) *ClientManager {
 
 // Start launch the connection loop
 func (cm *ClientManager) Start() {
-	cm.Client.config.Handler = func(e Event) {
-		if e.State == StateDisconnected {
+	cm.Client.Handler = func(e Event) {
+		switch e.State {
+		case StateConnected:
+			cm.Metrics.setConnectTime()
+		case StateSessionEstablished:
+			cm.Metrics.setLoginTime()
+		case StateDisconnected:
+			// Reconnect on disconnection
 			cm.connect()
 		}
 	}
@@ -38,7 +47,7 @@ func (cm *ClientManager) Start() {
 // Stop cancels pending operations and terminates existing XMPP client.
 func (cm *ClientManager) Stop() {
 	// Remove on disconnect handler to avoid triggering reconnect
-	cm.Client.config.Handler = nil
+	cm.Client.Handler = nil
 	cm.Client.Disconnect()
 }
 
@@ -48,6 +57,8 @@ func (cm *ClientManager) connect() {
 
 	for {
 		var err error
+		cm.Metrics = initMetrics()
+
 		if cm.Client.Session, err = cm.Client.Connect(); err != nil {
 			log.Printf("Connection error: %v\n", err)
 			backoff.Wait()

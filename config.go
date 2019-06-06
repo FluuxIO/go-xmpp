@@ -17,7 +17,4 @@ type Config struct {
 	// is supported on the server, we will still try to use it.
 	Insecure      bool
 	CharsetReader func(charset string, input io.Reader) (io.Reader, error) // passed to xml decoder
-
-	// Callback used to get connection changes
-	Handler EventHandler
 }
