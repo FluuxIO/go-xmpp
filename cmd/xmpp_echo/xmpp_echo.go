@@ -28,7 +28,8 @@ func main() {
 
 	cm := xmpp.NewClientManager(client, nil)
 	cm.Start()
-	// connection can be stopped with cm.Stop().
+	// connection can be stopped with cm.Stop()
+	// connection state can be checked by reading cm.Client.CurrentState
 
 	// Iterator to receive packets coming from our XMPP connection
 	for packet := range client.Recv() {
