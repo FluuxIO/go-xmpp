@@ -59,6 +59,8 @@ func (cm *ClientManager) connect() {
 		var err error
 		cm.Metrics = initMetrics()
 
+		// TODO: Test for non recoverable errors (invalid username and password) and return an error
+		//   to start caller. We do not want to retry on non recoverable errors.
 		if cm.Client.Session, err = cm.Client.Connect(); err != nil {
 			log.Printf("Connection error: %v\n", err)
 			backoff.Wait()
