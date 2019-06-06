@@ -18,7 +18,7 @@ type ReceiptRequest struct {
 type ReceiptReceived struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:receipts received"`
-	ID      string
+	ID      string   `xml:"id,attr"`
 }
 
 func init() {

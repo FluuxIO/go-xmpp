@@ -17,19 +17,19 @@ type Markable struct {
 type MarkReceived struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 received"`
-	ID      string
+	ID      string   `xml:"id,attr"`
 }
 
 type MarkDisplayed struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 displayed"`
-	ID      string
+	ID      string   `xml:"id,attr"`
 }
 
 type MarkAcknowledged struct {
 	MsgExtension
 	XMLName xml.Name `xml:"urn:xmpp:chat-markers:0 acknowledged"`
-	ID      string
+	ID      string   `xml:"id,attr"`
 }
 
 func init() {
