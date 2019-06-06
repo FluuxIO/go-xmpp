@@ -163,7 +163,6 @@ func (c *Client) recv() (err error) {
 
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
-// FIXME: The code will not work fine if the XMPP client calls Recv several times.
 // TODO: Deprecate this function in favor of reading directly from the RecvChannel
 func (c *Client) Recv() <-chan interface{} {
 	return c.RecvChannel
