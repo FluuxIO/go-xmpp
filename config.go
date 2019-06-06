@@ -12,7 +12,6 @@ type Config struct {
 	Password       string
 	PacketLogger   *os.File // Used for debugging
 	Lang           string   // TODO: should default to 'en'
-	Retry          int      // Number of retries for connect
 	ConnectTimeout int      // Connection timeout in seconds. Default to 15
 	// Insecure can be set to true to allow to open a session without TLS. If TLS
 	// is supported on the server, we will still try to use it.

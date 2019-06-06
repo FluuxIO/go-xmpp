@@ -10,37 +10,43 @@ import (
 	"time"
 )
 
-// Client Metrics
-// ============================================================================
+//=============================================================================
 
-type Metrics struct {
-	startTime time.Time
-	// ConnectTime returns the duration between client initiation of the TCP/IP
-	// connection to the server and actual TCP/IP session establishment.
-	// This time includes DNS resolution and can be slightly higher if the DNS
-	// resolution result was not in cache.
-	ConnectTime time.Duration
-	// LoginTime returns the between client initiation of the TCP/IP
-	// connection to the server and the return of the login result.
-	// This includes ConnectTime, but also XMPP level protocol negociation
-	// like starttls.
-	LoginTime time.Duration
+// ConnState represents the current connection state.
+type ConnState = uint8
+
+// This is a the list of events happening on the connection that the
+// client can be notified about.
+const (
+	StateDisconnected ConnState = iota
+	StateConnected
+	StateSessionEstablished
+)
+
+// Event is a structure use to convey event changes related to client state. This
+// is for example used to notify the client when the client get disconnected.
+type Event struct {
+	State       ConnState
+	Description string
 }
 
-// initMetrics set metrics with default value and define the starting point
-// for duration calculation (connect time, login time, etc).
-func initMetrics() *Metrics {
-	return &Metrics{
-		startTime: time.Now(),
+// EventHandler is use to pass events about state of the connection to
+// client implementation.
+type EventHandler func(Event)
+
+type EventManager struct {
+	// Store current state
+	CurrentState ConnState
+
+	// Callback used to propagate connection state changes
+	Handler EventHandler
+}
+
+func (em EventManager) updateState(state ConnState) {
+	em.CurrentState = state
+	if em.Handler != nil {
+		em.Handler(Event{State: em.CurrentState})
 	}
-}
-
-func (m *Metrics) setConnectTime() {
-	m.ConnectTime = time.Since(m.startTime)
-}
-
-func (m *Metrics) setLoginTime() {
-	m.LoginTime = time.Since(m.startTime)
 }
 
 // Client
@@ -49,14 +55,16 @@ func (m *Metrics) setLoginTime() {
 // Client is the main structure used to connect as a client on an XMPP
 // server.
 type Client struct {
-	// Store user defined options
+	// Store user defined options and states
 	config Config
 	// Session gather data that can be accessed by users of this library
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
-	// store low level metrics
-	Metrics *Metrics
+	// Packet channel
+	RecvChannel chan interface{}
+	// Track and broadcast connection state
+	EventManager
 }
 
 /*
@@ -89,6 +97,10 @@ func NewClient(config Config) (c *Client, err error) {
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
+
+	// Create a default channel that developer can override
+	c.RecvChannel = make(chan interface{})
+
 	return
 }
 
@@ -112,59 +124,55 @@ func checkAddress(addr string) (string, error) {
 
 // Connect triggers actual TCP connection, based on previously defined parameters.
 func (c *Client) Connect() (*Session, error) {
-	var tcpconn net.Conn
 	var err error
 
-	// TODO: Refactor = abstract retry loop in capped exponential back-off function
-	var try = 0
-	var success bool
-	c.Metrics = initMetrics()
-	for try <= c.config.Retry && !success {
-		if tcpconn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second); err == nil {
-			c.Metrics.setConnectTime()
-			success = true
-		}
-		try++
-	}
+	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
 	if err != nil {
 		return nil, err
 	}
+	c.updateState(StateConnected)
 
 	// Connection is ok, we now open XMPP session
-	c.conn = tcpconn
 	if c.conn, c.Session, err = NewSession(c.conn, c.config); err != nil {
 		return c.Session, err
 	}
+	c.updateState(StateSessionEstablished)
 
-	c.Metrics.setLoginTime()
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
 	fmt.Fprintf(c.Session.socketProxy, "<presence/>")
 
+	// Start the receiver go routine
+	go c.recv()
+
 	return c.Session, err
 }
 
-func (c *Client) recv(receiver chan<- interface{}) (err error) {
+func (c *Client) Disconnect() {
+	_ = c.SendRaw("</stream:stream>")
+	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
+	_ = c.conn.Close()
+}
+
+func (c *Client) recv() (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
-			close(receiver)
+			c.updateState(StateDisconnected)
 			return err
 		}
-		receiver <- val
+		c.RecvChannel <- val
 		val = nil
 	}
-	panic("unreachable")
 }
 
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
+// TODO: Deprecate this function in favor of reading directly from the RecvChannel
 func (c *Client) Recv() <-chan interface{} {
-	ch := make(chan interface{})
-	go c.recv(ch)
-	return ch
+	return c.RecvChannel
 }
 
 // Send marshalls XMPP stanza and sends it to the server.
@@ -185,8 +193,9 @@ func (c *Client) Send(packet Packet) error {
 // disconnect the client. It is up to the user of this method to
 // carefully craft the XML content to produce valid XMPP.
 func (c *Client) SendRaw(packet string) error {
-	fmt.Fprintf(c.Session.socketProxy, packet) // TODO handle errors
-	return nil
+	var err error
+	_, err = fmt.Fprintf(c.Session.socketProxy, packet)
+	return err
 }
 
 func xmlEscape(s string) string {

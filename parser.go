@@ -39,7 +39,6 @@ func initDecoder(p *xml.Decoder) (sessionID string, err error) {
 			return
 		}
 	}
-	panic("unreachable")
 }
 
 // Scan XML token stream to find next StartElement.
@@ -47,7 +46,7 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 	for {
 		t, err := p.Token()
 		if err == io.EOF {
-			return xml.StartElement{}, nil
+			return xml.StartElement{}, errors.New("connection closed")
 		}
 		if err != nil {
 			return xml.StartElement{}, fmt.Errorf("nextStart %s", err)
@@ -57,7 +56,6 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 			return t, nil
 		}
 	}
-	panic("unreachable")
 }
 
 // next scans XML token stream for next element and then assign a structure to decode

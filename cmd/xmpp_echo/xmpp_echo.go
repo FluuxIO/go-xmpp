@@ -26,17 +26,14 @@ func main() {
 		log.Fatal("Error: ", err)
 	}
 
-	session, err := client.Connect()
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	fmt.Println("Stream opened, we have streamID = ", session.StreamId)
+	cm := xmpp.NewClientManager(client, nil)
+	cm.Start()
+	// connection can be stopped with cm.Stop().
 
 	// Iterator to receive packets coming from our XMPP connection
 	for packet := range client.Recv() {
 		switch packet := packet.(type) {
-		case *xmpp.Message:
+		case xmpp.Message:
 			_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
 			reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
 			_ = client.Send(reply)
@@ -47,6 +44,4 @@ func main() {
 }
 
 // TODO create default command line client to send message or to send an arbitrary XMPP sequence from a file,
-// (using templates ?)
-
-// TODO: autoreconnect when connection is lost
+//   (using templates ?)
