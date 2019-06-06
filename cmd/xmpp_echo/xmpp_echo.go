@@ -43,6 +43,4 @@ func main() {
 }
 
 // TODO create default command line client to send message or to send an arbitrary XMPP sequence from a file,
-// (using templates ?)
-
-// TODO: autoreconnect when connection is lost
+//   (using templates ?)
