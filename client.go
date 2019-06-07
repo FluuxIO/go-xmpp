@@ -86,13 +86,13 @@ func NewClient(config Config) (c *Client, err error) {
 		return
 	}
 
-	c = new(Client)
-	c.config = config
-
 	// Parse JID
-	if c.config.parsedJid, err = NewJid(c.config.Jid); err != nil {
+	if config.parsedJid, err = NewJid(c.config.Jid); err != nil {
 		return
 	}
+
+	c = new(Client)
+	c.config = config
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
