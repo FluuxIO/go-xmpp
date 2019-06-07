@@ -37,7 +37,7 @@ func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 
 	// starttls
 	var tlsConn net.Conn
-	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.domain)
+	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.Domain)
 	if s.TlsEnabled {
 		s.reset(conn, tlsConn, o)
 	}
@@ -64,7 +64,7 @@ func (s *Session) PacketId() string {
 
 func (s *Session) init(conn net.Conn, o Config) {
 	s.setProxy(nil, conn, o)
-	s.Features = s.open(o.parsedJid.domain)
+	s.Features = s.open(o.parsedJid.Domain)
 }
 
 func (s *Session) reset(conn net.Conn, newConn net.Conn, o Config) {
@@ -73,7 +73,7 @@ func (s *Session) reset(conn net.Conn, newConn net.Conn, o Config) {
 	}
 
 	s.setProxy(conn, newConn, o)
-	s.Features = s.open(o.parsedJid.domain)
+	s.Features = s.open(o.parsedJid.Domain)
 }
 
 // TODO: setProxyLogger ? better name ? This is not a TCP / HTTP proxy
@@ -141,7 +141,7 @@ func (s *Session) auth(o Config) {
 		return
 	}
 
-	s.err = authSASL(s.socketProxy, s.decoder, s.Features, o.parsedJid.username, o.Password)
+	s.err = authSASL(s.socketProxy, s.decoder, s.Features, o.parsedJid.Node, o.Password)
 }
 
 func (s *Session) bind(o Config) {
@@ -150,7 +150,7 @@ func (s *Session) bind(o Config) {
 	}
 
 	// Send IQ message asking to bind to the local user name.
-	var resource = o.parsedJid.resource
+	var resource = o.parsedJid.Resource
 	if resource != "" {
 		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'><resource>%s</resource></bind></iq>",
 			s.PacketId(), nsBind, resource)

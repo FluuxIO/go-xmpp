@@ -7,9 +7,9 @@ import (
 )
 
 type Jid struct {
-	username string
-	domain   string
-	resource string
+	Node     string
+	Domain   string
+	Resource string
 }
 
 func NewJid(sjid string) (*Jid, error) {
@@ -21,29 +21,29 @@ func NewJid(sjid string) (*Jid, error) {
 
 	s1 := strings.SplitN(sjid, "@", 2)
 	if len(s1) == 1 { // This is a server or component JID
-		jid.domain = s1[0]
+		jid.Domain = s1[0]
 	} else { // JID has a local username part
 		if s1[0] == "" {
 			return jid, fmt.Errorf("invalid jid '%s", sjid)
 		}
-		jid.username = s1[0]
+		jid.Node = s1[0]
 		if s1[1] == "" {
 			return jid, fmt.Errorf("domain cannot be empty")
 		}
-		jid.domain = s1[1]
+		jid.Domain = s1[1]
 	}
 
 	// Extract resource from domain field
-	s2 := strings.SplitN(jid.domain, "/", 2)
+	s2 := strings.SplitN(jid.Domain, "/", 2)
 	if len(s2) == 2 { // If len = 1, domain is already correct, and resource is already empty
-		jid.domain = s2[0]
-		jid.resource = s2[1]
+		jid.Domain = s2[0]
+		jid.Resource = s2[1]
 	}
 
-	if !isUsernameValid(jid.username) {
-		return jid, fmt.Errorf("invalid username in JID '%s'", sjid)
+	if !isUsernameValid(jid.Node) {
+		return jid, fmt.Errorf("invalid Node in JID '%s'", sjid)
 	}
-	if !isDomainValid(jid.domain) {
+	if !isDomainValid(jid.Domain) {
 		return jid, fmt.Errorf("invalid domain in JID '%s'", sjid)
 	}
 

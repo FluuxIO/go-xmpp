@@ -28,16 +28,16 @@ func TestValidJids(t *testing.T) {
 			t.Error("jid should not be nil")
 		}
 
-		if jid.username != tt.expected.username {
-			t.Errorf("incorrect jid username (%s): %s", tt.expected.username, jid.username)
+		if jid.Node != tt.expected.Node {
+			t.Errorf("incorrect jid Node (%s): %s", tt.expected.Node, jid.Node)
 		}
 
-		if jid.username != tt.expected.username {
-			t.Errorf("incorrect jid domain (%s): %s", tt.expected.domain, jid.domain)
+		if jid.Node != tt.expected.Node {
+			t.Errorf("incorrect jid domain (%s): %s", tt.expected.Domain, jid.Domain)
 		}
 
-		if jid.resource != tt.expected.resource {
-			t.Errorf("incorrect jid resource (%s): %s", tt.expected.resource, jid.resource)
+		if jid.Resource != tt.expected.Resource {
+			t.Errorf("incorrect jid resource (%s): %s", tt.expected.Resource, jid.Resource)
 		}
 	}
 }
