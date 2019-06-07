@@ -26,6 +26,8 @@ func main() {
 		log.Fatalf("%+v", err)
 	}
 
+	// If you pass the client to a connection manager, it will handle the reconnect policy
+	// for you automatically.
 	cm := xmpp.NewClientManager(client, nil)
 	err = cm.Start()
 	// connection can be stopped with cm.Stop()
