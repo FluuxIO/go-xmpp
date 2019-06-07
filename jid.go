@@ -50,6 +50,17 @@ func NewJid(sjid string) (*Jid, error) {
 	return jid, nil
 }
 
+func (j *Jid) Full() string {
+	return j.Node + "@" + j.Domain + "/" + j.Resource
+}
+
+func (j *Jid) Bare() string {
+	return j.Node + "@" + j.Domain
+}
+
+// ============================================================================
+// Helpers, for parsing / validation
+
 func isUsernameValid(username string) bool {
 	invalidRunes := []rune{'@', '/', '\'', '"', ':', '<', '>'}
 	return strings.IndexFunc(username, isInvalid(invalidRunes)) < 0

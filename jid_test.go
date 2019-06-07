@@ -59,3 +59,28 @@ func TestIncorrectJids(t *testing.T) {
 		}
 	}
 }
+
+func TestFull(t *testing.T) {
+	jid := "test@domain.com/my resource"
+	parsedJid, err := NewJid(jid)
+	if err != nil {
+		t.Errorf("could not parse jid: %v", err)
+	}
+	fullJid := parsedJid.Full()
+	if fullJid != jid {
+		t.Errorf("incorrect full jid: %s", fullJid)
+	}
+}
+
+func TestBare(t *testing.T) {
+	jid := "test@domain.com"
+	fullJid := jid + "/my resource"
+	parsedJid, err := NewJid(fullJid)
+	if err != nil {
+		t.Errorf("could not parse jid: %v", err)
+	}
+	bareJid := parsedJid.Bare()
+	if bareJid != jid {
+		t.Errorf("incorrect bare jid: %s", bareJid)
+	}
+}
