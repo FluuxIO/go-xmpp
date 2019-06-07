@@ -23,13 +23,16 @@ func main() {
 
 	client, err := xmpp.NewClient(config)
 	if err != nil {
-		log.Fatal("Error: ", err)
+		log.Fatalf("%+v", err)
 	}
 
 	cm := xmpp.NewClientManager(client, nil)
-	cm.Start()
+	err = cm.Start()
 	// connection can be stopped with cm.Stop()
 	// connection state can be checked by reading cm.Client.CurrentState
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Iterator to receive packets coming from our XMPP connection
 	for packet := range client.Recv() {

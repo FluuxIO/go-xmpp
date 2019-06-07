@@ -1,8 +1,9 @@
 package xmpp // import "gosrc.io/xmpp"
 
 import (
-	"log"
 	"time"
+
+	"golang.org/x/xerrors"
 )
 
 type PostConnect func(c *Client)
@@ -29,7 +30,7 @@ func NewClientManager(client *Client, pc PostConnect) *ClientManager {
 }
 
 // Start launch the connection loop
-func (cm *ClientManager) Start() {
+func (cm *ClientManager) Start() error {
 	cm.Client.Handler = func(e Event) {
 		switch e.State {
 		case StateConnected:
@@ -41,7 +42,8 @@ func (cm *ClientManager) Start() {
 			cm.connect()
 		}
 	}
-	cm.connect()
+
+	return cm.connect()
 }
 
 // Stop cancels pending operations and terminates existing XMPP client.
@@ -52,17 +54,23 @@ func (cm *ClientManager) Stop() {
 }
 
 // connect manages the reconnection loop and apply the define backoff to avoid overloading the server.
-func (cm *ClientManager) connect() {
+func (cm *ClientManager) connect() error {
 	var backoff Backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
 		var err error
+		// TODO: Make it possible to define logger to log disconnect and reconnection attempts
 		cm.Metrics = initMetrics()
 
 		// TODO: Test for non recoverable errors (invalid username and password) and return an error
 		//   to start caller. We do not want to retry on non recoverable errors.
 		if cm.Client.Session, err = cm.Client.Connect(); err != nil {
-			log.Printf("Connection error: %v\n", err)
+			var actualErr ConnError
+			if xerrors.As(err, &actualErr) {
+				if actualErr.Permanent {
+					return xerrors.Errorf("unrecoverable connect error %w", actualErr)
+				}
+			}
 			backoff.Wait()
 		} else {
 			break
@@ -72,6 +80,7 @@ func (cm *ClientManager) connect() {
 	if cm.PostConnect != nil {
 		cm.PostConnect(cm.Client)
 	}
+	return nil
 }
 
 // Client Metrics

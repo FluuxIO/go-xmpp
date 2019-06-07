@@ -78,17 +78,18 @@ Setting up the client / Checking the parameters
 func NewClient(config Config) (c *Client, err error) {
 	// TODO: If option address is nil, use the Jid domain to compose the address
 	if config.Address, err = checkAddress(config.Address); err != nil {
-		return
+		return nil, NewConnError(err, true)
 	}
 
 	if config.Password == "" {
 		err = errors.New("missing password")
-		return
+		return nil, NewConnError(err, true)
 	}
 
 	// Parse JID
-	if config.parsedJid, err = NewJid(c.config.Jid); err != nil {
-		return
+	if config.parsedJid, err = NewJid(config.Jid); err != nil {
+		err = errors.New("missing jid")
+		return nil, NewConnError(err, true)
 	}
 
 	c = new(Client)

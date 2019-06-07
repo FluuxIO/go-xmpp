@@ -18,7 +18,8 @@ func authSASL(socket io.ReadWriter, decoder *xml.Decoder, f StreamFeatures, user
 		}
 	}
 	if !havePlain {
-		return fmt.Errorf("PLAIN authentication is not supported by server: %v", f.Mechanisms.Mechanism)
+		err := fmt.Errorf("PLAIN authentication is not supported by server: %v", f.Mechanisms.Mechanism)
+		return NewConnError(err, true)
 	}
 
 	return authPlain(socket, decoder, user, password)
@@ -41,7 +42,8 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, password
 	case SASLSuccess:
 	case SASLFailure:
 		// v.Any is type of sub-element in failure, which gives a description of what failed.
-		return errors.New("auth failure: " + v.Any.Local)
+		err := errors.New("auth failure: " + v.Any.Local)
+		return NewConnError(err, true)
 	default:
 		return errors.New("expected SASL success or failure, got " + v.Name())
 	}
