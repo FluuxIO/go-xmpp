@@ -14,6 +14,7 @@ func TestValidJids(t *testing.T) {
 		// resource can contain '/' or '@'
 		{jidstr: "test@domain.com/a/b", expected: Jid{"test", "domain.com", "a/b"}},
 		{jidstr: "test@domain.com/a@b", expected: Jid{"test", "domain.com", "a@b"}},
+		{jidstr: "domain.com", expected: Jid{"", "domain.com", ""}},
 	}
 
 	for _, tt := range tests {
@@ -43,6 +44,9 @@ func TestValidJids(t *testing.T) {
 
 func TestIncorrectJids(t *testing.T) {
 	badJids := []string{
+		"",
+		"user@",
+		"@domain.com",
 		"user:name@domain.com",
 		"user<name@domain.com",
 		"test@domain.com@otherdomain.com",

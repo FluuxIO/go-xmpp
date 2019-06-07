@@ -1,7 +1,7 @@
 package xmpp // import "gosrc.io/xmpp"
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 	"unicode"
 )
@@ -13,25 +13,38 @@ type Jid struct {
 }
 
 func NewJid(sjid string) (*Jid, error) {
-	s1 := strings.SplitN(sjid, "@", 2)
-	if len(s1) != 2 {
-		return nil, errors.New("invalid JID, missing domain: " + sjid)
-	}
 	jid := new(Jid)
-	jid.username = s1[0]
-	if !isUsernameValid(jid.username) {
-		return jid, errors.New("invalid domain: " + jid.username)
+
+	if sjid == "" {
+		return jid, fmt.Errorf("jid cannot be empty")
 	}
 
-	s2 := strings.SplitN(s1[1], "/", 2)
-
-	jid.domain = s2[0]
-	if !isDomainValid(jid.domain) {
-		return jid, errors.New("invalid domain: " + jid.domain)
+	s1 := strings.SplitN(sjid, "@", 2)
+	if len(s1) == 1 { // This is a server or component JID
+		jid.domain = s1[0]
+	} else { // JID has a local username part
+		if s1[0] == "" {
+			return jid, fmt.Errorf("invalid jid '%s", sjid)
+		}
+		jid.username = s1[0]
+		if s1[1] == "" {
+			return jid, fmt.Errorf("domain cannot be empty")
+		}
+		jid.domain = s1[1]
 	}
 
-	if len(s2) == 2 {
+	// Extract resource from domain field
+	s2 := strings.SplitN(jid.domain, "/", 2)
+	if len(s2) == 2 { // If len = 1, domain is already correct, and resource is already empty
+		jid.domain = s2[0]
 		jid.resource = s2[1]
+	}
+
+	if !isUsernameValid(jid.username) {
+		return jid, fmt.Errorf("invalid username in JID '%s'", sjid)
+	}
+	if !isDomainValid(jid.domain) {
+		return jid, fmt.Errorf("invalid domain in JID '%s'", sjid)
 	}
 
 	return jid, nil
@@ -43,6 +56,10 @@ func isUsernameValid(username string) bool {
 }
 
 func isDomainValid(domain string) bool {
+	if len(domain) == 0 {
+		return false
+	}
+
 	invalidRunes := []rune{'@', '/'}
 	return strings.IndexFunc(domain, isInvalid(invalidRunes)) < 0
 }
