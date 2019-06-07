@@ -13,6 +13,57 @@ The goal is to make simple to write simple adhoc XMPP clients:
 
 The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
 
-## Usage
+## Example
+
+Here is a demo "echo" client:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"gosrc.io/xmpp"
+)
+
+func main() {
+	config := xmpp.Config{
+		Address:      "localhost:5222",
+		Jid:          "test@localhost",
+		Password:     "test",
+		PacketLogger: os.Stdout,
+		Insecure:     true,
+	}
+
+	client, err := xmpp.NewClient(config)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	// If you pass the client to a connection manager, it will handle the reconnect policy
+	// for you automatically.
+	cm := xmpp.NewClientManager(client, nil)
+	err = cm.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Iterator to receive packets coming from our XMPP connection
+	for packet := range client.Recv() {
+		switch packet := packet.(type) {
+		case xmpp.Message:
+			_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
+			reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
+			_ = client.Send(reply)
+		default:
+			_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
+		}
+	}
+}
+```
+
+## Documentation
 
 Please, check GoDoc for more information: [gosrc.io/xmpp](https://godoc.org/gosrc.io/xmpp)

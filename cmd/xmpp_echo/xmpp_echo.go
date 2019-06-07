@@ -1,5 +1,5 @@
 /*
-xmpp_client is a demo client that connect on an XMPP server and echo message received back to original sender.
+xmpp_echo is a demo client that connect on an XMPP server and echo message received back to original sender.
 */
 
 package main
@@ -30,8 +30,6 @@ func main() {
 	// for you automatically.
 	cm := xmpp.NewClientManager(client, nil)
 	err = cm.Start()
-	// connection can be stopped with cm.Stop()
-	// connection state can be checked by reading cm.Client.CurrentState
 	if err != nil {
 		log.Fatal(err)
 	}
