@@ -37,6 +37,7 @@ func (streamFeatureDecoder) decode(p *xml.Decoder, se xml.StartElement) (StreamF
 type StreamError struct {
 	XMLName xml.Name `xml:"http://etherx.jabber.org/streams error"`
 	Error   xml.Name `xml:",any"`
+	Text    string   `xml:"urn:ietf:params:xml:ns:xmpp-streams text"`
 }
 
 func (StreamError) Name() string {

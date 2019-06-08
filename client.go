@@ -21,6 +21,7 @@ const (
 	StateDisconnected ConnState = iota
 	StateConnected
 	StateSessionEstablished
+	StateStreamError
 )
 
 // Event is a structure use to convey event changes related to client state. This
@@ -28,6 +29,7 @@ const (
 type Event struct {
 	State       ConnState
 	Description string
+	StreamError string
 }
 
 // EventHandler is use to pass events about state of the connection to
@@ -46,6 +48,13 @@ func (em EventManager) updateState(state ConnState) {
 	em.CurrentState = state
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState})
+	}
+}
+
+func (em EventManager) streamError(error, desc string) {
+	em.CurrentState = StateStreamError
+	if em.Handler != nil {
+		em.Handler(Event{State: em.CurrentState, StreamError: error, Description: desc})
 	}
 }
 
@@ -164,8 +173,17 @@ func (c *Client) recv() (err error) {
 			c.updateState(StateDisconnected)
 			return err
 		}
+
+		// Handle stream errors
+		switch packet := val.(type) {
+		case StreamError:
+			c.RecvChannel <- val
+			close(c.RecvChannel)
+			c.streamError(packet.Error.Local, packet.Text)
+			return errors.New("stream error: " + packet.Error.Local)
+		}
+
 		c.RecvChannel <- val
-		val = nil
 	}
 }
 
