@@ -143,7 +143,7 @@ func (c *Client) Connect() error {
 	}
 	c.updateState(StateConnected)
 
-	// Connection is ok, we now open XMPP session
+	// Client is ok, we now open XMPP session
 	if c.conn, c.Session, err = NewSession(c.conn, c.config); err != nil {
 		return err
 	}
