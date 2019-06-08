@@ -69,7 +69,6 @@ func (c *Component) Connect(connStr string) error {
 	default:
 		return errors.New("unexpected packet, got " + v.Name())
 	}
-	panic("unreachable")
 }
 
 // ReadPacket reads next incoming XMPP packet
@@ -96,7 +95,7 @@ func (c *Component) Send(packet Packet) error {
 // disconnect the component. It is up to the user of this method to
 // carefully craft the XML content to produce valid XMPP.
 func (c *Component) SendRaw(packet string) error {
-	fmt.Fprintf(c.conn, packet) // TODO handle errors
+	fmt.Fprintf(c.conn, packet)
 	return nil
 }
 
