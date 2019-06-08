@@ -107,7 +107,7 @@ func connectXmpp(jid string, password string, address string) (client *xmpp.Clie
 		return
 	}
 
-	if _, err = client.Connect(); err != nil {
+	if err = client.Connect(); err != nil {
 		return
 	}
 	return

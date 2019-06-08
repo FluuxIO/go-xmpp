@@ -11,6 +11,7 @@ import (
 )
 
 //=============================================================================
+// EventManager
 
 // ConnState represents the current connection state.
 type ConnState = uint8
@@ -133,18 +134,18 @@ func checkAddress(addr string) (string, error) {
 }
 
 // Connect triggers actual TCP connection, based on previously defined parameters.
-func (c *Client) Connect() (*Session, error) {
+func (c *Client) Connect() error {
 	var err error
 
 	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	c.updateState(StateConnected)
 
 	// Connection is ok, we now open XMPP session
 	if c.conn, c.Session, err = NewSession(c.conn, c.config); err != nil {
-		return c.Session, err
+		return err
 	}
 	c.updateState(StateSessionEstablished)
 
@@ -157,13 +158,24 @@ func (c *Client) Connect() (*Session, error) {
 	// Start the receiver go routine
 	go c.recv()
 
-	return c.Session, err
+	return err
 }
 
 func (c *Client) Disconnect() {
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	_ = c.conn.Close()
+}
+
+func (c *Client) SetHandler(handler EventHandler) {
+	c.Handler = handler
+}
+
+// Recv abstracts receiving preparsed XMPP packets from a channel.
+// Channel allow client to receive / dispatch packets in for range loop.
+// TODO: Deprecate this function in favor of reading directly from the RecvChannel ?
+func (c *Client) Recv() <-chan interface{} {
+	return c.RecvChannel
 }
 
 func (c *Client) recv() (err error) {
@@ -185,13 +197,6 @@ func (c *Client) recv() (err error) {
 
 		c.RecvChannel <- val
 	}
-}
-
-// Recv abstracts receiving preparsed XMPP packets from a channel.
-// Channel allow client to receive / dispatch packets in for range loop.
-// TODO: Deprecate this function in favor of reading directly from the RecvChannel
-func (c *Client) Recv() <-chan interface{} {
-	return c.RecvChannel
 }
 
 // Send marshalls XMPP stanza and sends it to the server.

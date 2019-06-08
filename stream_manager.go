@@ -6,11 +6,26 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type PostConnect func(c *Client)
+// The Fluux XMPP lib can manage client or component XMPP streams.
+// The StreamManager handles the stream workflow handling the common
+// stream events and doing the right operations.
+//
+// It can handle:
+//     - Connection
+//     - Stream establishment workflow
+//     - Reconnection strategies, with exponential backoff. It also takes into account
+//       permanent errors to avoid useless reconnection loops.
+//     - Metrics processing
 
-// ClientManager supervises an XMPP client connection. Its role is to handle connection events and
+type StreamSession interface {
+	Connect() error
+	Disconnect()
+	SetHandler(handler EventHandler)
+}
+
+// StreamManager supervises an XMPP client connection. Its role is to handle connection events and
 // apply reconnection strategy.
-type ClientManager struct {
+type StreamManager struct {
 	Client      *Client
 	Session     *Session
 	PostConnect PostConnect
@@ -19,18 +34,20 @@ type ClientManager struct {
 	Metrics *Metrics
 }
 
-// NewClientManager creates a new client manager structure, intended to support
+type PostConnect func(c *Client)
+
+// NewStreamManager creates a new StreamManager structure, intended to support
 // handling XMPP client state event changes and auto-trigger reconnection
-// based on ClientManager configuration.
-func NewClientManager(client *Client, pc PostConnect) *ClientManager {
-	return &ClientManager{
+// based on StreamManager configuration.
+func NewStreamManager(client *Client, pc PostConnect) *StreamManager {
+	return &StreamManager{
 		Client:      client,
 		PostConnect: pc,
 	}
 }
 
 // Start launch the connection loop
-func (cm *ClientManager) Start() error {
+func (cm *StreamManager) Start() error {
 	cm.Client.Handler = func(e Event) {
 		switch e.State {
 		case StateConnected:
@@ -53,14 +70,14 @@ func (cm *ClientManager) Start() error {
 }
 
 // Stop cancels pending operations and terminates existing XMPP client.
-func (cm *ClientManager) Stop() {
+func (cm *StreamManager) Stop() {
 	// Remove on disconnect handler to avoid triggering reconnect
 	cm.Client.Handler = nil
 	cm.Client.Disconnect()
 }
 
 // connect manages the reconnection loop and apply the define backoff to avoid overloading the server.
-func (cm *ClientManager) connect() error {
+func (cm *StreamManager) connect() error {
 	var backoff Backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
@@ -68,7 +85,7 @@ func (cm *ClientManager) connect() error {
 		// TODO: Make it possible to define logger to log disconnect and reconnection attempts
 		cm.Metrics = initMetrics()
 
-		if cm.Client.Session, err = cm.Client.Connect(); err != nil {
+		if err = cm.Client.Connect(); err != nil {
 			var actualErr ConnError
 			if xerrors.As(err, &actualErr) {
 				if actualErr.Permanent {
@@ -87,7 +104,7 @@ func (cm *ClientManager) connect() error {
 	return nil
 }
 
-// Client Metrics
+// Stream Metrics
 // ============================================================================
 
 type Metrics struct {
