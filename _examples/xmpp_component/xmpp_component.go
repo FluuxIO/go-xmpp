@@ -8,31 +8,36 @@ import (
 )
 
 func main() {
-	component := MyComponent{Name: "Test Component", Category: "gateway", Type: "service"}
-	component.xmpp = &xmpp.Component{Host: "service.localhost", Secret: "mypass"}
-	if err := component.xmpp.Connect("localhost:8888"); err != nil {
+	opts := xmpp.ComponentOptions{
+		Domain:   "service.localhost",
+		Secret:   "mypass",
+		Address:  "localhost:8888",
+		Name:     "Test Component",
+		Category: "gateway",
+		Type:     "service",
+	}
+	component, err := xmpp.NewComponent(opts)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	// If you pass the component to a connection manager, it will handle the reconnect policy
+	// for you automatically.
+	cm := xmpp.NewStreamManager(component, nil)
+	err = cm.Start()
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	for {
-		packet, err := component.xmpp.ReadPacket()
-		if err != nil {
-			fmt.Println("read error", err)
-			return
-		}
-
+	// Iterator to receive packets coming from our XMPP connection
+	for packet := range component.Recv() {
 		switch p := packet.(type) {
 		case xmpp.IQ:
 			switch inner := p.Payload[0].(type) {
-			case *xmpp.DiscoInfo:
-				fmt.Println("Disco Info")
-				if p.Type == "get" {
-					DiscoResult(component, p.PacketAttrs, inner)
-				}
 			case *xmpp.DiscoItems:
 				fmt.Println("DiscoItems")
 				if p.Type == "get" {
-					DiscoItems(component, p.PacketAttrs, inner)
+					discoItems(component, p.PacketAttrs, inner)
 				}
 			default:
 				fmt.Println("ignoring iq packet", inner)
@@ -42,7 +47,7 @@ func main() {
 					Type:   "cancel",
 				}
 				reply := p.MakeError(xError)
-				_ = component.xmpp.Send(&reply)
+				_ = component.Send(&reply)
 			}
 
 		case xmpp.Message:
@@ -57,39 +62,7 @@ func main() {
 	}
 }
 
-type MyComponent struct {
-	Name string
-	// Typical categories and types: https://xmpp.org/registrar/disco-categories.html
-	Category string
-	Type     string
-
-	xmpp *xmpp.Component
-}
-
-func DiscoResult(c MyComponent, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
-	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
-	var identity xmpp.Identity
-	if info.Node == "" {
-		identity = xmpp.Identity{
-			Name:     c.Name,
-			Category: c.Category,
-			Type:     c.Type,
-		}
-	}
-
-	payload := xmpp.DiscoInfo{
-		Identity: identity,
-		Features: []xmpp.Feature{
-			{Var: xmpp.NSDiscoInfo},
-			{Var: xmpp.NSDiscoItems},
-		},
-	}
-	iq.AddPayload(&payload)
-
-	_ = c.xmpp.Send(iq)
-}
-
-func DiscoItems(c MyComponent, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
+func discoItems(c *xmpp.Component, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
 	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
 
 	var payload xmpp.DiscoItems
@@ -101,5 +74,5 @@ func DiscoItems(c MyComponent, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
 		}
 	}
 	iq.AddPayload(&payload)
-	_ = c.xmpp.Send(iq)
+	_ = c.Send(iq)
 }
