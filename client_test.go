@@ -31,7 +31,7 @@ func TestClient_Connect(t *testing.T) {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
-	if _, err = client.Connect(); err != nil {
+	if err = client.Connect(); err != nil {
 		t.Errorf("XMPP connection failed: %s", err)
 	}
 
@@ -52,7 +52,7 @@ func TestClient_NoInsecure(t *testing.T) {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
-	if _, err = client.Connect(); err == nil {
+	if err = client.Connect(); err == nil {
 		// When insecure is not allowed:
 		t.Errorf("should fail as insecure connection is not allowed and server does not support TLS")
 	}
