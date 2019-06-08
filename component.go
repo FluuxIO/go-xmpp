@@ -9,8 +9,6 @@ import (
 	"io"
 	"net"
 	"time"
-
-	"gosrc.io/xmpp"
 )
 
 const componentStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' xmlns='%s' xmlns:stream='%s'>"
@@ -140,11 +138,11 @@ func (c *Component) recv() (err error) {
 			close(c.RecvChannel)
 			c.streamError(p.Error.Local, p.Text)
 			return errors.New("stream error: " + p.Error.Local)
-		case xmpp.IQ:
+		case IQ:
 			switch inner := p.Payload[0].(type) {
 			// Our component module handle disco info but can let component implementation
 			// handle disco items queries
-			case *xmpp.DiscoInfo:
+			case *DiscoInfo:
 				if p.Type == "get" {
 					c.discoResult(p.PacketAttrs, inner)
 				}
@@ -223,25 +221,25 @@ func (handshakeDecoder) decode(p *xml.Decoder, se xml.StartElement) (Handshake, 
 
 // Service discovery
 
-func (c *Component) discoResult(attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
-	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
-	var identity xmpp.Identity
+func (c *Component) discoResult(attrs PacketAttrs, info *DiscoInfo) {
+	iq := NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+	var identity Identity
 	if info.Node == "" {
-		identity = xmpp.Identity{
+		identity = Identity{
 			Name:     c.Name,
 			Category: c.Category,
 			Type:     c.Type,
 		}
 	}
 
-	payload := xmpp.DiscoInfo{
+	payload := DiscoInfo{
 		Identity: identity,
-		Features: []xmpp.Feature{
-			{Var: xmpp.NSDiscoInfo},
-			{Var: xmpp.NSDiscoItems},
+		Features: []Feature{
+			{Var: NSDiscoInfo},
+			{Var: NSDiscoItems},
 		},
 	}
 	iq.AddPayload(&payload)
 
-	_ = c.xmpp.Send(iq)
+	_ = c.Send(iq)
 }
