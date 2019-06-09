@@ -171,8 +171,9 @@ func (c *Component) Send(packet Packet) error {
 // disconnect the component. It is up to the user of this method to
 // carefully craft the XML content to produce valid XMPP.
 func (c *Component) SendRaw(packet string) error {
-	fmt.Fprintf(c.conn, packet)
-	return nil
+	var err error
+	_, err = fmt.Fprintf(c.conn, packet)
+	return err
 }
 
 // handshake generates an authentication token based on StreamID and shared secret.
