@@ -1,8 +1,9 @@
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
+github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/processone/mpg123 v1.0.0/go.mod h1:X/FeL+h8vD1bYsG9tIWV3M2c4qNTZOficyvPVBP08go=
 github.com/processone/soundcloud v1.0.0/go.mod h1:kDLeWpkRtN3C8kIReQdxoiRi92P9xR6yW6qLOJnNWfY=
 golang.org/x/net v0.0.0-20190110200230-915654e7eabc/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522 h1:bhOzK9QyoD0ogCnFro1m2mz41+Ib0oOhfJnBp5MR4K4=
 golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-gosrc.io/xmpp v0.0.0-20190608160922-63a29d5c218a h1:TKUhPFlQkBLpoSTNgh4rX64T1FmObGcggIYl7d2q4vM=
-gosrc.io/xmpp v0.0.0-20190608160922-63a29d5c218a/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
+gosrc.io/xmpp v0.0.0-20190609110825-bc2fad6693da h1:LmOtwrmeUIWTG87zgPc99ouMPDowrRtgEsCKKvkmanQ=
+gosrc.io/xmpp v0.0.0-20190609110825-bc2fad6693da/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
