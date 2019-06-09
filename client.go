@@ -109,7 +109,7 @@ func NewClient(config Config) (c *Client, err error) {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
 
-	// Create a default channel that developer can override
+	// Create a default channel that developers can override
 	c.RecvChannel = make(chan interface{})
 
 	return
