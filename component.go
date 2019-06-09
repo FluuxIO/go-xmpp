@@ -58,7 +58,10 @@ type Component struct {
 }
 
 func NewComponent(opts ComponentOptions) (*Component, error) {
-	return &Component{ComponentOptions: opts}, nil
+	c := Component{ComponentOptions: opts}
+	// Create a default channel that developers can override
+	c.RecvChannel = make(chan interface{})
+	return &c, nil
 }
 
 // Connect triggers component connection to XMPP server component port.
