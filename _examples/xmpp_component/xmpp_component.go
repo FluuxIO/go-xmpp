@@ -34,6 +34,11 @@ func main() {
 		switch p := packet.(type) {
 		case xmpp.IQ:
 			switch inner := p.Payload[0].(type) {
+			case *xmpp.DiscoInfo:
+				fmt.Println("DiscoInfo")
+				if p.Type == "get" {
+					discoResult(component, p.PacketAttrs, inner)
+				}
 			case *xmpp.DiscoItems:
 				fmt.Println("DiscoItems")
 				if p.Type == "get" {
@@ -60,6 +65,29 @@ func main() {
 			fmt.Println("ignoring packet:", packet)
 		}
 	}
+}
+
+func discoResult(c *xmpp.Component, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
+	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+	var identity xmpp.Identity
+	if info.Node == "" {
+		identity = xmpp.Identity{
+			Name:     c.Name,
+			Category: c.Category,
+			Type:     c.Type,
+		}
+	}
+
+	payload := xmpp.DiscoInfo{
+		Identity: identity,
+		Features: []xmpp.Feature{
+			{Var: xmpp.NSDiscoInfo},
+			{Var: xmpp.NSDiscoItems},
+		},
+	}
+	iq.AddPayload(&payload)
+
+	_ = c.Send(iq)
 }
 
 func discoItems(c *xmpp.Component, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
