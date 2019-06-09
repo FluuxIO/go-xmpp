@@ -141,16 +141,6 @@ func (c *Component) recv() (err error) {
 			close(c.RecvChannel)
 			c.streamError(p.Error.Local, p.Text)
 			return errors.New("stream error: " + p.Error.Local)
-		case IQ:
-			switch inner := p.Payload[0].(type) {
-			// Our component module handle disco info but can let component implementation
-			// handle disco items queries
-			case *DiscoInfo:
-				if p.Type == "get" {
-					c.discoResult(p.PacketAttrs, inner)
-				}
-			}
-			break
 		}
 		c.RecvChannel <- val
 	}
@@ -247,3 +237,9 @@ func (c *Component) discoResult(attrs PacketAttrs, info *DiscoInfo) {
 
 	_ = c.Send(iq)
 }
+
+/*
+TODO: Add support for discovery management directly in component
+TODO: Support multiple identities on disco info
+TODO: Support returning features on disco info
+*/
