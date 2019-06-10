@@ -60,6 +60,30 @@ func TestClient_NoInsecure(t *testing.T) {
 	mock.Stop()
 }
 
+// Check that the client is properly tracking features, as session negotiation progresses.
+func TestClient_FeaturesTracking(t *testing.T) {
+	// Setup Mock server
+	mock := ServerMock{}
+	mock.Start(t, testXMPPAddress, handlerAbortTLS)
+
+	// Test / Check result
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
+
+	var client *Client
+	var err error
+	if client, err = NewClient(config); err != nil {
+		t.Errorf("cannot create XMPP client: %s", err)
+	}
+
+	if err = client.Connect(); err == nil {
+		// When insecure is not allowed:
+		t.Errorf("should fail as insecure connection is not allowed and server does not support TLS")
+	}
+
+	mock.Stop()
+
+}
+
 //=============================================================================
 // Basic XMPP Server Mock Handlers.
 

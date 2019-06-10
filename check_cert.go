@@ -76,8 +76,7 @@ func (c *ServerCheck) Check() error {
 		return errors.New("expected packet received while expecting features, got " + p.Name())
 	}
 
-	startTLSFeature := f.StartTLS.XMLName.Space + " " + f.StartTLS.XMLName.Local
-	if startTLSFeature == nsTLS+" starttls" {
+	if _, ok := f.DoesStartTLS(); ok {
 		fmt.Fprintf(tcpconn, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
 
 		var k tlsProceed

@@ -7,12 +7,7 @@ import (
 
 var DefaultTlsConfig tls.Config
 
-// XMPP Packet Parsing
-type tlsStartTLS struct {
-	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
-	Required bool
-}
-
+// Used during stream initiation / session establishment
 type tlsProceed struct {
 	XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls proceed"`
 }
