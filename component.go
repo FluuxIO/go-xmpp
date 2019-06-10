@@ -213,31 +213,6 @@ func (handshakeDecoder) decode(p *xml.Decoder, se xml.StartElement) (Handshake, 
 	return packet, err
 }
 
-// Service discovery
-
-func (c *Component) discoResult(attrs PacketAttrs, info *DiscoInfo) {
-	iq := NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
-	var identity Identity
-	if info.Node == "" {
-		identity = Identity{
-			Name:     c.Name,
-			Category: c.Category,
-			Type:     c.Type,
-		}
-	}
-
-	payload := DiscoInfo{
-		Identity: identity,
-		Features: []Feature{
-			{Var: NSDiscoInfo},
-			{Var: NSDiscoItems},
-		},
-	}
-	iq.AddPayload(&payload)
-
-	_ = c.Send(iq)
-}
-
 /*
 TODO: Add support for discovery management directly in component
 TODO: Support multiple identities on disco info
