@@ -317,13 +317,6 @@ type DiscoItem struct {
 	Node    string   `xml:"node,attr,omitempty"`
 }
 
-func init() {
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoInfo, "query"}, DiscoInfo{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoItems, "query"}, DiscoItems{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
-}
-
 // ============================================================================
 // Software Version (XEP-0092)
 
@@ -334,4 +327,15 @@ type Version struct {
 	Name    string   `xml:"name,omitempty"`
 	Version string   `xml:"version,omitempty"`
 	OS      string   `xml:"os,omitempty"`
+}
+
+// ============================================================================
+// Registry init
+
+func init() {
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoInfo, "query"}, DiscoInfo{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoItems, "query"}, DiscoItems{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"jabber:iq:version", "query"}, Version{})
 }

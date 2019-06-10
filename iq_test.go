@@ -1,4 +1,4 @@
-package xmpp_test // import "gosrc.io/xmpp"
+package xmpp_test // import "gosrc.io/xmpp_test"
 
 import (
 	"encoding/xml"
@@ -111,5 +111,19 @@ func TestDiscoItems(t *testing.T) {
 
 	if !xmlEqual(parsedIQ.Payload, iq.Payload) {
 		t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ.Payload, iq.Payload))
+	}
+}
+
+func TestUnmarshalPayload(t *testing.T) {
+	query := "<iq to='service.localhost' type='get' id='1'><query xmlns='jabber:iq:version'/></iq>"
+
+	parsedIQ := xmpp.IQ{}
+	err := xml.Unmarshal([]byte(query), &parsedIQ)
+	if err != nil {
+		t.Errorf("Unmarshal(%s) returned error", query)
+	}
+
+	if len(parsedIQ.Payload) != 1 {
+		t.Errorf("Incorrect payload size: %d", len(parsedIQ.Payload))
 	}
 }
