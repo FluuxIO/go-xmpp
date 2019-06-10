@@ -281,6 +281,7 @@ const (
 	NSDiscoItems = "http://jabber.org/protocol/disco#items"
 )
 
+// Disco Info
 type DiscoInfo struct {
 	IQPayload
 	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
@@ -301,8 +302,7 @@ type Feature struct {
 	Var     string   `xml:"var,attr"`
 }
 
-// ============================================================================
-
+// Disco Items
 type DiscoItems struct {
 	IQPayload
 	XMLName xml.Name    `xml:"http://jabber.org/protocol/disco#items query"`
@@ -322,4 +322,16 @@ func init() {
 	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoItems, "query"}, DiscoItems{})
 	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
 	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
+}
+
+// ============================================================================
+// Software Version (XEP-0092)
+
+// Version
+type Version struct {
+	IQPayload
+	XMLName xml.Name `xml:"jabber:iq:version query"`
+	Name    string   `xml:"name,omitempty"`
+	Version string   `xml:"version,omitempty"`
+	OS      string   `xml:"os,omitempty"`
 }
