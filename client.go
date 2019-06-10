@@ -72,7 +72,7 @@ type Client struct {
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
 	// Packet channel
-	RecvChannel chan interface{}
+	RecvChannel chan Packet
 	// Track and broadcast connection state
 	EventManager
 }
@@ -110,7 +110,7 @@ func NewClient(config Config) (c *Client, err error) {
 	}
 
 	// Create a default channel that developers can override
-	c.RecvChannel = make(chan interface{})
+	c.RecvChannel = make(chan Packet)
 
 	return
 }
@@ -174,7 +174,7 @@ func (c *Client) SetHandler(handler EventHandler) {
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
 // TODO: Deprecate this function in favor of reading directly from the RecvChannel ?
-func (c *Client) Recv() <-chan interface{} {
+func (c *Client) Recv() <-chan Packet {
 	return c.RecvChannel
 }
 

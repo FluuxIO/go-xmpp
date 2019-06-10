@@ -38,7 +38,7 @@ type ComponentOptions struct {
 	// Communication with developer client / StreamManager
 
 	// Packet channel
-	RecvChannel chan interface{}
+	RecvChannel chan Packet
 	// Track and broadcast connection state
 	EventManager
 }
@@ -60,7 +60,7 @@ type Component struct {
 func NewComponent(opts ComponentOptions) (*Component, error) {
 	c := Component{ComponentOptions: opts}
 	// Create a default channel that developers can override
-	c.RecvChannel = make(chan interface{})
+	c.RecvChannel = make(chan Packet)
 	return &c, nil
 }
 
@@ -122,7 +122,7 @@ func (c *Component) SetHandler(handler EventHandler) {
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
 // TODO: Deprecate this function in favor of reading directly from the RecvChannel ?
-func (c *Component) Recv() <-chan interface{} {
+func (c *Component) Recv() <-chan Packet {
 	return c.RecvChannel
 }
 
