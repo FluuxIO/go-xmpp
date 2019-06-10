@@ -13,11 +13,12 @@ type StreamFeatures struct {
 	// Server capabilities hash
 	Caps Caps
 	// Stream features
-	StartTLS   tlsStartTLS
-	Mechanisms saslMechanisms
-	Bind       BindBind
-	Session    sessionSession
-	Any        []xml.Name `xml:",any"`
+	StartTLS         tlsStartTLS
+	Mechanisms       saslMechanisms
+	Bind             BindBind
+	Session          sessionSession
+	StreamManagement streamManagement
+	Any              []xml.Name `xml:",any"`
 }
 
 func (StreamFeatures) Name() string {
@@ -102,6 +103,19 @@ func (sf *StreamFeatures) DoesStartTLS() (feature tlsStartTLS, isSupported bool)
 type saslMechanisms struct {
 	XMLName   xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanisms"`
 	Mechanism []string `xml:"mechanism"`
+}
+
+// StreamManagement
+// Reference: XEP-0198 - https://xmpp.org/extensions/xep-0198.html#feature
+type streamManagement struct {
+	XMLName xml.Name `xml:"urn:xmpp:sm:3 sm"`
+}
+
+func (sf *StreamFeatures) DoesStreamManagement() (isSupported bool) {
+	if sf.StreamManagement.XMLName.Space+" "+sf.StreamManagement.XMLName.Local == "urn:xmpp:sm:3 sm" {
+		return true
+	}
+	return false
 }
 
 // ============================================================================

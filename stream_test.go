@@ -45,3 +45,20 @@ func TestStartTLS(t *testing.T) {
 		t.Error("StartTLS feature should be required")
 	}
 }
+
+// TODO: Ability to support / detect previous version of stream management feature
+func TestStreamManagement(t *testing.T) {
+	streamFeatures := `<stream:features xmlns:stream='http://etherx.jabber.org/streams'>
+    <sm xmlns='urn:xmpp:sm:3'/>
+</stream:features>`
+
+	var parsedSF xmpp.StreamFeatures
+	if err := xml.Unmarshal([]byte(streamFeatures), &parsedSF); err != nil {
+		t.Errorf("Unmarshal(%s) returned error: %v", streamFeatures, err)
+	}
+
+	ok := parsedSF.DoesStreamManagement()
+	if !ok {
+		t.Error("Stream Management feature should have been detected")
+	}
+}
