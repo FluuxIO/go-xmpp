@@ -44,6 +44,11 @@ func main() {
 				if p.Type == "get" {
 					discoItems(component, p.PacketAttrs, inner)
 				}
+			case *xmpp.Version:
+				fmt.Println("Version")
+				if p.Type == "get" {
+					version(component, p.PacketAttrs)
+				}
 			default:
 				fmt.Println("ignoring iq packet", inner)
 				xError := xmpp.Err{
@@ -83,6 +88,7 @@ func discoResult(c *xmpp.Component, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo
 		Features: []xmpp.Feature{
 			{Var: xmpp.NSDiscoInfo},
 			{Var: xmpp.NSDiscoItems},
+			{Var: "jabber:iq:version"},
 		},
 	}
 	iq.AddPayload(&payload)
@@ -101,6 +107,16 @@ func discoItems(c *xmpp.Component, attrs xmpp.PacketAttrs, items *xmpp.DiscoItem
 			},
 		}
 	}
+	iq.AddPayload(&payload)
+	_ = c.Send(iq)
+}
+
+func version(c *xmpp.Component, attrs xmpp.PacketAttrs) {
+	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+
+	var payload xmpp.Version
+	payload.Name = "Fluux XMPP Component"
+	payload.Version = "0.0.1"
 	iq.AddPayload(&payload)
 	_ = c.Send(iq)
 }
