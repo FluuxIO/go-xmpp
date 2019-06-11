@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -77,6 +78,7 @@ type Client struct {
 
 	// Signaling channels, used to clean go routines
 	keepaliveQuit chan struct{}
+	muLock        sync.RWMutex
 }
 
 /*
@@ -160,7 +162,9 @@ func (c *Client) Connect() error {
 	// Start the receiver go routine
 	go c.recv()
 	// Start the keepalive go routine
+	c.muLock.Lock()
 	c.keepaliveQuit = make(chan struct{})
+	c.muLock.Unlock()
 	go c.keepalive()
 
 	return err
@@ -215,7 +219,10 @@ func (c *Client) recv() (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
+			c.muLock.RLock()
 			close(c.keepaliveQuit)
+			c.muLock.RUnlock()
+
 			c.updateState(StateDisconnected)
 			return err
 		}
