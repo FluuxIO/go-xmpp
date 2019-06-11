@@ -5,9 +5,5 @@ github.com/processone/soundcloud v1.0.0/go.mod h1:kDLeWpkRtN3C8kIReQdxoiRi92P9xR
 golang.org/x/net v0.0.0-20190110200230-915654e7eabc/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522 h1:bhOzK9QyoD0ogCnFro1m2mz41+Ib0oOhfJnBp5MR4K4=
 golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-gosrc.io/xmpp v0.0.0-20190609110825-bc2fad6693da h1:LmOtwrmeUIWTG87zgPc99ouMPDowrRtgEsCKKvkmanQ=
-gosrc.io/xmpp v0.0.0-20190609110825-bc2fad6693da/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
-gosrc.io/xmpp v0.0.0-20190610095607-45cb2e6f343a h1:CUG1rGnMuMYUX2y9N/uPaDe/CS27GdNnxhnSmBAjCic=
-gosrc.io/xmpp v0.0.0-20190610095607-45cb2e6f343a/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
-gosrc.io/xmpp v0.0.0-20190610103001-322a6594e7f9 h1:CJpDd5q0iH08ntle+uO5XNx+EGUycafYYR175pyPqOQ=
-gosrc.io/xmpp v0.0.0-20190610103001-322a6594e7f9/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
+gosrc.io/xmpp v0.0.0-20190611132908-4d4710463dbc h1:+XtYQ6hbNiPehZdPz3SU049S1wFFa4KKZxDtGITvyW8=
+gosrc.io/xmpp v0.0.0-20190611132908-4d4710463dbc/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
