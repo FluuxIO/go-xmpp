@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -75,10 +74,6 @@ type Client struct {
 	RecvChannel chan Packet
 	// Track and broadcast connection state
 	EventManager
-
-	// Signaling channels, used to clean go routines
-	keepaliveQuit chan struct{}
-	muLock        sync.RWMutex
 }
 
 /*
@@ -159,19 +154,16 @@ func (c *Client) Connect() error {
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
 	fmt.Fprintf(c.Session.socketProxy, "<presence/>")
 
-	// Start the receiver go routine
-	go c.recv()
 	// Start the keepalive go routine
-	c.muLock.Lock()
-	c.keepaliveQuit = make(chan struct{})
-	c.muLock.Unlock()
-	go c.keepalive()
+	keepaliveQuit := make(chan struct{})
+	go keepalive(c.conn, keepaliveQuit)
+	// Start the receiver go routine
+	go c.recv(keepaliveQuit)
 
 	return err
 }
 
 func (c *Client) Disconnect() {
-	close(c.keepaliveQuit)
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	_ = c.conn.Close()
@@ -215,14 +207,11 @@ func (c *Client) SendRaw(packet string) error {
 // Go routines
 
 // Loop: Receive data from server
-func (c *Client) recv() (err error) {
+func (c *Client) recv(keepaliveQuit chan<- struct{}) (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
-			c.muLock.RLock()
-			close(c.keepaliveQuit)
-			c.muLock.RUnlock()
-
+			close(keepaliveQuit)
 			c.updateState(StateDisconnected)
 			return err
 		}
@@ -243,21 +232,19 @@ func (c *Client) recv() (err error) {
 // Loop: send whitespace keepalive to server
 // This is use to keep the connection open, but also to detect connection loss
 // and trigger proper client connection shutdown.
-func (c *Client) keepalive() {
+func keepalive(conn net.Conn, quit <-chan struct{}) {
 	// TODO: Make keepalive interval configurable
 	ticker := time.NewTicker(30 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			if n, err := fmt.Fprintf(c.conn, "\n"); err != nil || n != 1 {
-				fmt.Println("cannot send keepalive")
+			if n, err := fmt.Fprintf(conn, "\n"); err != nil || n != 1 {
 				// When keep alive fails, we force close the connection. In all cases, the recv will also fail.
 				ticker.Stop()
-				_ = c.conn.Close()
+				_ = conn.Close()
 				return
 			}
-		case <-c.keepaliveQuit:
-			fmt.Println("keepalive quit")
+		case <-quit:
 			ticker.Stop()
 			return
 		}
