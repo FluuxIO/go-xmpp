@@ -138,7 +138,6 @@ func checkAddress(addr string) (string, error) {
 // Connect triggers actual TCP connection, based on previously defined parameters.
 func (c *Client) Connect() error {
 	var err error
-	fmt.Println("MREMOND: connect")
 
 	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
 	if err != nil {
@@ -216,6 +215,7 @@ func (c *Client) recv() (err error) {
 	for {
 		val, err := next(c.Session.decoder)
 		if err != nil {
+			close(c.keepaliveQuit)
 			c.updateState(StateDisconnected)
 			return err
 		}
@@ -242,12 +242,15 @@ func (c *Client) keepalive() {
 	for {
 		select {
 		case <-ticker.C:
-			if err := c.SendRaw("\n"); err != nil {
+			if n, err := fmt.Fprintf(c.conn, "\n"); err != nil || n != 1 {
+				fmt.Println("cannot send keepalive")
 				// When keep alive fails, we force close the connection. In all cases, the recv will also fail.
+				ticker.Stop()
 				_ = c.conn.Close()
 				return
 			}
 		case <-c.keepaliveQuit:
+			fmt.Println("keepalive quit")
 			ticker.Stop()
 			return
 		}
