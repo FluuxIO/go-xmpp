@@ -18,7 +18,11 @@ type StreamFeatures struct {
 	Bind             BindBind
 	Session          sessionSession
 	StreamManagement streamManagement
-	Any              []xml.Name `xml:",any"`
+	// ProcessOne Stream Features
+	P1Push   p1Push
+	P1Rebind p1Rebind
+	p1Ack    p1Ack
+	Any      []xml.Name `xml:",any"`
 }
 
 func (StreamFeatures) Name() string {
@@ -116,6 +120,24 @@ func (sf *StreamFeatures) DoesStreamManagement() (isSupported bool) {
 		return true
 	}
 	return false
+}
+
+// P1 extensions
+// Reference: https://docs.ejabberd.im/developer/mobile/core-features/
+
+// p1:push support
+type p1Push struct {
+	XMLName xml.Name `xml:"p1:push push"`
+}
+
+// p1:rebind suppor
+type p1Rebind struct {
+	XMLName xml.Name `xml:"p1:rebind rebind"`
+}
+
+// p1:ack support
+type p1Ack struct {
+	XMLName xml.Name `xml:"p1:ack ack"`
 }
 
 // ============================================================================
