@@ -1,7 +1,6 @@
 package xmpp // import "gosrc.io/xmpp"
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -75,6 +74,9 @@ type Client struct {
 	RecvChannel chan Packet
 	// Track and broadcast connection state
 	EventManager
+
+	// Signaling channels, used to clean go routines
+	keepaliveQuit chan struct{}
 }
 
 /*
@@ -136,6 +138,7 @@ func checkAddress(addr string) (string, error) {
 // Connect triggers actual TCP connection, based on previously defined parameters.
 func (c *Client) Connect() error {
 	var err error
+	fmt.Println("MREMOND: connect")
 
 	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
 	if err != nil {
@@ -157,11 +160,15 @@ func (c *Client) Connect() error {
 
 	// Start the receiver go routine
 	go c.recv()
+	// Start the keepalive go routine
+	c.keepaliveQuit = make(chan struct{})
+	go c.keepalive()
 
 	return err
 }
 
 func (c *Client) Disconnect() {
+	close(c.keepaliveQuit)
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	_ = c.conn.Close()
@@ -178,28 +185,7 @@ func (c *Client) Recv() <-chan Packet {
 	return c.RecvChannel
 }
 
-func (c *Client) recv() (err error) {
-	for {
-		val, err := next(c.Session.decoder)
-		if err != nil {
-			c.updateState(StateDisconnected)
-			return err
-		}
-
-		// Handle stream errors
-		switch packet := val.(type) {
-		case StreamError:
-			c.RecvChannel <- val
-			close(c.RecvChannel)
-			c.streamError(packet.Error.Local, packet.Text)
-			return errors.New("stream error: " + packet.Error.Local)
-		}
-
-		c.RecvChannel <- val
-	}
-}
-
-// Send marshalls XMPP stanza and sends it to the server.
+// Send marshals XMPP stanza and sends it to the server.
 func (c *Client) Send(packet Packet) error {
 	data, err := xml.Marshal(packet)
 	if err != nil {
@@ -222,8 +208,48 @@ func (c *Client) SendRaw(packet string) error {
 	return err
 }
 
-func xmlEscape(s string) string {
-	var b bytes.Buffer
-	xml.Escape(&b, []byte(s))
-	return b.String()
+// ============================================================================
+// Go routines
+
+// Loop: Receive data from server
+func (c *Client) recv() (err error) {
+	for {
+		val, err := next(c.Session.decoder)
+		if err != nil {
+			c.updateState(StateDisconnected)
+			return err
+		}
+
+		// Handle stream errors
+		switch packet := val.(type) {
+		case StreamError:
+			c.RecvChannel <- val
+			close(c.RecvChannel)
+			c.streamError(packet.Error.Local, packet.Text)
+			return errors.New("stream error: " + packet.Error.Local)
+		}
+
+		c.RecvChannel <- val
+	}
+}
+
+// Loop: send whitespace keepalive to server
+// This is use to keep the connection open, but also to detect connection loss
+// and trigger proper client connection shutdown.
+func (c *Client) keepalive() {
+	// TODO: Make keepalive interval configurable
+	ticker := time.NewTicker(30 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			if err := c.SendRaw("\n"); err != nil {
+				// When keep alive fails, we force close the connection. In all cases, the recv will also fail.
+				_ = c.conn.Close()
+				return
+			}
+		case <-c.keepaliveQuit:
+			ticker.Stop()
+			return
+		}
+	}
 }
