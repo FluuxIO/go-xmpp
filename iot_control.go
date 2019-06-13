@@ -5,9 +5,12 @@ import (
 )
 
 type ControlSet struct {
-	IQPayload
 	XMLName xml.Name       `xml:"urn:xmpp:iot:control set"`
 	Fields  []ControlField `xml:",any"`
+}
+
+func (c *ControlSet) Namespace() string {
+	return c.XMLName.Space
 }
 
 type ControlGetForm struct {
@@ -23,4 +26,8 @@ type ControlField struct {
 type ControlSetResponse struct {
 	IQPayload
 	XMLName xml.Name `xml:"urn:xmpp:iot:control setResponse"`
+}
+
+func (c *ControlSetResponse) Namespace() string {
+	return c.XMLName.Space
 }

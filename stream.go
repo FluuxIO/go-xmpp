@@ -6,7 +6,9 @@ import (
 
 // ============================================================================
 // StreamFeatures Packet
-// Reference: https://xmpp.org/registrar/stream-features.html
+// Reference: The active stream features are published on
+//            https://xmpp.org/registrar/stream-features.html
+// Note: That page misses draft and experimental XEP (i.e CSI, etc)
 
 type StreamFeatures struct {
 	XMLName xml.Name `xml:"http://etherx.jabber.org/streams features"`
