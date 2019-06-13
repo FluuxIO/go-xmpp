@@ -2,6 +2,7 @@ package xmpp // import "gosrc.io/xmpp"
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -32,6 +33,8 @@ type StreamManager struct {
 
 	// Store low level metrics
 	Metrics *Metrics
+
+	wg sync.WaitGroup
 }
 
 type PostConnect func(c StreamClient)
@@ -47,8 +50,10 @@ func NewStreamManager(client StreamClient, pc PostConnect) *StreamManager {
 	}
 }
 
-// Start launch the connection loop
-func (sm *StreamManager) Start() error {
+// Run launchs the connection of the underlying client or component
+// and wait until Disconnect is called, or for the manager to terminate due
+// to an unrecoverable error.
+func (sm *StreamManager) Run() error {
 	if sm.client == nil {
 		return errors.New("missing stream client")
 	}
@@ -72,7 +77,13 @@ func (sm *StreamManager) Start() error {
 	}
 	sm.client.SetHandler(handler)
 
-	return sm.connect()
+	sm.wg.Add(1)
+	if err := sm.connect(); err != nil {
+		sm.wg.Done()
+		return err
+	}
+	sm.wg.Wait()
+	return nil
 }
 
 // Stop cancels pending operations and terminates existing XMPP client.
@@ -80,6 +91,7 @@ func (sm *StreamManager) Stop() {
 	// Remove on disconnect handler to avoid triggering reconnect
 	sm.client.SetHandler(nil)
 	sm.client.Disconnect()
+	sm.wg.Done()
 }
 
 // connect manages the reconnection loop and apply the define backoff to avoid overloading the server.

@@ -16,12 +16,15 @@ TODO support ability to put Raw payload inside IQ
 // presence or iq stanza.
 // It is intended to be added in the payload of the erroneous stanza.
 type Err struct {
-	IQPayload
 	XMLName xml.Name `xml:"error"`
 	Code    int      `xml:"code,attr,omitempty"`
 	Type    string   `xml:"type,attr,omitempty"`
 	Reason  string
 	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text,omitempty"`
+}
+
+func (x *Err) Namespace() string {
+	return x.XMLName.Space
 }
 
 // UnmarshalXML implements custom parsing for IQs
@@ -120,6 +123,10 @@ func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 type IQ struct { // Info/Query
 	XMLName xml.Name `xml:"iq"`
 	PacketAttrs
+	// FIXME: We can only have one payload:
+	//   "An IQ stanza of type "get" or "set" MUST contain exactly one
+	//    child element, which specifies the semantics of the particular
+	//    request."
 	Payload []IQPayload `xml:",omitempty"`
 	RawXML  string      `xml:",innerxml"`
 	Error   Err         `xml:"error,omitempty"`
@@ -229,16 +236,21 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // ============================================================================
 // Generic IQ Payload
 
-type IQPayload interface{}
+type IQPayload interface {
+	Namespace() string
+}
 
 // Node is a generic structure to represent XML data. It is used to parse
 // unreferenced or custom stanza payload.
 type Node struct {
-	IQPayload
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
 	Content string     `xml:",innerxml"`
 	Nodes   []Node     `xml:",any"`
+}
+
+func (n *Node) Namespace() string {
+	return n.XMLName.Space
 }
 
 // Attr represents generic XML attributes, as used on the generic XML Node
@@ -283,11 +295,14 @@ const (
 
 // Disco Info
 type DiscoInfo struct {
-	IQPayload
 	XMLName  xml.Name  `xml:"http://jabber.org/protocol/disco#info query"`
 	Node     string    `xml:"node,attr,omitempty"`
 	Identity Identity  `xml:"identity"`
 	Features []Feature `xml:"feature"`
+}
+
+func (d *DiscoInfo) Namespace() string {
+	return d.XMLName.Space
 }
 
 type Identity struct {
@@ -304,10 +319,13 @@ type Feature struct {
 
 // Disco Items
 type DiscoItems struct {
-	IQPayload
 	XMLName xml.Name    `xml:"http://jabber.org/protocol/disco#items query"`
 	Node    string      `xml:"node,attr,omitempty"`
 	Items   []DiscoItem `xml:"item"`
+}
+
+func (d *DiscoItems) Namespace() string {
+	return d.XMLName.Space
 }
 
 type DiscoItem struct {
@@ -322,11 +340,14 @@ type DiscoItem struct {
 
 // Version
 type Version struct {
-	IQPayload
 	XMLName xml.Name `xml:"jabber:iq:version query"`
 	Name    string   `xml:"name,omitempty"`
 	Version string   `xml:"version,omitempty"`
 	OS      string   `xml:"os,omitempty"`
+}
+
+func (v *Version) Namespace() string {
+	return v.XMLName.Space
 }
 
 // ============================================================================

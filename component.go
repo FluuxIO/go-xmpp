@@ -48,6 +48,7 @@ type ComponentOptions struct {
 // in XEP-0114, XEP-0355 and XEP-0356.
 type Component struct {
 	ComponentOptions
+	router *Router
 
 	// TCP level connection
 	conn net.Conn
@@ -57,8 +58,8 @@ type Component struct {
 	decoder     *xml.Decoder
 }
 
-func NewComponent(opts ComponentOptions) (*Component, error) {
-	c := Component{ComponentOptions: opts}
+func NewComponent(opts ComponentOptions, r *Router) (*Component, error) {
+	c := Component{ComponentOptions: opts, router: r}
 	// Create a default channel that developers can override
 	c.RecvChannel = make(chan Packet)
 	return &c, nil
@@ -122,10 +123,13 @@ func (c *Component) SetHandler(handler EventHandler) {
 // Recv abstracts receiving preparsed XMPP packets from a channel.
 // Channel allow client to receive / dispatch packets in for range loop.
 // TODO: Deprecate this function in favor of reading directly from the RecvChannel ?
+/*
 func (c *Component) Recv() <-chan Packet {
 	return c.RecvChannel
 }
+*/
 
+// Receiver Go routine receiver
 func (c *Component) recv() (err error) {
 	for {
 		val, err := next(c.decoder)
@@ -137,12 +141,11 @@ func (c *Component) recv() (err error) {
 		// Handle stream errors
 		switch p := val.(type) {
 		case StreamError:
-			c.RecvChannel <- val
-			close(c.RecvChannel)
+			c.router.Route(c.conn, val)
 			c.streamError(p.Error.Local, p.Text)
 			return errors.New("stream error: " + p.Error.Local)
 		}
-		c.RecvChannel <- val
+		c.router.Route(c.conn, val)
 	}
 }
 
