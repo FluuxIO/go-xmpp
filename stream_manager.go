@@ -19,10 +19,18 @@ import (
 //       permanent errors to avoid useless reconnection loops.
 //     - Metrics processing
 
+// StreamClient is an interface used by StreamManager to control Client lifecycle,
+// set callback and trigger reconnection.
 type StreamClient interface {
 	Connect() error
 	Disconnect()
 	SetHandler(handler EventHandler)
+}
+
+// Sender is an interface provided by Stream clients to allow sending XMPP data.
+type Sender interface {
+	Send(packet Packet) error
+	SendRaw(packet string) error
 }
 
 // StreamManager supervises an XMPP client connection. Its role is to handle connection events and
