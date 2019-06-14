@@ -7,3 +7,4 @@ golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522 h1:bhOzK9QyoD0ogCnFro1m2
 golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gosrc.io/xmpp v0.0.0-20190611132908-4d4710463dbc h1:+XtYQ6hbNiPehZdPz3SU049S1wFFa4KKZxDtGITvyW8=
 gosrc.io/xmpp v0.0.0-20190611132908-4d4710463dbc/go.mod h1:6NJG4vRCxQJMGLxIdroPLPd++FPLOmDqJdJEt2mu4kQ=
+gosrc.io/xmpp v0.0.0-20190611133128-eb54ec9fb1e9 h1:X814eTuDYbQiQYpR48iN9LPspbTZRQ6TGqAcrDmepa4=
