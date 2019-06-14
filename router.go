@@ -1,12 +1,11 @@
 package xmpp
 
 import (
-	"io"
 	"strings"
 )
 
 /*
-The XMPP router helps client and component developer select which XMPP they would like to process,
+The XMPP router helps client and component developers select which XMPP they would like to process,
 and associate processing code depending on the router configuration.
 
 TODO: Automatically reply to IQ that do not match any route, to comply to XMPP standard.
@@ -22,10 +21,10 @@ func NewRouter() *Router {
 	return &Router{}
 }
 
-func (r *Router) Route(w io.Writer, p Packet) {
+func (r *Router) Route(s Sender, p Packet) {
 	var match RouteMatch
 	if r.Match(p, &match) {
-		match.Handler.HandlePacket(w, p)
+		match.Handler.HandlePacket(s, p)
 	}
 }
 
@@ -53,14 +52,14 @@ func (r *Router) Handle(name string, handler Handler) *Route {
 
 // HandleFunc registers a new route with a matcher for for a given packet name (iq, message, presence)
 // See Route.Path() and Route.HandlerFunc().
-func (r *Router) HandleFunc(name string, f func(io.Writer, Packet)) *Route {
+func (r *Router) HandleFunc(name string, f func(s Sender, p Packet)) *Route {
 	return r.NewRoute().Packet(name).HandlerFunc(f)
 }
 
 // ============================================================================
 // Route
 type Handler interface {
-	HandlePacket(w io.Writer, p Packet)
+	HandlePacket(s Sender, p Packet)
 }
 
 type Route struct {
@@ -78,11 +77,11 @@ func (r *Route) Handler(handler Handler) *Route {
 // ordinary functions as XMPP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
 // Handler that calls f.
-type HandlerFunc func(io.Writer, Packet)
+type HandlerFunc func(s Sender, p Packet)
 
-// HandlePacket calls f(w, p)
-func (f HandlerFunc) HandlePacket(w io.Writer, p Packet) {
-	f(w, p)
+// HandlePacket calls f(s, p)
+func (f HandlerFunc) HandlePacket(s Sender, p Packet) {
+	f(s, p)
 }
 
 // HandlerFunc sets a handler function for the route
