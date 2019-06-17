@@ -32,3 +32,5 @@ coverage.txt
 # Do not commit codeship key
 codeship.aes
 codeship.env
+
+priv/
