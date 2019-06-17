@@ -216,6 +216,40 @@ func (handshakeDecoder) decode(p *xml.Decoder, se xml.StartElement) (Handshake, 
 	return packet, err
 }
 
+// ============================================================================
+// Component delegation
+// XEP-0355
+
+// Delegation can be used both on message (for delegated) and IQ (for Forwarded),
+// depending on the context.
+type Delegation struct {
+	MsgExtension
+	XMLName   xml.Name  `xml:"urn:xmpp:delegation:1 delegation"`
+	Forwarded Forwarded // This is used in iq to wrap delegated iqs
+	Delegated Delegated // This is used in a message to confirm delegated namespace
+}
+
+func (d *Delegation) Namespace() string {
+	return d.XMLName.Space
+}
+
+type Forwarded struct {
+	XMLName  xml.Name `xml:"urn:xmpp:forward:0 forwarded"`
+	IQ       IQ
+	Message  Message
+	Presence Presence
+}
+
+type Delegated struct {
+	XMLName   xml.Name `xml:"delegated"`
+	Namespace string   `xml:"namespace,attr,omitempty"`
+}
+
+func init() {
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:delegation:1", "delegation"}, Delegation{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:delegation:1", "delegation"}, Delegation{})
+}
+
 /*
 TODO: Add support for discovery management directly in component
 TODO: Support multiple identities on disco info

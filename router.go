@@ -8,6 +8,11 @@ import (
 The XMPP router helps client and component developers select which XMPP they would like to process,
 and associate processing code depending on the router configuration.
 
+Here are important rules to keep in mind while setting your routes and matchers:
+- Routes are evaluated in the order they are set.
+- When a route matches, it is executed and all others routes are ignored. For each packet, only a single
+  route is executed.
+
 TODO: Automatically reply to IQ that do not match any route, to comply to XMPP standard.
 */
 
