@@ -37,8 +37,6 @@ type ComponentOptions struct {
 	// =================================
 	// Communication with developer client / StreamManager
 
-	// Packet channel
-	RecvChannel chan Packet
 	// Track and broadcast connection state
 	EventManager
 }
@@ -60,8 +58,6 @@ type Component struct {
 
 func NewComponent(opts ComponentOptions, r *Router) (*Component, error) {
 	c := Component{ComponentOptions: opts, router: r}
-	// Create a default channel that developers can override
-	c.RecvChannel = make(chan Packet)
 	return &c, nil
 }
 
