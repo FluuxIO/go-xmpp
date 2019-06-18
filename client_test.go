@@ -27,7 +27,8 @@ func TestClient_Connect(t *testing.T) {
 
 	var client *Client
 	var err error
-	if client, err = NewClient(config); err != nil {
+	router := NewRouter()
+	if client, err = NewClient(config, router); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
@@ -48,7 +49,8 @@ func TestClient_NoInsecure(t *testing.T) {
 
 	var client *Client
 	var err error
-	if client, err = NewClient(config); err != nil {
+	router := NewRouter()
+	if client, err = NewClient(config, router); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
@@ -71,7 +73,8 @@ func TestClient_FeaturesTracking(t *testing.T) {
 
 	var client *Client
 	var err error
-	if client, err = NewClient(config); err != nil {
+	router := NewRouter()
+	if client, err = NewClient(config, router); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
