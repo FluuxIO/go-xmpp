@@ -3,6 +3,8 @@
 This component will connect to ejabberd and act as a subdomain "service" of your primary XMPP domain
 (in that case localhost).
 
+This component does nothing expect connect and show up in service discovery.
+
 To be able to connect this component, you need to add a listener to your XMPP server.
 
 Here is an example ejabberd configuration for that component listener:
