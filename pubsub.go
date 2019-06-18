@@ -6,8 +6,8 @@ import (
 
 type PubSub struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/pubsub pubsub"`
-	Publish Publish
-	Retract Retract
+	Publish *Publish
+	Retract *Retract
 	// TODO <configure/>
 }
 
@@ -24,7 +24,8 @@ type Publish struct {
 type Item struct {
 	XMLName xml.Name `xml:"item"`
 	Id      string   `xml:"id,attr,omitempty"`
-	Tune    Tune
+	Tune    *Tune
+	Mood    *Mood
 }
 
 type Retract struct {
