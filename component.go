@@ -120,15 +120,6 @@ func (c *Component) SetHandler(handler EventHandler) {
 	c.Handler = handler
 }
 
-// Recv abstracts receiving preparsed XMPP packets from a channel.
-// Channel allow client to receive / dispatch packets in for range loop.
-// TODO: Deprecate this function in favor of reading directly from the RecvChannel ?
-/*
-func (c *Component) Recv() <-chan Packet {
-	return c.RecvChannel
-}
-*/
-
 // Receiver Go routine receiver
 func (c *Component) recv() (err error) {
 	for {
