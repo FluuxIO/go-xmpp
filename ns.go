@@ -1,4 +1,4 @@
-package xmpp // import "gosrc.io/xmpp"
+package xmpp
 
 const (
 	NSStream    = "http://etherx.jabber.org/streams"

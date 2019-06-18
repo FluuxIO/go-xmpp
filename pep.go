@@ -1,6 +1,4 @@
-package xmpp // import "gosrc.io/xmpp"
-
-// TODO: Move to a pubsub file
+package xmpp
 
 import (
 	"encoding/xml"

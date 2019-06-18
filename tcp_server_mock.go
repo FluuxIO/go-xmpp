@@ -1,4 +1,4 @@
-package xmpp // import "gosrc.io/xmpp"
+package xmpp
 
 import (
 	"net"

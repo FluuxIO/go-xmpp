@@ -1,4 +1,4 @@
-package main // import "gosrc.io/xmpp"
+package main
 
 import (
 	"log"

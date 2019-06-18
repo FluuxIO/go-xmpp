@@ -20,7 +20,7 @@ TODO: Implement Backoff Ticker channel
 TODO: Implement throttler interface. Throttler could be used to implement various reconnect strategies.
 */
 
-package xmpp // import "gosrc.io/xmpp"
+package xmpp
 
 import (
 	"math"
