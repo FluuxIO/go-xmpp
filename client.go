@@ -70,8 +70,8 @@ type Client struct {
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
-	// Packet channel
-	RecvChannel chan Packet
+	// Router is used to dispatch packets
+	router *Router
 	// Track and broadcast connection state
 	EventManager
 }
@@ -84,7 +84,7 @@ Setting up the client / Checking the parameters
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
 // TODO: better config checks
-func NewClient(config Config) (c *Client, err error) {
+func NewClient(config Config, r *Router) (c *Client, err error) {
 	// TODO: If option address is nil, use the Jid domain to compose the address
 	if config.Address, err = checkAddress(config.Address); err != nil {
 		return nil, NewConnError(err, true)
@@ -103,13 +103,11 @@ func NewClient(config Config) (c *Client, err error) {
 
 	c = new(Client)
 	c.config = config
+	c.router = r
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
-
-	// Create a default channel that developers can override
-	c.RecvChannel = make(chan Packet)
 
 	return
 }
@@ -173,13 +171,6 @@ func (c *Client) SetHandler(handler EventHandler) {
 	c.Handler = handler
 }
 
-// Recv abstracts receiving preparsed XMPP packets from a channel.
-// Channel allow client to receive / dispatch packets in for range loop.
-// TODO: Deprecate this function in favor of reading directly from the RecvChannel ?
-func (c *Client) Recv() <-chan Packet {
-	return c.RecvChannel
-}
-
 // Send marshals XMPP stanza and sends it to the server.
 func (c *Client) Send(packet Packet) error {
 	data, err := xml.Marshal(packet)
@@ -219,13 +210,13 @@ func (c *Client) recv(keepaliveQuit chan<- struct{}) (err error) {
 		// Handle stream errors
 		switch packet := val.(type) {
 		case StreamError:
-			c.RecvChannel <- val
-			close(c.RecvChannel)
+			c.router.Route(c, val)
+			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
 			return errors.New("stream error: " + packet.Error.Local)
 		}
 
-		c.RecvChannel <- val
+		c.router.Route(c, val)
 	}
 }
 
