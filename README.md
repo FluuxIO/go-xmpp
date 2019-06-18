@@ -13,9 +13,12 @@ The goal is to make simple to write simple XMPP clients and components:
 
 The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
 
-## Example
+## Examples
 
-Here is a demo "echo" client:
+We have several [examples](https://github.com/FluuxIO/go-xmpp/tree/master/_examples) to help you get started using
+Fluux XMPP library.
+
+Here is the demo "echo" client:
 
 ```go
 package main
