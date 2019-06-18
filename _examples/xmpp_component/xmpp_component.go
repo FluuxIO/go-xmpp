@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"log"
 
@@ -9,114 +10,123 @@ import (
 
 func main() {
 	opts := xmpp.ComponentOptions{
-		Domain:   "service.localhost",
+		Domain:   "service2.localhost",
 		Secret:   "mypass",
 		Address:  "localhost:8888",
 		Name:     "Test Component",
 		Category: "gateway",
 		Type:     "service",
 	}
-	component, err := xmpp.NewComponent(opts)
+
+	router := xmpp.NewRouter()
+	router.HandleFunc("message", HandleMessage)
+	router.NewRoute().
+		IQNamespaces(xmpp.NSDiscoInfo).
+		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+			DiscoInfo(s, p, opts)
+		})
+	router.NewRoute().
+		IQNamespaces(xmpp.NSDiscoItems).
+		HandlerFunc(DiscoItems)
+	router.NewRoute().
+		IQNamespaces("jabber:iq:version").
+		HandlerFunc(HandleVersion)
+
+	component, err := xmpp.NewComponent(opts, router)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
 
-	// If you pass the component to a connection manager, it will handle the reconnect policy
+	// If you pass the component to a stream manager, it will handle the reconnect policy
 	// for you automatically.
+	// TODO: Post Connect could be a feature of the router or the client. Move it somewhere else.
 	cm := xmpp.NewStreamManager(component, nil)
-	err = cm.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Iterator to receive packets coming from our XMPP connection
-	for packet := range component.Recv() {
-		switch p := packet.(type) {
-		case xmpp.IQ:
-			switch inner := p.Payload[0].(type) {
-			case *xmpp.DiscoInfo:
-				fmt.Println("DiscoInfo")
-				if p.Type == "get" {
-					discoResult(component, p.PacketAttrs, inner)
-				}
-			case *xmpp.DiscoItems:
-				fmt.Println("DiscoItems")
-				if p.Type == "get" {
-					discoItems(component, p.PacketAttrs, inner)
-				}
-			case *xmpp.Version:
-				fmt.Println("Version")
-				if p.Type == "get" {
-					version(component, p.PacketAttrs)
-				}
-			default:
-				fmt.Println("ignoring iq packet", inner)
-				xError := xmpp.Err{
-					Code:   501,
-					Reason: "feature-not-implemented",
-					Type:   "cancel",
-				}
-				reply := p.MakeError(xError)
-				_ = component.Send(&reply)
-			}
-
-		case xmpp.Message:
-			fmt.Println("Received message:", p.Body)
-
-		case xmpp.Presence:
-			fmt.Println("Received presence:", p.Type)
-
-		default:
-			fmt.Println("ignoring packet:", packet)
-		}
-	}
+	log.Fatal(cm.Run())
 }
 
-func discoResult(c *xmpp.Component, attrs xmpp.PacketAttrs, info *xmpp.DiscoInfo) {
-	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
-	var identity xmpp.Identity
-	if info.Node == "" {
-		identity = xmpp.Identity{
-			Name:     c.Name,
-			Category: c.Category,
-			Type:     c.Type,
-		}
+func HandleMessage(_ xmpp.Sender, p xmpp.Packet) {
+	msg, ok := p.(xmpp.Message)
+	if !ok {
+		return
+	}
+	fmt.Println("Received message:", msg.Body)
+}
+
+func DiscoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
+	// Type conversion & sanity checks
+	iq, ok := p.(xmpp.IQ)
+	if !ok {
+		return
 	}
 
+	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
+	identity := xmpp.Identity{
+		Name:     opts.Name,
+		Category: opts.Category,
+		Type:     opts.Type,
+	}
 	payload := xmpp.DiscoInfo{
+		XMLName: xml.Name{
+			Space: xmpp.NSDiscoInfo,
+			Local: "query",
+		},
 		Identity: identity,
 		Features: []xmpp.Feature{
 			{Var: xmpp.NSDiscoInfo},
 			{Var: xmpp.NSDiscoItems},
 			{Var: "jabber:iq:version"},
+			{Var: "urn:xmpp:delegation:1"},
 		},
 	}
-	iq.AddPayload(&payload)
-
-	_ = c.Send(iq)
+	iqResp.AddPayload(&payload)
+	_ = c.Send(iqResp)
 }
 
-func discoItems(c *xmpp.Component, attrs xmpp.PacketAttrs, items *xmpp.DiscoItems) {
-	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+// TODO: Handle iq error responses
+func DiscoItems(c xmpp.Sender, p xmpp.Packet) {
+	// Type conversion & sanity checks
+	iq, ok := p.(xmpp.IQ)
+	if !ok {
+		return
+	}
+
+	if len(iq.Payload) == 0 {
+		return
+	}
+	discoItems, ok := iq.Payload[0].(*xmpp.DiscoItems)
+	if !ok {
+		return
+	}
+
+	if iq.Type != "get" {
+		return
+	}
+
+	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
 
 	var payload xmpp.DiscoItems
-	if items.Node == "" {
+	if discoItems.Node == "" {
 		payload = xmpp.DiscoItems{
 			Items: []xmpp.DiscoItem{
 				{Name: "test node", JID: "service.localhost", Node: "node1"},
 			},
 		}
 	}
-	iq.AddPayload(&payload)
-	_ = c.Send(iq)
+	iqResp.AddPayload(&payload)
+	_ = c.Send(iqResp)
 }
 
-func version(c *xmpp.Component, attrs xmpp.PacketAttrs) {
-	iq := xmpp.NewIQ("result", attrs.To, attrs.From, attrs.Id, "en")
+func HandleVersion(c xmpp.Sender, p xmpp.Packet) {
+	// Type conversion & sanity checks
+	iq, ok := p.(xmpp.IQ)
+	if !ok {
+		return
+	}
 
+	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
 	var payload xmpp.Version
 	payload.Name = "Fluux XMPP Component"
 	payload.Version = "0.0.1"
 	iq.AddPayload(&payload)
-	_ = c.Send(iq)
+	_ = c.Send(iqResp)
 }
