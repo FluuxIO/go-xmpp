@@ -37,30 +37,30 @@ func main() {
 		Insecure:     true,
 	}
 
-	client, err := xmpp.NewClient(config)
+	router := xmpp.NewRouter()
+	router.HandleFunc("message", HandleMessage)
+
+	client, err := xmpp.NewClient(config, router)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
 
 	// If you pass the client to a connection manager, it will handle the reconnect policy
 	// for you automatically.
-	cm := xmpp.NewClientManager(client, nil)
-	err = cm.Start()
-	if err != nil {
-		log.Fatal(err)
+	cm := xmpp.NewStreamManager(client, nil)
+	log.Fatal(cm.Run())
+}
+
+func HandleMessage(s xmpp.Sender, p xmpp.Packet) {
+	msg, ok := p.(xmpp.Message)
+	if !ok {
+		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", p)
+		return
 	}
 
-	// Iterator to receive packets coming from our XMPP connection
-	for packet := range client.Recv() {
-		switch packet := packet.(type) {
-		case xmpp.Message:
-			_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", packet.Body, packet.From)
-			reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: packet.From}, Body: packet.Body}
-			_ = client.Send(reply)
-		default:
-			_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
-		}
-	}
+	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", msg.Body, msg.From)
+	reply := xmpp.Message{PacketAttrs: xmpp.PacketAttrs{To: msg.From}, Body: msg.Body}
+	_ = s.Send(reply)
 }
 ```
 
