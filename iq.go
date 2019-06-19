@@ -2,6 +2,7 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strconv"
 )
 
@@ -195,7 +196,6 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 
 	// decode inner elements
-	level := 0
 	for {
 		t, err := d.Token()
 		if err != nil {
@@ -203,25 +203,28 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 
 		switch tt := t.(type) {
-
 		case xml.StartElement:
-			level++
-			if level <= 1 {
-				if iqExt := TypeRegistry.GetIQExtension(tt.Name); iqExt != nil {
-					// Decode payload extension
-					err = d.DecodeElement(iqExt, &tt)
-					if err != nil {
-						return err
-					}
-					iq.Payload = iqExt
-				} else {
-					// TODO: Fix me. We do nothing of that element here.
-					// elt = new(Node)
+			if tt.Name.Local == "error" {
+				var xmppError Err
+				err = d.DecodeElement(&xmppError, &tt)
+				if err != nil {
+					fmt.Println(err)
+					return err
 				}
+				iq.Error = xmppError
+				continue
 			}
-
+			if iqExt := TypeRegistry.GetIQExtension(tt.Name); iqExt != nil {
+				// Decode payload extension
+				err = d.DecodeElement(iqExt, &tt)
+				if err != nil {
+					return err
+				}
+				iq.Payload = iqExt
+				continue
+			}
+			return fmt.Errorf("unexpected element in iq: %s %s", tt.Name.Space, tt.Name.Local)
 		case xml.EndElement:
-			level--
 			if tt == start.End() {
 				return nil
 			}
