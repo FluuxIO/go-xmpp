@@ -123,13 +123,13 @@ func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 type IQ struct { // Info/Query
 	XMLName xml.Name `xml:"iq"`
 	PacketAttrs
-	// FIXME: We can only have one payload:
+	// We can only have one payload on IQ:
 	//   "An IQ stanza of type "get" or "set" MUST contain exactly one
 	//    child element, which specifies the semantics of the particular
 	//    request."
-	Payload []IQPayload `xml:",omitempty"`
-	RawXML  string      `xml:",innerxml"`
-	Error   Err         `xml:"error,omitempty"`
+	Payload IQPayload `xml:",omitempty"`
+	Error   Err       `xml:"error,omitempty"`
+	RawXML  string    `xml:",innerxml"`
 }
 
 func NewIQ(iqtype, from, to, id, lang string) IQ {
@@ -143,10 +143,6 @@ func NewIQ(iqtype, from, to, id, lang string) IQ {
 			Lang: lang,
 		},
 	}
-}
-
-func (iq *IQ) AddPayload(payload IQPayload) {
-	iq.Payload = append(iq.Payload, payload)
 }
 
 func (iq IQ) MakeError(xerror Err) IQ {
@@ -217,7 +213,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 					if err != nil {
 						return err
 					}
-					iq.Payload = append(iq.Payload, iqExt)
+					iq.Payload = iqExt
 				} else {
 					// TODO: Fix me. We do nothing of that element here.
 					// elt = new(Node)

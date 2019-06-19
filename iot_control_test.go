@@ -20,7 +20,7 @@ func TestControlSet(t *testing.T) {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 
-	if cs, ok := parsedIQ.Payload[0].(*ControlSet); !ok {
+	if cs, ok := parsedIQ.Payload.(*ControlSet); !ok {
 		t.Errorf("Paylod is not an iot control set: %v", cs)
 	}
 }

@@ -78,18 +78,16 @@ func TestParsingDelegationIQ(t *testing.T) {
 
 	// Check that we have extracted the delegation info as IQPayload
 	var node string
-	for _, ext := range iq.Payload {
-		if delegation, ok := ext.(*Delegation); ok {
+	if iq.Payload != nil {
+		if delegation, ok := iq.Payload.(*Delegation); ok {
 			packet := delegation.Forwarded.Stanza
 			forwardedIQ, ok := packet.(IQ)
 			if !ok {
 				t.Errorf("Could not extract packet IQ")
 				return
 			}
-			payload := forwardedIQ.Payload
-			if len(payload) > 0 {
-				pl := payload[0]
-				if pubsub, ok := pl.(*PubSub); ok {
+			if forwardedIQ.Payload != nil {
+				if pubsub, ok := forwardedIQ.Payload.(*PubSub); ok {
 					node = pubsub.Publish.Node
 				}
 			}

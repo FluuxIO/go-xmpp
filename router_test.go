@@ -33,7 +33,7 @@ func TestNameMatcher(t *testing.T) {
 	// Check that an IQ packet is not matched
 	conn = NewSenderMock()
 	iq := xmpp.NewIQ("get", "", "localhost", "1", "")
-	iq.Payload = append(iq.Payload, &xmpp.DiscoInfo{})
+	iq.Payload = &xmpp.DiscoInfo{}
 	router.Route(conn, iq)
 	if conn.String() == successFlag {
 		t.Error("IQ should not have been matched and routed")
@@ -52,11 +52,11 @@ func TestIQNSMatcher(t *testing.T) {
 	conn := NewSenderMock()
 	iqDisco := xmpp.NewIQ("get", "", "localhost", "1", "")
 	// TODO: Add a function to generate payload with proper namespace initialisation
-	iqDisco.Payload = append(iqDisco.Payload, &xmpp.DiscoInfo{
+	iqDisco.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: xmpp.NSDiscoInfo,
 			Local: "query",
-		}})
+		}}
 	router.Route(conn, iqDisco)
 	if conn.String() != successFlag {
 		t.Errorf("IQ should have been matched and routed: %v", iqDisco)
@@ -66,11 +66,11 @@ func TestIQNSMatcher(t *testing.T) {
 	conn = NewSenderMock()
 	iqVersion := xmpp.NewIQ("get", "", "localhost", "1", "")
 	// TODO: Add a function to generate payload with proper namespace initialisation
-	iqVersion.Payload = append(iqVersion.Payload, &xmpp.DiscoInfo{
+	iqVersion.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
-		}})
+		}}
 	router.Route(conn, iqVersion)
 	if conn.String() == successFlag {
 		t.Errorf("IQ should not have been matched and routed: %v", iqVersion)

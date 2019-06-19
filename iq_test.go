@@ -47,7 +47,7 @@ func TestGenerateIq(t *testing.T) {
 			{Var: xmpp.NSDiscoItems},
 		},
 	}
-	iq.AddPayload(&payload)
+	iq.Payload = &payload
 
 	data, err := xml.Marshal(iq)
 	if err != nil {
@@ -97,7 +97,7 @@ func TestDiscoItems(t *testing.T) {
 	payload := xmpp.DiscoItems{
 		Node: "music",
 	}
-	iq.AddPayload(&payload)
+	iq.Payload = &payload
 
 	data, err := xml.Marshal(iq)
 	if err != nil {
@@ -123,7 +123,7 @@ func TestUnmarshalPayload(t *testing.T) {
 		t.Errorf("Unmarshal(%s) returned error", query)
 	}
 
-	if len(parsedIQ.Payload) != 1 {
-		t.Errorf("Incorrect payload size: %d", len(parsedIQ.Payload))
+	if parsedIQ.Payload == nil {
+		t.Error("Missing payload")
 	}
 }
