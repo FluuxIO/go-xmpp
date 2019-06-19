@@ -233,7 +233,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 }
 
 // ============================================================================
-// Generic IQ Payload
+// Generic / unknown content
 
 // Node is a generic structure to represent XML data. It is used to parse
 // unreferenced or custom stanza payload.
