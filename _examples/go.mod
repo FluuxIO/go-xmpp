@@ -8,3 +8,5 @@ require (
 	github.com/processone/soundcloud v1.0.0
 	gosrc.io/xmpp v0.1.1-0.20190619120342-a6cbc0c08f52
 )
+
+replace gosrc.io/xmpp => gosrc.io/xmpp v0.1.1-0.20190619153249-b1dde2330764

@@ -59,7 +59,7 @@ func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 		return
 	}
 
-	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
+	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
 	identity := xmpp.Identity{
 		Name:     opts.Name,
 		Category: opts.Category,
@@ -95,7 +95,7 @@ func discoItems(c xmpp.Sender, p xmpp.Packet) {
 		return
 	}
 
-	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
+	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
 
 	var payload xmpp.DiscoItems
 	if discoItems.Node == "" {
@@ -116,7 +116,7 @@ func handleVersion(c xmpp.Sender, p xmpp.Packet) {
 		return
 	}
 
-	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
+	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
 	var payload xmpp.Version
 	payload.Name = "Fluux XMPP Component"
 	payload.Version = "0.0.1"
