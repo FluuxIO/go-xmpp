@@ -157,10 +157,10 @@ func (m nsIQMatcher) Match(p Packet, match *RouteMatch) bool {
 	if !ok {
 		return false
 	}
-	if len(iq.Payload) < 1 {
+	if iq.Payload == nil {
 		return false
 	}
-	return matchInArray(m, iq.Payload[0].Namespace())
+	return matchInArray(m, iq.Payload.Namespace())
 }
 
 // IQNamespaces adds an IQ matcher, expecting both an IQ and a

@@ -165,7 +165,7 @@ func (s *Session) bind(o Config) {
 	}
 
 	// TODO Check all elements
-	switch payload := iq.Payload[0].(type) {
+	switch payload := iq.Payload.(type) {
 	case *BindBind:
 		s.BindJid = payload.Jid // our local id (with possibly randomly generated resource
 	default:
