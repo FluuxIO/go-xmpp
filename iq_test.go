@@ -132,3 +132,24 @@ func TestUnmarshalPayload(t *testing.T) {
 		t.Errorf("incorrect namespace: %s", namespace)
 	}
 }
+
+func TestPayloadWithError(t *testing.T) {
+	iq := `<iq xml:lang='en' to='test1@localhost/resource' from='test@localhost' type='error' id='aac1a'>
+ <query xmlns='jabber:iq:version'/>
+ <error code='407' type='auth'>
+  <subscription-required xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>
+  <text xml:lang='en' xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'>Not subscribed</text>
+ </error>
+</iq>`
+
+	parsedIQ := xmpp.IQ{}
+	err := xml.Unmarshal([]byte(iq), &parsedIQ)
+	if err != nil {
+		t.Errorf("Unmarshal error: %s", iq)
+		return
+	}
+
+	if parsedIQ.Error.Reason != "subscription-required" {
+		t.Errorf("incorrect error value: '%s'", parsedIQ.Error.Reason)
+	}
+}
