@@ -104,7 +104,7 @@ func (sm *StreamManager) Stop() {
 
 // connect manages the reconnection loop and apply the define backoff to avoid overloading the server.
 func (sm *StreamManager) connect() error {
-	var backoff Backoff // TODO: Group backoff calculation features with connection manager?
+	var backoff backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
 		var err error
@@ -118,7 +118,7 @@ func (sm *StreamManager) connect() error {
 					return xerrors.Errorf("unrecoverable connect error %w", actualErr)
 				}
 			}
-			backoff.Wait()
+			backoff.wait()
 		} else { // We are connected, we can leave the retry loop
 			break
 		}
