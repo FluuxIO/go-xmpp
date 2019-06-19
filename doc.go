@@ -16,6 +16,9 @@ The library is designed to have minimal dependencies. For now, the library does 
 
 The library includes a StreamManager that provides features like autoreconnect exponential back-off.
 
+The library is implementing latest versions of the XMPP specifications (RFC 6120 and RFC 6121), and includes
+support for many extensions.
+
 Clients
 
 Fluux XMPP can be use to create fully interactive XMPP clients (for
