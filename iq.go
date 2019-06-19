@@ -133,6 +133,10 @@ type IQ struct { // Info/Query
 	RawXML  string    `xml:",innerxml"`
 }
 
+type IQPayload interface {
+	Namespace() string
+}
+
 // iqtype, from, to, id, lang string
 func NewIQ(a Attrs) IQ {
 	return IQ{
@@ -218,6 +222,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				iq.Payload = iqExt
 				continue
 			}
+			// TODO: If unknown decode as generic node
 			return fmt.Errorf("unexpected element in iq: %s %s", tt.Name.Space, tt.Name.Local)
 		case xml.EndElement:
 			if tt == start.End() {
@@ -229,10 +234,6 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // ============================================================================
 // Generic IQ Payload
-
-type IQPayload interface {
-	Namespace() string
-}
 
 // Node is a generic structure to represent XML data. It is used to parse
 // unreferenced or custom stanza payload.
