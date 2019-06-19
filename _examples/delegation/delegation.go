@@ -21,15 +21,15 @@ func main() {
 	}
 
 	router := xmpp.NewRouter()
-	router.HandleFunc("message", HandleMessage)
+	router.HandleFunc("message", handleMessage)
 	router.NewRoute().
 		IQNamespaces(xmpp.NSDiscoInfo).
 		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
-			DiscoInfo(s, p, opts)
+			discoInfo(s, p, opts)
 		})
 	router.NewRoute().
 		IQNamespaces("urn:xmpp:delegation:1").
-		HandlerFunc(HandleDelegation)
+		HandlerFunc(handleDelegation)
 
 	component, err := xmpp.NewComponent(opts, router)
 	if err != nil {
@@ -43,7 +43,7 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func HandleMessage(_ xmpp.Sender, p xmpp.Packet) {
+func handleMessage(_ xmpp.Sender, p xmpp.Packet) {
 	msg, ok := p.(xmpp.Message)
 	if !ok {
 		return
@@ -72,13 +72,13 @@ const (
 // TODO: replace xmpp.Sender by ctx xmpp.Context ?
 // ctx.Stream.Send / SendRaw
 // ctx.Opts
-func DiscoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
+func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
 	if !ok {
 		return
 	}
-	info, ok := iq.Payload[0].(*xmpp.DiscoInfo)
+	info, ok := iq.Payload.(*xmpp.DiscoInfo)
 	if !ok {
 		return
 	}
@@ -87,17 +87,17 @@ func DiscoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 
 	switch info.Node {
 	case "":
-		DiscoInfoRoot(&iqResp, opts)
+		discoInfoRoot(&iqResp, opts)
 	case pubsubNode:
-		DiscoInfoPubSub(&iqResp)
+		discoInfoPubSub(&iqResp)
 	case pepNode:
-		DiscoInfoPEP(&iqResp)
+		discoInfoPEP(&iqResp)
 	}
 
 	_ = c.Send(iqResp)
 }
 
-func DiscoInfoRoot(iqResp *xmpp.IQ, opts xmpp.ComponentOptions) {
+func discoInfoRoot(iqResp *xmpp.IQ, opts xmpp.ComponentOptions) {
 	// Higher level discovery
 	identity := xmpp.Identity{
 		Name:     opts.Name,
@@ -117,10 +117,10 @@ func DiscoInfoRoot(iqResp *xmpp.IQ, opts xmpp.ComponentOptions) {
 			{Var: "urn:xmpp:delegation:1"},
 		},
 	}
-	iqResp.AddPayload(&payload)
+	iqResp.Payload = &payload
 }
 
-func DiscoInfoPubSub(iqResp *xmpp.IQ) {
+func discoInfoPubSub(iqResp *xmpp.IQ) {
 	payload := xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: xmpp.NSDiscoInfo,
@@ -134,10 +134,10 @@ func DiscoInfoPubSub(iqResp *xmpp.IQ) {
 			{Var: "http://jabber.org/protocol/pubsub#publish-options"},
 		},
 	}
-	iqResp.AddPayload(&payload)
+	iqResp.Payload = &payload
 }
 
-func DiscoInfoPEP(iqResp *xmpp.IQ) {
+func discoInfoPEP(iqResp *xmpp.IQ) {
 	identity := xmpp.Identity{
 		Category: "pubsub",
 		Type:     "pep",
@@ -163,18 +163,17 @@ func DiscoInfoPEP(iqResp *xmpp.IQ) {
 			{Var: "http://jabber.org/protocol/pubsub#subscribe"},
 		},
 	}
-	iqResp.AddPayload(&payload)
+	iqResp.Payload = &payload
 }
 
-func HandleDelegation(s xmpp.Sender, p xmpp.Packet) {
+func handleDelegation(s xmpp.Sender, p xmpp.Packet) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
 	if !ok {
 		return
 	}
 
-	payload1 := iq.Payload[0]
-	delegation, ok := payload1.(*xmpp.Delegation)
+	delegation, ok := iq.Payload.(*xmpp.Delegation)
 	if !ok {
 		return
 	}
@@ -184,12 +183,8 @@ func HandleDelegation(s xmpp.Sender, p xmpp.Packet) {
 	if !ok {
 		return
 	}
-	payload := forwardedIQ.Payload
-	if len(payload) == 0 {
-		return
-	}
 
-	pubsub, ok := payload[0].(*xmpp.PubSub)
+	pubsub, ok := forwardedIQ.Payload.(*xmpp.PubSub)
 	if !ok {
 		// We only support pubsub delegation
 		return
@@ -204,7 +199,7 @@ func HandleDelegation(s xmpp.Sender, p xmpp.Packet) {
 				Local: "pubsub",
 			},
 		}
-		iqResp.AddPayload(&payload)
+		iqResp.Payload = &payload
 		// Wrap the reply in delegation 'forward'
 		iqForward := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
 		delegPayload := xmpp.Delegation{
@@ -220,7 +215,7 @@ func HandleDelegation(s xmpp.Sender, p xmpp.Packet) {
 				Stanza: iqResp,
 			},
 		}
-		iqForward.AddPayload(&delegPayload)
+		iqForward.Payload = &delegPayload
 		_ = s.Send(iqForward)
 		// TODO: The component should actually broadcast the mood to subscribers
 	}

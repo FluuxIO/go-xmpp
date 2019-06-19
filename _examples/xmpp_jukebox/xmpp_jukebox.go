@@ -23,45 +23,61 @@ func main() {
 	address := flag.String("address", "", "If needed, XMPP server DNSName or IP and optional port (ie myserver:5222)")
 	flag.Parse()
 
-	var client *xmpp.Client
-	var err error
-	if client, err = connectXmpp(*jid, *password, *address); err != nil {
-		log.Fatal("Could not connect to XMPP: ", err)
-	}
-
-	p, err := mpg123.NewPlayer()
+	// 1. Create mpg player
+	player, err := mpg123.NewPlayer()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Iterator to receive packets coming from our XMPP connection
-	for packet := range client.Recv() {
-
-		switch packet := packet.(type) {
-		case xmpp.Message:
-			processMessage(client, p, &packet)
-		case xmpp.IQ:
-			processIq(client, p, &packet)
-		case xmpp.Presence:
-			// Do nothing with received presence
-		default:
-			_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", packet)
-		}
+	// 2. Prepare XMPP client
+	config := xmpp.Config{
+		Address:  *address,
+		Jid:      *jid,
+		Password: *password,
+		Insecure: true,
 	}
+
+	router := xmpp.NewRouter()
+	router.NewRoute().
+		Packet("message").
+		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+			handleMessage(s, p, player)
+		})
+	router.NewRoute().
+		Packet("message").
+		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+			handleIQ(s, p, player)
+		})
+
+	client, err := xmpp.NewClient(config, router)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	cm := xmpp.NewStreamManager(client, nil)
+	log.Fatal(cm.Run())
 }
 
-func processMessage(client *xmpp.Client, p *mpg123.Player, packet *xmpp.Message) {
-	command := strings.Trim(packet.Body, " ")
+func handleMessage(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
+	msg, ok := p.(xmpp.Message)
+	if !ok {
+		return
+	}
+	command := strings.Trim(msg.Body, " ")
 	if command == "stop" {
-		p.Stop()
+		player.Stop()
 	} else {
-		playSCURL(p, command)
-		sendUserTune(client, "Radiohead", "Spectre")
+		playSCURL(player, command)
+		sendUserTune(s, "Radiohead", "Spectre")
 	}
 }
 
-func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
-	switch payload := packet.Payload[0].(type) {
+func handleIQ(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
+	iq, ok := p.(xmpp.IQ)
+	if !ok {
+		return
+	}
+	switch payload := iq.Payload.(type) {
 	// We support IOT Control IQ
 	case *xmpp.ControlSet:
 		var url string
@@ -72,24 +88,24 @@ func processIq(client *xmpp.Client, p *mpg123.Player, packet *xmpp.IQ) {
 			}
 		}
 
-		playSCURL(p, url)
+		playSCURL(player, url)
 		setResponse := new(xmpp.ControlSetResponse)
 		// FIXME: Broken
-		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: packet.From, Type: "result", Id: packet.Id}, Payload: []xmpp.IQPayload{setResponse}}
-		_ = client.Send(reply)
+		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
+		_ = s.Send(reply)
 		// TODO add Soundclound artist / title retrieval
-		sendUserTune(client, "Radiohead", "Spectre")
+		sendUserTune(s, "Radiohead", "Spectre")
 	default:
-		_, _ = fmt.Fprintf(os.Stdout, "Other IQ Payload: %T\n", packet.Payload)
+		_, _ = fmt.Fprintf(os.Stdout, "Other IQ Payload: %T\n", iq.Payload)
 	}
 }
 
-func sendUserTune(client *xmpp.Client, artist string, title string) {
+func sendUserTune(s xmpp.Sender, artist string, title string) {
 	tune := xmpp.Tune{Artist: artist, Title: title}
 	iq := xmpp.NewIQ("set", "", "", "usertune-1", "en")
 	payload := xmpp.PubSub{Publish: &xmpp.Publish{Node: "http://jabber.org/protocol/tune", Item: xmpp.Item{Tune: &tune}}}
-	iq.AddPayload(&payload)
-	_ = client.Send(iq)
+	iq.Payload = &payload
+	_ = s.Send(iq)
 }
 
 func playSCURL(p *mpg123.Player, rawURL string) {
@@ -98,20 +114,6 @@ func playSCURL(p *mpg123.Player, rawURL string) {
 	url := soundcloud.FormatStreamURL(songID)
 
 	_ = p.Play(url)
-}
-
-func connectXmpp(jid string, password string, address string) (client *xmpp.Client, err error) {
-	xmppConfig := xmpp.Config{Address: address,
-		Jid: jid, Password: password, PacketLogger: os.Stdout, Insecure: true}
-
-	if client, err = xmpp.NewClient(xmppConfig); err != nil {
-		return
-	}
-
-	if err = client.Connect(); err != nil {
-		return
-	}
-	return
 }
 
 // TODO

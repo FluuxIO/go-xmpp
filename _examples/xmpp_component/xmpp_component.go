@@ -19,18 +19,18 @@ func main() {
 	}
 
 	router := xmpp.NewRouter()
-	router.HandleFunc("message", HandleMessage)
+	router.HandleFunc("message", handleMessage)
 	router.NewRoute().
 		IQNamespaces(xmpp.NSDiscoInfo).
 		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
-			DiscoInfo(s, p, opts)
+			discoInfo(s, p, opts)
 		})
 	router.NewRoute().
 		IQNamespaces(xmpp.NSDiscoItems).
-		HandlerFunc(DiscoItems)
+		HandlerFunc(discoItems)
 	router.NewRoute().
 		IQNamespaces("jabber:iq:version").
-		HandlerFunc(HandleVersion)
+		HandlerFunc(handleVersion)
 
 	component, err := xmpp.NewComponent(opts, router)
 	if err != nil {
@@ -44,7 +44,7 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func HandleMessage(_ xmpp.Sender, p xmpp.Packet) {
+func handleMessage(_ xmpp.Sender, p xmpp.Packet) {
 	msg, ok := p.(xmpp.Message)
 	if !ok {
 		return
@@ -52,7 +52,7 @@ func HandleMessage(_ xmpp.Sender, p xmpp.Packet) {
 	fmt.Println("Received message:", msg.Body)
 }
 
-func DiscoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
+func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
 	if !ok {
@@ -78,22 +78,19 @@ func DiscoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 			{Var: "urn:xmpp:delegation:1"},
 		},
 	}
-	iqResp.AddPayload(&payload)
+	iqResp.Payload = &payload
 	_ = c.Send(iqResp)
 }
 
 // TODO: Handle iq error responses
-func DiscoItems(c xmpp.Sender, p xmpp.Packet) {
+func discoItems(c xmpp.Sender, p xmpp.Packet) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
 	if !ok {
 		return
 	}
 
-	if len(iq.Payload) == 0 {
-		return
-	}
-	discoItems, ok := iq.Payload[0].(*xmpp.DiscoItems)
+	discoItems, ok := iq.Payload.(*xmpp.DiscoItems)
 	if !ok {
 		return
 	}
@@ -112,11 +109,11 @@ func DiscoItems(c xmpp.Sender, p xmpp.Packet) {
 			},
 		}
 	}
-	iqResp.AddPayload(&payload)
+	iqResp.Payload = &payload
 	_ = c.Send(iqResp)
 }
 
-func HandleVersion(c xmpp.Sender, p xmpp.Packet) {
+func handleVersion(c xmpp.Sender, p xmpp.Packet) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
 	if !ok {
@@ -127,6 +124,6 @@ func HandleVersion(c xmpp.Sender, p xmpp.Packet) {
 	var payload xmpp.Version
 	payload.Name = "Fluux XMPP Component"
 	payload.Version = "0.0.1"
-	iq.AddPayload(&payload)
+	iq.Payload = &payload
 	_ = c.Send(iqResp)
 }
