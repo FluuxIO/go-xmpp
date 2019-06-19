@@ -7,7 +7,7 @@ XMPP check is a tool to check TLS certificate on a remote server.
 To install `xmpp-check` in your Go path:
 
 ```
-$ go get -u gosrc.io/xmpp/...
+$ go get -u gosrc.io/xmpp/cmd/xmpp-check
 ```
 
 ## Usage
