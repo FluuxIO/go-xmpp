@@ -1,13 +1,20 @@
 /*
-Fluux XMPP is a Go XMPP library, focusing on simplicity, simple automation, and IoT.
+Fluux XMPP is an modern and full-featured XMPP library that can be used to build clients or
+server components.
 
-The goal is to make simple to write simple adhoc XMPP clients:
+The goal is to make simple to write modern compliant XMPP software:
 
  - For automation (like for example monitoring of an XMPP service),
  - For building connected "things" by plugging them on an XMPP server,
  - For writing simple chatbots to control a service or a thing.
+ - For writing XMPP servers components. Fluux XMPP supports:
+    - XEP-0114: Jabber Component Protocol
+    - XEP-0355: Namespace Delegation
+    - XEP-0356: Privileged Entity
 
-Fluux XMPP can be used to build XMPP clients or XMPP components.
+The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
+
+The library includes a StreamManager that provides features like autoreconnect exponential back-off.
 
 Clients
 
