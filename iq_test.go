@@ -126,4 +126,9 @@ func TestUnmarshalPayload(t *testing.T) {
 	if parsedIQ.Payload == nil {
 		t.Error("Missing payload")
 	}
+
+	namespace := parsedIQ.Payload.Namespace()
+	if namespace != "jabber:iq:version" {
+		t.Errorf("incorrect namespace: %s", namespace)
+	}
 }
