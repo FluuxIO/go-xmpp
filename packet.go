@@ -4,8 +4,8 @@ type Packet interface {
 	Name() string
 }
 
-// PacketAttrs represents the common structure for base XMPP packets.
-type PacketAttrs struct {
+// Attrs represents the common structure for base XMPP packets.
+type Attrs struct {
 	Id   string `xml:"id,attr,omitempty"`
 	From string `xml:"from,attr,omitempty"`
 	To   string `xml:"to,attr,omitempty"`

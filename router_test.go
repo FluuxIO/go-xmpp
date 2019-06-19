@@ -19,8 +19,7 @@ func TestNameMatcher(t *testing.T) {
 
 	// Check that a message packet is properly matched
 	conn := NewSenderMock()
-	// TODO: We want packet creation code to use struct to use default values
-	msg := xmpp.NewMessage("chat", "", "test@localhost", "1", "")
+	msg := xmpp.NewMessage(xmpp.Attrs{Type: "chat", To: "test@localhost", Id: "1"})
 	msg.Body = "Hello"
 	router.Route(conn, msg)
 	if conn.String() != successFlag {
@@ -29,7 +28,7 @@ func TestNameMatcher(t *testing.T) {
 
 	// Check that an IQ packet is not matched
 	conn = NewSenderMock()
-	iq := xmpp.NewIQ("get", "", "localhost", "1", "")
+	iq := xmpp.NewIQ(xmpp.Attrs{Type: "get", To: "localhost", Id: "1"})
 	iq.Payload = &xmpp.DiscoInfo{}
 	router.Route(conn, iq)
 	if conn.String() == successFlag {
@@ -47,7 +46,8 @@ func TestIQNSMatcher(t *testing.T) {
 
 	// Check that an IQ with proper namespace does match
 	conn := NewSenderMock()
-	iqDisco := xmpp.NewIQ("get", "", "localhost", "1", "")
+	iqDisco := xmpp.NewIQ(xmpp.Attrs{Type: "get", To: "localhost", Id: "1"})
+	// TODO: Add a function to generate payload with proper namespace initialisation
 	iqDisco.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: xmpp.NSDiscoInfo,
@@ -60,7 +60,8 @@ func TestIQNSMatcher(t *testing.T) {
 
 	// Check that another namespace is not matched
 	conn = NewSenderMock()
-	iqVersion := xmpp.NewIQ("get", "", "localhost", "1", "")
+	iqVersion := xmpp.NewIQ(xmpp.Attrs{Type: "get", To: "localhost", Id: "1"})
+	// TODO: Add a function to generate payload with proper namespace initialisation
 	iqVersion.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
@@ -240,7 +241,7 @@ func (s SenderMock) String() string {
 
 func TestSenderMock(t *testing.T) {
 	conn := NewSenderMock()
-	msg := xmpp.NewMessage("", "", "test@localhost", "1", "")
+	msg := xmpp.NewMessage(xmpp.Attrs{Type: "", From: "", To: "test@localhost", Id: "1", Lang: ""})
 	msg.Body = "Hello"
 	if err := conn.Send(msg); err != nil {
 		t.Error("Could not send message")

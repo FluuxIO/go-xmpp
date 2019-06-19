@@ -9,7 +9,7 @@ import (
 
 type Message struct {
 	XMLName xml.Name `xml:"message"`
-	PacketAttrs
+	Attrs
 	Subject    string         `xml:"subject,omitempty"`
 	Body       string         `xml:"body,omitempty"`
 	Thread     string         `xml:"thread,omitempty"`
@@ -21,16 +21,10 @@ func (Message) Name() string {
 	return "message"
 }
 
-func NewMessage(msgtype, from, to, id, lang string) Message {
+func NewMessage(a Attrs) Message {
 	return Message{
 		XMLName: xml.Name{Local: "message"},
-		PacketAttrs: PacketAttrs{
-			Id:   id,
-			From: from,
-			To:   to,
-			Type: msgtype,
-			Lang: lang,
-		},
+		Attrs:   a,
 	}
 }
 

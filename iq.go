@@ -123,7 +123,7 @@ func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 
 type IQ struct { // Info/Query
 	XMLName xml.Name `xml:"iq"`
-	PacketAttrs
+	Attrs
 	// We can only have one payload on IQ:
 	//   "An IQ stanza of type "get" or "set" MUST contain exactly one
 	//    child element, which specifies the semantics of the particular
@@ -133,16 +133,11 @@ type IQ struct { // Info/Query
 	RawXML  string    `xml:",innerxml"`
 }
 
-func NewIQ(iqtype, from, to, id, lang string) IQ {
+// iqtype, from, to, id, lang string
+func NewIQ(a Attrs) IQ {
 	return IQ{
 		XMLName: xml.Name{Local: "iq"},
-		PacketAttrs: PacketAttrs{
-			Id:   id,
-			From: from,
-			To:   to,
-			Type: iqtype,
-			Lang: lang,
-		},
+		Attrs:   a,
 	}
 }
 

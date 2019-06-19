@@ -7,7 +7,7 @@ import "encoding/xml"
 
 type Presence struct {
 	XMLName xml.Name `xml:"presence"`
-	PacketAttrs
+	Attrs
 	Show     string `xml:"show,omitempty"` // away, chat, dnd, xa
 	Status   string `xml:"status,omitempty"`
 	Priority int    `xml:"priority,omitempty"`
@@ -18,15 +18,10 @@ func (Presence) Name() string {
 	return "presence"
 }
 
-func NewPresence(from, to, id, lang string) Presence {
+func NewPresence(a Attrs) Presence {
 	return Presence{
 		XMLName: xml.Name{Local: "presence"},
-		PacketAttrs: PacketAttrs{
-			Id:   id,
-			From: from,
-			To:   to,
-			Lang: lang,
-		},
+		Attrs:   a,
 	}
 }
 

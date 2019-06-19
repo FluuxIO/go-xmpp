@@ -10,7 +10,7 @@ import (
 )
 
 func TestGeneratePresence(t *testing.T) {
-	presence := xmpp.NewPresence("admin@localhost", "test@localhost", "1", "en")
+	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1", Lang: "en"})
 	presence.Show = "chat"
 
 	data, err := xml.Marshal(presence)
@@ -37,7 +37,7 @@ func TestPresenceSubElt(t *testing.T) {
 		Priority int    `xml:"priority"`
 	}
 
-	presence := xmpp.NewPresence("admin@localhost", "test@localhost", "1", "en")
+	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1", Lang: "en"})
 	presence.Show = "xa"
 	presence.Status = "Coding"
 	presence.Priority = 10

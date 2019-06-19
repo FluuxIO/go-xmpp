@@ -9,7 +9,7 @@ import (
 )
 
 func TestGenerateMessage(t *testing.T) {
-	message := xmpp.NewMessage("chat", "admin@localhost", "test@localhost", "1", "en")
+	message := xmpp.NewMessage(xmpp.Attrs{Type: "chat", From: "admin@localhost", To: "test@localhost", Id: "1", Lang: "en"})
 	message.Body = "Hi"
 	message.Subject = "Msg Subject"
 

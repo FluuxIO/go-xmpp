@@ -16,8 +16,8 @@ func TestUnmarshalIqs(t *testing.T) {
 		parsedIQ xmpp.IQ
 	}{
 		{"<iq id=\"1\" type=\"set\" to=\"test@localhost\"/>",
-			xmpp.IQ{XMLName: xml.Name{Space: "", Local: "iq"}, PacketAttrs: xmpp.PacketAttrs{To: "test@localhost", Type: "set", Id: "1"}}},
-		//{"<iq xmlns=\"jabber:client\" id=\"2\" type=\"set\" to=\"test@localhost\" from=\"server\"><set xmlns=\"urn:xmpp:iot:control\"/></iq>", IQ{XMLName: xml.Name{Space: "jabber:client", Local: "iq"}, PacketAttrs: PacketAttrs{To: "test@localhost", From: "server", Type: "set", Id: "2"}, Payload: cs1}},
+			xmpp.IQ{XMLName: xml.Name{Space: "", Local: "iq"}, Attrs: xmpp.Attrs{To: "test@localhost", Type: "set", Id: "1"}}},
+		//{"<iq xmlns=\"jabber:client\" id=\"2\" type=\"set\" to=\"test@localhost\" from=\"server\"><set xmlns=\"urn:xmpp:iot:control\"/></iq>", IQ{XMLName: xml.Name{Space: "jabber:client", Local: "iq"}, Attrs: Attrs{To: "test@localhost", From: "server", Type: "set", Id: "2"}, Payload: cs1}},
 	}
 
 	for _, test := range tests {
@@ -35,7 +35,7 @@ func TestUnmarshalIqs(t *testing.T) {
 }
 
 func TestGenerateIq(t *testing.T) {
-	iq := xmpp.NewIQ("result", "admin@localhost", "test@localhost", "1", "en")
+	iq := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: "admin@localhost", To: "test@localhost", Id: "1", Lang: "en"})
 	payload := xmpp.DiscoInfo{
 		Identity: xmpp.Identity{
 			Name:     "Test Gateway",
@@ -93,7 +93,7 @@ func TestErrorTag(t *testing.T) {
 }
 
 func TestDiscoItems(t *testing.T) {
-	iq := xmpp.NewIQ("get", "romeo@montague.net/orchard", "catalog.shakespeare.lit", "items3", "en")
+	iq := xmpp.NewIQ(xmpp.Attrs{Type: "get", From: "romeo@montague.net/orchard", To: "catalog.shakespeare.lit", Id: "items3", Lang: "en"})
 	payload := xmpp.DiscoItems{
 		Node: "music",
 	}
