@@ -22,7 +22,7 @@ func main() {
 	}
 
 	router := xmpp.NewRouter()
-	router.HandleFunc("message", HandleMessage)
+	router.HandleFunc("message", handleMessage)
 
 	client, err := xmpp.NewClient(config, router)
 	if err != nil {
@@ -35,7 +35,7 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func HandleMessage(s xmpp.Sender, p xmpp.Packet) {
+func handleMessage(s xmpp.Sender, p xmpp.Packet) {
 	msg, ok := p.(xmpp.Message)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", p)
