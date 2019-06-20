@@ -34,13 +34,13 @@ func TestPresenceSubElt(t *testing.T) {
 	type pres struct {
 		Show     string `xml:"show"`
 		Status   string `xml:"status"`
-		Priority string `xml:"priority"`
+		Priority int    `xml:"priority"`
 	}
 
 	presence := xmpp.NewPresence("admin@localhost", "test@localhost", "1", "en")
 	presence.Show = "xa"
 	presence.Status = "Coding"
-	presence.Priority = "10"
+	presence.Priority = 10
 
 	data, err := xml.Marshal(presence)
 	if err != nil {
@@ -59,6 +59,6 @@ func TestPresenceSubElt(t *testing.T) {
 		t.Errorf("cannot read 'status' as presence subelement (%s)", parsedPresence.Status)
 	}
 	if parsedPresence.Priority != presence.Priority {
-		t.Errorf("cannot read 'priority' as presence subelement (%s)", parsedPresence.Priority)
+		t.Errorf("cannot read 'priority' as presence subelement (%d)", parsedPresence.Priority)
 	}
 }

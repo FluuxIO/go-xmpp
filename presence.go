@@ -10,7 +10,7 @@ type Presence struct {
 	PacketAttrs
 	Show     string `xml:"show,omitempty"` // away, chat, dnd, xa
 	Status   string `xml:"status,omitempty"`
-	Priority string `xml:"priority,omitempty"`
+	Priority int    `xml:"priority,omitempty"`
 	Error    Err    `xml:"error,omitempty"`
 }
 
