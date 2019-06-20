@@ -5,13 +5,15 @@ import "encoding/xml"
 // ============================================================================
 // Presence Packet
 
+// Presence implements RFC 6120 - A.5 Client Namespace (a part)
 type Presence struct {
 	XMLName xml.Name `xml:"presence"`
 	Attrs
-	Show     string `xml:"show,omitempty"` // away, chat, dnd, xa
-	Status   string `xml:"status,omitempty"`
-	Priority int    `xml:"priority,omitempty"`
-	Error    Err    `xml:"error,omitempty"`
+	Show     PresenceShow `xml:"show,omitempty"` // away, chat, dnd, xa
+	Type     PresenceType `xml:"type,attr,omitempty"`
+	Status   string       `xml:"status,omitempty"`
+	Priority uint         `xml:"priority,omitempty"` // default: 0
+	Error    Err          `xml:"error,omitempty"`
 }
 
 func (Presence) Name() string {
