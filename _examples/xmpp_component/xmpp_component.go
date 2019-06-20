@@ -58,6 +58,10 @@ func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 	if !ok {
 		return
 	}
+	
+	if iq.Type != "get" {
+		return
+	}
 
 	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
 	identity := xmpp.Identity{
@@ -89,13 +93,13 @@ func discoItems(c xmpp.Sender, p xmpp.Packet) {
 	if !ok {
 		return
 	}
-
-	discoItems, ok := iq.Payload.(*xmpp.DiscoItems)
-	if !ok {
+	
+	if iq.Type != "get" {
 		return
 	}
 
-	if iq.Type != "get" {
+	discoItems, ok := iq.Payload.(*xmpp.DiscoItems)
+	if !ok {
 		return
 	}
 
