@@ -38,7 +38,7 @@ func TestPresenceSubElt(t *testing.T) {
 	}
 
 	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
-	presence.Show = "xa"
+	presence.Show = xmpp.PresenceShowXA
 	presence.Status = "Coding"
 	presence.Priority = 10
 
