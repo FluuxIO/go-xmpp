@@ -34,7 +34,7 @@ func TestPresenceSubElt(t *testing.T) {
 	type pres struct {
 		Show     xmpp.PresenceShow `xml:"show"`
 		Status   string            `xml:"status"`
-		Priority uint              `xml:"priority"`
+		Priority int               `xml:"priority"`
 	}
 
 	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
