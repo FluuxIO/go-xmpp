@@ -16,7 +16,7 @@ func TestUnmarshalIqs(t *testing.T) {
 		parsedIQ xmpp.IQ
 	}{
 		{"<iq id=\"1\" type=\"set\" to=\"test@localhost\"/>",
-			xmpp.IQ{XMLName: xml.Name{Space: "", Local: "iq"}, Attrs: xmpp.Attrs{To: "test@localhost", Id: "1"}, Type: xmpp.IQTypeSet}},
+			xmpp.IQ{XMLName: xml.Name{Local: "iq"}, Attrs: xmpp.Attrs{To: "test@localhost", Id: "1"}, Type: xmpp.IQTypeSet}},
 		//{"<iq xmlns=\"jabber:client\" id=\"2\" type=\"set\" to=\"test@localhost\" from=\"server\"><set xmlns=\"urn:xmpp:iot:control\"/></iq>", IQ{XMLName: xml.Name{Space: "jabber:client", Local: "iq"}, PacketAttrs: PacketAttrs{To: "test@localhost", From: "server", Type: "set", Id: "2"}, Payload: cs1}},
 	}
 
