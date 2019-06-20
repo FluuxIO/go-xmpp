@@ -55,11 +55,7 @@ func handleMessage(_ xmpp.Sender, p xmpp.Packet) {
 func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
-	if !ok {
-		return
-	}
-	
-	if iq.Type != "get" {
+	if !ok || iq.Type != "get" {
 		return
 	}
 
@@ -90,11 +86,7 @@ func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 func discoItems(c xmpp.Sender, p xmpp.Packet) {
 	// Type conversion & sanity checks
 	iq, ok := p.(xmpp.IQ)
-	if !ok {
-		return
-	}
-	
-	if iq.Type != "get" {
+	if !ok || iq.Type != "get" {
 		return
 	}
 
