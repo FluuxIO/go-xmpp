@@ -9,8 +9,7 @@ import "encoding/xml"
 type Presence struct {
 	XMLName xml.Name `xml:"presence"`
 	Attrs
-	Show     PresenceShow `xml:"show,omitempty"` // away, chat, dnd, xa
-	Type     PresenceType `xml:"type,attr,omitempty"`
+	Show     PresenceShow `xml:"show,omitempty"`
 	Status   string       `xml:"status,omitempty"`
 	Priority int8         `xml:"priority,omitempty"` // default: 0
 	Error    Err          `xml:"error,omitempty"`

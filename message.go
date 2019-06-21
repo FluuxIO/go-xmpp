@@ -11,8 +11,6 @@ import (
 type Message struct {
 	XMLName xml.Name `xml:"message"`
 	Attrs
-	Type MessageType `xml:"type,attr,omitempty"` // default: normal
-	Lang string      `xml:"lang,attr,omitempty"`
 
 	Subject    string         `xml:"subject,omitempty"`
 	Body       string         `xml:"body,omitempty"`
@@ -25,11 +23,10 @@ func (Message) Name() string {
 	return "message"
 }
 
-func NewMessage(t MessageType, a Attrs) Message {
+func NewMessage(a Attrs) Message {
 	return Message{
 		XMLName: xml.Name{Local: "message"},
 		Attrs:   a,
-		Type:    t,
 	}
 }
 
@@ -62,7 +59,7 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			msg.Id = attr.Value
 		}
 		if attr.Name.Local == "type" {
-			msg.Type = MessageType(attr.Value)
+			msg.Type = StanzaType(attr.Value)
 		}
 		if attr.Name.Local == "to" {
 			msg.To = attr.Value

@@ -11,7 +11,7 @@ import (
 
 func TestGeneratePresence(t *testing.T) {
 	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
-	presence.Show = "chat"
+	presence.Show = xmpp.PresenceShowChat
 
 	data, err := xml.Marshal(presence)
 	if err != nil {

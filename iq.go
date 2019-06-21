@@ -17,7 +17,6 @@ type IQ struct { // Info/Query
 	XMLName xml.Name `xml:"iq"`
 	// MUST have a ID
 	Attrs
-	Type IQType `xml:"type,attr"` // required
 	// We can only have one payload on IQ:
 	//   "An IQ stanza of type "get" or "set" MUST contain exactly one
 	//    child element, which specifies the semantics of the particular
@@ -31,13 +30,12 @@ type IQPayload interface {
 	Namespace() string
 }
 
-// NewIQ iqtype, attrs
-func NewIQ(t IQType, a Attrs) IQ {
+func NewIQ(a Attrs) IQ {
 	// TODO generate IQ ID if not set
+	// TODO ensure that type is set, as it is required
 	return IQ{
 		XMLName: xml.Name{Local: "iq"},
 		Attrs:   a,
-		Type:    t,
 	}
 }
 
@@ -77,7 +75,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			iq.Id = attr.Value
 		}
 		if attr.Name.Local == "type" {
-			iq.Type = IQType(attr.Value)
+			iq.Type = StanzaType(attr.Value)
 		}
 		if attr.Name.Local == "to" {
 			iq.To = attr.Value
