@@ -12,6 +12,9 @@ Here are important rules to keep in mind while setting your routes and matchers:
 - Routes are evaluated in the order they are set.
 - When a route matches, it is executed and all others routes are ignored. For each packet, only a single
   route is executed.
+- An empty route will match everything. Adding an empty route as the last route in your router will
+  allow you to get all stanzas that did not match any previous route. You can for example use this to
+  log all unexpected stanza received by your client or component.
 
 TODO: Automatically reply to IQ that do not match any route, to comply to XMPP standard.
 */
@@ -146,13 +149,47 @@ func (r *Route) Packet(name string) *Route {
 }
 
 // -------------------------
+// Match on stanza type
+
+// nsTypeMather matches on a list of IQ  payload namespaces
+type nsTypeMatcher []string
+
+func (m nsTypeMatcher) Match(p Packet, match *RouteMatch) bool {
+	// TODO: Rework after merge of #62
+	var stanzaType string
+	switch packet := p.(type) {
+	case IQ:
+		stanzaType = packet.Type
+	case Presence:
+		stanzaType = packet.Type
+	case Message:
+		if packet.Type == "" {
+			// optional on message, normal is the default type
+			stanzaType = "normal"
+		} else {
+			stanzaType = packet.Type
+		}
+	default:
+		return false
+	}
+	return matchInArray(m, stanzaType)
+}
+
+// IQNamespaces adds an IQ matcher, expecting both an IQ and a
+func (r *Route) StanzaType(types ...string) *Route {
+	for k, v := range types {
+		types[k] = strings.ToLower(v)
+	}
+	return r.addMatcher(nsTypeMatcher(types))
+}
+
+// -------------------------
 // Match on IQ and namespace
 
 // nsIqMather matches on a list of IQ  payload namespaces
 type nsIQMatcher []string
 
 func (m nsIQMatcher) Match(p Packet, match *RouteMatch) bool {
-	// TODO
 	iq, ok := p.(IQ)
 	if !ok {
 		return false
