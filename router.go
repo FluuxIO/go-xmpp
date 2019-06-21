@@ -12,6 +12,9 @@ Here are important rules to keep in mind while setting your routes and matchers:
 - Routes are evaluated in the order they are set.
 - When a route matches, it is executed and all others routes are ignored. For each packet, only a single
   route is executed.
+- An empty route will match everything. Adding an empty route as the last route in your router will
+  allow you to get all stanzas that did not match any previous route. You can for example use this to
+  log all unexpected stanza received by your client or component.
 
 TODO: Automatically reply to IQ that do not match any route, to comply to XMPP standard.
 */
