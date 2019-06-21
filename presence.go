@@ -12,7 +12,7 @@ type Presence struct {
 	Show     PresenceShow `xml:"show,omitempty"` // away, chat, dnd, xa
 	Type     PresenceType `xml:"type,attr,omitempty"`
 	Status   string       `xml:"status,omitempty"`
-	Priority string       `xml:"priority,omitempty"` // default: 0
+	Priority int8         `xml:"priority,omitempty"` // default: 0
 	Error    Err          `xml:"error,omitempty"`
 }
 
