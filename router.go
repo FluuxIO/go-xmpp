@@ -146,13 +146,47 @@ func (r *Route) Packet(name string) *Route {
 }
 
 // -------------------------
+// Match on stanza type
+
+// nsTypeMather matches on a list of IQ  payload namespaces
+type nsTypeMatcher []string
+
+func (m nsTypeMatcher) Match(p Packet, match *RouteMatch) bool {
+	// TODO: Rework after merge of #62
+	var stanzaType string
+	switch packet := p.(type) {
+	case IQ:
+		stanzaType = packet.Type
+	case Presence:
+		stanzaType = packet.Type
+	case Message:
+		if packet.Type == "" {
+			// optional on message, normal is the default type
+			stanzaType = "normal"
+		} else {
+			stanzaType = packet.Type
+		}
+	default:
+		return false
+	}
+	return matchInArray(m, stanzaType)
+}
+
+// IQNamespaces adds an IQ matcher, expecting both an IQ and a
+func (r *Route) StanzaType(types ...string) *Route {
+	for k, v := range types {
+		types[k] = strings.ToLower(v)
+	}
+	return r.addMatcher(nsTypeMatcher(types))
+}
+
+// -------------------------
 // Match on IQ and namespace
 
 // nsIqMather matches on a list of IQ  payload namespaces
 type nsIQMatcher []string
 
 func (m nsIQMatcher) Match(p Packet, match *RouteMatch) bool {
-	// TODO
 	iq, ok := p.(IQ)
 	if !ok {
 		return false

@@ -9,9 +9,6 @@ import (
 )
 
 // ============================================================================
-// SenderMock
-
-// ============================================================================
 // Test route & matchers
 
 func TestNameMatcher(t *testing.T) {
@@ -76,6 +73,85 @@ func TestIQNSMatcher(t *testing.T) {
 		t.Errorf("IQ should not have been matched and routed: %v", iqVersion)
 	}
 }
+
+func TestTypeMatcher(t *testing.T) {
+	router := xmpp.NewRouter()
+	router.NewRoute().
+		StanzaType("normal").
+		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+			_ = s.SendRaw(successFlag)
+		})
+
+	// Check that a packet with the proper type matches
+	conn := NewSenderMock()
+	message := xmpp.NewMessage("normal", "", "test@localhost", "1", "")
+	message.Body = "hello"
+	router.Route(conn, message)
+
+	if conn.String() != successFlag {
+		t.Errorf("'normal' message should have been matched and routed: %v", message)
+	}
+
+	// We should match on default type 'normal' for message without a type
+	conn = NewSenderMock()
+	message = xmpp.NewMessage("", "", "test@localhost", "1", "")
+	message.Body = "hello"
+	router.Route(conn, message)
+
+	if conn.String() != successFlag {
+		t.Errorf("message should have been matched and routed: %v", message)
+	}
+
+	// We do not match on other types
+	conn = NewSenderMock()
+	iqVersion := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	iqVersion.Payload = &xmpp.DiscoInfo{
+		XMLName: xml.Name{
+			Space: "jabber:iq:version",
+			Local: "query",
+		}}
+	router.Route(conn, iqVersion)
+
+	if conn.String() == successFlag {
+		t.Errorf("iq get should not have been matched and routed: %v", iqVersion)
+	}
+}
+
+// A blank route with empty matcher will always match
+// It can be use to receive all packets that do not match any of the previous route.
+func TestCatchallMatcher(t *testing.T) {
+	router := xmpp.NewRouter()
+	router.NewRoute().
+		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+			_ = s.SendRaw(successFlag)
+		})
+
+	// Check that we match on several packets
+	conn := NewSenderMock()
+	message := xmpp.NewMessage("chat", "", "test@localhost", "1", "")
+	message.Body = "hello"
+	router.Route(conn, message)
+
+	if conn.String() != successFlag {
+		t.Errorf("chat message should have been matched and routed: %v", message)
+	}
+
+	conn = NewSenderMock()
+	iqVersion := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	iqVersion.Payload = &xmpp.DiscoInfo{
+		XMLName: xml.Name{
+			Space: "jabber:iq:version",
+			Local: "query",
+		}}
+	router.Route(conn, iqVersion)
+
+	if conn.String() != successFlag {
+		t.Errorf("iq get should have been matched and routed: %v", iqVersion)
+	}
+}
+
+// ============================================================================
+// SenderMock
 
 var successFlag = "matched"
 
