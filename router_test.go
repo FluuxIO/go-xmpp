@@ -48,7 +48,6 @@ func TestIQNSMatcher(t *testing.T) {
 	// Check that an IQ with proper namespace does match
 	conn := NewSenderMock()
 	iqDisco := xmpp.NewIQ("get", "", "localhost", "1", "")
-	// TODO: Add a function to generate payload with proper namespace initialisation
 	iqDisco.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: xmpp.NSDiscoInfo,
@@ -62,7 +61,6 @@ func TestIQNSMatcher(t *testing.T) {
 	// Check that another namespace is not matched
 	conn = NewSenderMock()
 	iqVersion := xmpp.NewIQ("get", "", "localhost", "1", "")
-	// TODO: Add a function to generate payload with proper namespace initialisation
 	iqVersion.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
@@ -114,6 +112,65 @@ func TestTypeMatcher(t *testing.T) {
 
 	if conn.String() == successFlag {
 		t.Errorf("iq get should not have been matched and routed: %v", iqVersion)
+	}
+}
+
+func TestCompositeMatcher(t *testing.T) {
+	router := xmpp.NewRouter()
+	router.NewRoute().
+		IQNamespaces("jabber:iq:version").
+		StanzaType("get").
+		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+			_ = s.SendRaw(successFlag)
+		})
+
+	// Data set
+	getVersionIq := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	getVersionIq.Payload = &xmpp.Version{
+		XMLName: xml.Name{
+			Space: "jabber:iq:version",
+			Local: "query",
+		}}
+
+	setVersionIq := xmpp.NewIQ("set", "service.localhost", "test@localhost", "1", "")
+	setVersionIq.Payload = &xmpp.Version{
+		XMLName: xml.Name{
+			Space: "jabber:iq:version",
+			Local: "query",
+		}}
+
+	GetDiscoIq := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	GetDiscoIq.Payload = &xmpp.DiscoInfo{
+		XMLName: xml.Name{
+			Space: "http://jabber.org/protocol/disco#info",
+			Local: "query",
+		}}
+
+	message := xmpp.NewMessage("normal", "", "test@localhost", "1", "")
+	message.Body = "hello"
+
+	tests := []struct {
+		name  string
+		input xmpp.Packet
+		want  bool
+	}{
+		{name: "match get version iq", input: getVersionIq, want: true},
+		{name: "ignore set version iq", input: setVersionIq, want: false},
+		{name: "ignore get discoinfo iq", input: GetDiscoIq, want: false},
+		{name: "ignore message", input: message, want: false},
+	}
+
+	//
+	for _, tc := range tests {
+		t.Run(tc.name, func(st *testing.T) {
+			conn := NewSenderMock()
+			router.Route(conn, tc.input)
+
+			res := conn.String() == successFlag
+			if tc.want != res {
+				st.Errorf("incorrect result for %#v\nMatch = %#v, expecting %#v", tc.input, res, tc.want)
+			}
+		})
 	}
 }
 
