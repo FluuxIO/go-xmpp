@@ -83,7 +83,7 @@ func TestTypeMatcher(t *testing.T) {
 
 	// Check that a packet with the proper type matches
 	conn := NewSenderMock()
-	message := xmpp.NewMessage("normal", "", "test@localhost", "1", "")
+	message := xmpp.NewMessage(xmpp.Attrs{Type: "normal", To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 	router.Route(conn, message)
 
@@ -93,7 +93,7 @@ func TestTypeMatcher(t *testing.T) {
 
 	// We should match on default type 'normal' for message without a type
 	conn = NewSenderMock()
-	message = xmpp.NewMessage("", "", "test@localhost", "1", "")
+	message = xmpp.NewMessage(xmpp.Attrs{To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 	router.Route(conn, message)
 
@@ -103,7 +103,7 @@ func TestTypeMatcher(t *testing.T) {
 
 	// We do not match on other types
 	conn = NewSenderMock()
-	iqVersion := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	iqVersion := xmpp.NewIQ(xmpp.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
 	iqVersion.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
@@ -126,28 +126,28 @@ func TestCompositeMatcher(t *testing.T) {
 		})
 
 	// Data set
-	getVersionIq := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	getVersionIq := xmpp.NewIQ(xmpp.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
 	getVersionIq.Payload = &xmpp.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	setVersionIq := xmpp.NewIQ("set", "service.localhost", "test@localhost", "1", "")
+	setVersionIq := xmpp.NewIQ(xmpp.Attrs{Type: "set", From: "service.localhost", To: "test@localhost", Id: "1"})
 	setVersionIq.Payload = &xmpp.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	GetDiscoIq := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	GetDiscoIq := xmpp.NewIQ(xmpp.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
 	GetDiscoIq.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "http://jabber.org/protocol/disco#info",
 			Local: "query",
 		}}
 
-	message := xmpp.NewMessage("normal", "", "test@localhost", "1", "")
+	message := xmpp.NewMessage(xmpp.Attrs{Type: "normal", To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 
 	tests := []struct {
@@ -186,7 +186,7 @@ func TestCatchallMatcher(t *testing.T) {
 
 	// Check that we match on several packets
 	conn := NewSenderMock()
-	message := xmpp.NewMessage("chat", "", "test@localhost", "1", "")
+	message := xmpp.NewMessage(xmpp.Attrs{Type: "chat", To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 	router.Route(conn, message)
 
@@ -195,7 +195,7 @@ func TestCatchallMatcher(t *testing.T) {
 	}
 
 	conn = NewSenderMock()
-	iqVersion := xmpp.NewIQ("get", "service.localhost", "test@localhost", "1", "")
+	iqVersion := xmpp.NewIQ(xmpp.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
 	iqVersion.Payload = &xmpp.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",

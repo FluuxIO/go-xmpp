@@ -155,8 +155,7 @@ func (r *Route) Packet(name string) *Route {
 type nsTypeMatcher []string
 
 func (m nsTypeMatcher) Match(p Packet, match *RouteMatch) bool {
-	// TODO: Rework after merge of #62
-	var stanzaType string
+	var stanzaType StanzaType
 	switch packet := p.(type) {
 	case IQ:
 		stanzaType = packet.Type
@@ -172,7 +171,7 @@ func (m nsTypeMatcher) Match(p Packet, match *RouteMatch) bool {
 	default:
 		return false
 	}
-	return matchInArray(m, stanzaType)
+	return matchInArray(m, string(stanzaType))
 }
 
 // IQNamespaces adds an IQ matcher, expecting both an IQ and a
