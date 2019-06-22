@@ -200,7 +200,7 @@ func (c *Client) SendRaw(packet string) error {
 // Loop: Receive data from server
 func (c *Client) recv(keepaliveQuit chan<- struct{}) (err error) {
 	for {
-		val, err := next(c.Session.decoder)
+		val, err := nextPacket(c.Session.decoder)
 		if err != nil {
 			close(keepaliveQuit)
 			c.updateState(StateDisconnected)

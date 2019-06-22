@@ -78,7 +78,7 @@ func (c *Component) Connect() error {
 	c.decoder = xml.NewDecoder(conn)
 
 	// 2. Initialize xml decoder and extract streamID from reply
-	streamId, err := initDecoder(c.decoder)
+	streamId, err := initStream(c.decoder)
 	if err != nil {
 		return errors.New("cannot init decoder " + err.Error())
 	}
@@ -89,7 +89,7 @@ func (c *Component) Connect() error {
 	}
 
 	// 4. Check server response for authentication
-	val, err := next(c.decoder)
+	val, err := nextPacket(c.decoder)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (c *Component) SetHandler(handler EventHandler) {
 // Receiver Go routine receiver
 func (c *Component) recv() (err error) {
 	for {
-		val, err := next(c.decoder)
+		val, err := nextPacket(c.decoder)
 		if err != nil {
 			c.updateState(StateDisconnected)
 			return err

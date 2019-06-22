@@ -92,7 +92,7 @@ func (s *Session) open(domain string) (f StreamFeatures) {
 	}
 
 	// Set xml decoder and extract streamID from reply
-	s.StreamId, s.err = initDecoder(s.decoder) // TODO refactor / rename
+	s.StreamId, s.err = initStream(s.decoder) // TODO refactor / rename
 	if s.err != nil {
 		return
 	}

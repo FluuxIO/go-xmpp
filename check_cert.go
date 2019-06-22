@@ -54,14 +54,14 @@ func (c *ServerCheck) Check() error {
 	}
 
 	// Set xml decoder and extract streamID from reply (not used for now)
-	_, err = initDecoder(decoder)
+	_, err = initStream(decoder)
 	if err != nil {
 		return err
 	}
 
 	// extract stream features
 	var f StreamFeatures
-	packet, err := next(decoder)
+	packet, err := nextPacket(decoder)
 	if err != nil {
 		err = fmt.Errorf("stream open decode features: %s", err)
 		return err

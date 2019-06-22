@@ -33,7 +33,7 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, password
 	fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='PLAIN'>%s</auth>", nsSASL, enc)
 
 	// Next message should be either success or failure.
-	val, err := next(decoder)
+	val, err := nextPacket(decoder)
 	if err != nil {
 		return err
 	}

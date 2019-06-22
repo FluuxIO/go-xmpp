@@ -10,8 +10,8 @@ import (
 )
 
 func TestGeneratePresence(t *testing.T) {
-	presence := xmpp.NewPresence("admin@localhost", "test@localhost", "1", "en")
-	presence.Show = "chat"
+	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
+	presence.Show = xmpp.PresenceShowChat
 
 	data, err := xml.Marshal(presence)
 	if err != nil {
@@ -32,13 +32,13 @@ func TestPresenceSubElt(t *testing.T) {
 	// Test structure to ensure that show, status and priority are correctly defined as presence
 	// package sub-elements
 	type pres struct {
-		Show     string `xml:"show"`
-		Status   string `xml:"status"`
-		Priority int    `xml:"priority"`
+		Show     xmpp.PresenceShow `xml:"show"`
+		Status   string            `xml:"status"`
+		Priority int8              `xml:"priority"`
 	}
 
-	presence := xmpp.NewPresence("admin@localhost", "test@localhost", "1", "en")
-	presence.Show = "xa"
+	presence := xmpp.NewPresence(xmpp.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
+	presence.Show = xmpp.PresenceShowXA
 	presence.Status = "Coding"
 	presence.Priority = 10
 

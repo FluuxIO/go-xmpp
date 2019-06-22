@@ -83,7 +83,7 @@ func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 		return
 	}
 
-	iqResp := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
+	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
 
 	switch info.Node {
 	case "":
@@ -192,7 +192,7 @@ func handleDelegation(s xmpp.Sender, p xmpp.Packet) {
 
 	if pubsub.Publish.XMLName.Local == "publish" {
 		// Prepare pubsub IQ reply
-		iqResp := xmpp.NewIQ("result", forwardedIQ.To, forwardedIQ.From, forwardedIQ.Id, "en")
+		iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: forwardedIQ.To, To: forwardedIQ.From, Id: forwardedIQ.Id})
 		payload := xmpp.PubSub{
 			XMLName: xml.Name{
 				Space: "http://jabber.org/protocol/pubsub",
@@ -201,7 +201,7 @@ func handleDelegation(s xmpp.Sender, p xmpp.Packet) {
 		}
 		iqResp.Payload = &payload
 		// Wrap the reply in delegation 'forward'
-		iqForward := xmpp.NewIQ("result", iq.To, iq.From, iq.Id, "en")
+		iqForward := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
 		delegPayload := xmpp.Delegation{
 			XMLName: xml.Name{
 				Space: "urn:xmpp:delegation:1",

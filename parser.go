@@ -14,29 +14,29 @@ import (
 //       reattach features (allowing to resume an existing stream at the point the connection was interrupted, without
 //       getting through the authentication process.
 // TODO We should handle stream error from XEP-0114 ( <conflict/> or <host-unknown/> )
-func initDecoder(p *xml.Decoder) (sessionID string, err error) {
+func initStream(p *xml.Decoder) (sessionID string, err error) {
 	for {
 		var t xml.Token
 		t, err = p.Token()
 		if err != nil {
-			return
+			return sessionID, err
 		}
 
 		switch elem := t.(type) {
 		case xml.StartElement:
 			if elem.Name.Space != NSStream || elem.Name.Local != "stream" {
 				err = errors.New("xmpp: expected <stream> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
-				return
+				return sessionID, err
 			}
 
-			// Parse Stream attributes
+			// Parse XMPP stream attributes
 			for _, attrs := range elem.Attr {
 				switch attrs.Name.Local {
 				case "id":
 					sessionID = attrs.Value
 				}
 			}
-			return
+			return sessionID, err
 		}
 	}
 }
@@ -58,10 +58,12 @@ func nextStart(p *xml.Decoder) (xml.StartElement, error) {
 	}
 }
 
-// next scans XML token stream for next element and then assign a structure to decode
-// that elements.
+// nextPacket scans XML token stream for next complete XMPP stanza.
+// Once the type of stanza has been identified, a structure is created to decode
+// that stanza and returned.
 // TODO Use an interface to return packets interface xmppDecoder
-func next(p *xml.Decoder) (Packet, error) {
+// TODO make auth and bind use nextPacket instead of directly nextStart
+func nextPacket(p *xml.Decoder) (Packet, error) {
 	// Read start element to find out how we want to parse the XMPP packet
 	se, err := nextStart(p)
 	if err != nil {
@@ -84,6 +86,13 @@ func next(p *xml.Decoder) (Packet, error) {
 	}
 }
 
+/*
+TODO: From all the decoder, we can return a pointer to the actual concrete type, instead of directly that
+   type.
+   That way, we have a consistent way to do type assertion, always matching against pointers.
+*/
+
+// decodeStream will fully decode a stream packet
 func decodeStream(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "error":
@@ -96,6 +105,7 @@ func decodeStream(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	}
 }
 
+// decodeSASL decodes a packet related to SASL authentication.
 func decodeSASL(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "success":
@@ -108,6 +118,7 @@ func decodeSASL(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	}
 }
 
+// decodeClient decodes all known packets in the client namespace.
 func decodeClient(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "message":
@@ -122,9 +133,10 @@ func decodeClient(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	}
 }
 
+// decodeClient decodes all known packets in the component namespace.
 func decodeComponent(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
-	case "handshake":
+	case "handshake": // handshake is used to authenticate components
 		return handshake.decode(p, se)
 	case "message":
 		return message.decode(p, se)

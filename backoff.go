@@ -13,7 +13,7 @@ It can be used in several ways:
 - Using ticker channel to trigger callback function on tick
 
 The functions for Backoff are not threadsafe, but you can:
-- Keep the attempt counter on your end and use DurationForAttempt(int)
+- Keep the attempt counter on your end and use durationForAttempt(int)
 - Use lock in your own code to protect the Backoff structure.
 
 TODO: Implement Backoff Ticker channel
@@ -34,11 +34,11 @@ const (
 	defaultCap    int = 180000 // 3 minutes
 )
 
-// Backoff can provide increasing duration with the number of attempt
+// backoff provides increasing duration with the number of attempt
 // performed. The structure is used to support exponential backoff on
 // connection attempts to avoid hammering the server we are connecting
 // to.
-type Backoff struct {
+type backoff struct {
 	NoJitter     bool
 	Base         int
 	Factor       int
@@ -47,20 +47,20 @@ type Backoff struct {
 	attempt      int
 }
 
-// Duration returns the duration to apply to the current attempt.
-func (b *Backoff) Duration() time.Duration {
-	d := b.DurationForAttempt(b.attempt)
+// duration returns the duration to apply to the current attempt.
+func (b *backoff) duration() time.Duration {
+	d := b.durationForAttempt(b.attempt)
 	b.attempt++
 	return d
 }
 
-// Wait sleeps for backoff duration for current attempt.
-func (b *Backoff) Wait() {
-	time.Sleep(b.Duration())
+// wait sleeps for backoff duration for current attempt.
+func (b *backoff) wait() {
+	time.Sleep(b.duration())
 }
 
-// DurationForAttempt returns a duration for an attempt number, in a stateless way.
-func (b *Backoff) DurationForAttempt(attempt int) time.Duration {
+// durationForAttempt returns a duration for an attempt number, in a stateless way.
+func (b *backoff) durationForAttempt(attempt int) time.Duration {
 	b.setDefault()
 	expBackoff := math.Min(float64(b.Cap), float64(b.Base)*math.Pow(float64(b.Factor), float64(b.attempt)))
 	d := int(math.Trunc(expBackoff))
@@ -70,13 +70,13 @@ func (b *Backoff) DurationForAttempt(attempt int) time.Duration {
 	return time.Duration(d) * time.Millisecond
 }
 
-// Reset sets back the number of attempts to 0. This is to be called after a successfull operation has been performed,
+// reset sets back the number of attempts to 0. This is to be called after a successful operation has been performed,
 // to reset the exponential backoff interval.
-func (b *Backoff) Reset() {
+func (b *backoff) reset() {
 	b.attempt = 0
 }
 
-func (b *Backoff) setDefault() {
+func (b *backoff) setDefault() {
 	if b.Base == 0 {
 		b.Base = defaultBase
 	}

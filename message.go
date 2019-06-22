@@ -7,9 +7,11 @@ import (
 // ============================================================================
 // Message Packet
 
+// Message implements RFC 6120 - A.5 Client Namespace (a part)
 type Message struct {
 	XMLName xml.Name `xml:"message"`
-	PacketAttrs
+	Attrs
+
 	Subject    string         `xml:"subject,omitempty"`
 	Body       string         `xml:"body,omitempty"`
 	Thread     string         `xml:"thread,omitempty"`
@@ -21,16 +23,10 @@ func (Message) Name() string {
 	return "message"
 }
 
-func NewMessage(msgtype, from, to, id, lang string) Message {
+func NewMessage(a Attrs) Message {
 	return Message{
 		XMLName: xml.Name{Local: "message"},
-		PacketAttrs: PacketAttrs{
-			Id:   id,
-			From: from,
-			To:   to,
-			Type: msgtype,
-			Lang: lang,
-		},
+		Attrs:   a,
 	}
 }
 
@@ -63,7 +59,7 @@ func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			msg.Id = attr.Value
 		}
 		if attr.Name.Local == "type" {
-			msg.Type = attr.Value
+			msg.Type = StanzaType(attr.Value)
 		}
 		if attr.Name.Local == "to" {
 			msg.To = attr.Value

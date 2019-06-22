@@ -34,6 +34,7 @@ func main() {
 		Address:  *address,
 		Jid:      *jid,
 		Password: *password,
+		// PacketLogger: os.Stdout,
 		Insecure: true,
 	}
 
@@ -91,7 +92,7 @@ func handleIQ(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
 		playSCURL(player, url)
 		setResponse := new(xmpp.ControlSetResponse)
 		// FIXME: Broken
-		reply := xmpp.IQ{PacketAttrs: xmpp.PacketAttrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
+		reply := xmpp.IQ{Attrs: xmpp.Attrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
 		_ = s.Send(reply)
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(s, "Radiohead", "Spectre")
@@ -102,7 +103,7 @@ func handleIQ(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
 
 func sendUserTune(s xmpp.Sender, artist string, title string) {
 	tune := xmpp.Tune{Artist: artist, Title: title}
-	iq := xmpp.NewIQ("set", "", "", "usertune-1", "en")
+	iq := xmpp.NewIQ(xmpp.Attrs{Type: "set", Id: "usertune-1", Lang: "en"})
 	payload := xmpp.PubSub{Publish: &xmpp.Publish{Node: "http://jabber.org/protocol/tune", Item: xmpp.Item{Tune: &tune}}}
 	iq.Payload = &payload
 	_ = s.Send(iq)
