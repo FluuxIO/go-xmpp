@@ -2,6 +2,7 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"reflect"
 )
 
 // ============================================================================
@@ -28,6 +29,37 @@ func NewMessage(a Attrs) Message {
 		XMLName: xml.Name{Local: "message"},
 		Attrs:   a,
 	}
+}
+
+// Get search and extracts a specific extension on a message.
+// It receives a pointer to an MsgExtension. It will panic if the caller
+// does not pass a pointer.
+// It will return true if the passed extension is found and set the pointer
+// to the extension passed as parameter to the found extension.
+// It will return false if the extension is not found on the message.
+//
+// Example usage:
+//   var oob xmpp.OOB
+//   if ok := msg.Get(&oob); ok {
+//     // oob extension has been found
+//	 }
+func (msg *Message) Get(ext MsgExtension) bool {
+	target := reflect.ValueOf(ext)
+	if target.Kind() != reflect.Ptr {
+		panic("you must pass a pointer to the message Get method")
+	}
+
+	for _, e := range msg.Extensions {
+		if reflect.TypeOf(e) == target.Type() {
+			source := reflect.ValueOf(e)
+			if source.Kind() != reflect.Ptr {
+				source = source.Elem()
+			}
+			target.Elem().Set(source.Elem())
+			return true
+		}
+	}
+	return false
 }
 
 type messageDecoder struct{}

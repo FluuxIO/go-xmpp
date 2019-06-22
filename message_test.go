@@ -47,3 +47,30 @@ func TestDecodeError(t *testing.T) {
 		t.Errorf("incorrect error type: %s", parsedMessage.Error.Type)
 	}
 }
+
+func TestGetOOB(t *testing.T) {
+	image := "https://localhost/image.png"
+	msg := xmpp.NewMessage(xmpp.Attrs{To: "test@localhost"})
+	ext := xmpp.OOB{
+		XMLName: xml.Name{Space: "jabber:x:oob", Local: "x"},
+		URL:     image,
+	}
+	msg.Extensions = append(msg.Extensions, &ext)
+
+	// OOB can properly be found
+	var oob xmpp.OOB
+	// Try to find and
+	if ok := msg.Get(&oob); !ok {
+		t.Error("could not find oob extension")
+		return
+	}
+	if oob.URL != image {
+		t.Errorf("OOB URL was not properly extracted: ''%s", oob.URL)
+	}
+
+	// Markable is not found
+	var m xmpp.Markable
+	if ok := msg.Get(&m); ok {
+		t.Error("we should not have found markable extension")
+	}
+}
