@@ -12,3 +12,5 @@ gosrc.io/xmpp v0.1.1-0.20190619120342-a6cbc0c08f52 h1:H5BezaFYvDL9r72ng90ICnefto
 gosrc.io/xmpp v0.1.1-0.20190619120342-a6cbc0c08f52/go.mod h1:WvSgrZF7lMvjd1SH8nVGi7ZGr6gNU7oUuBdwpFTs9nY=
 gosrc.io/xmpp v0.1.1-0.20190619153249-b1dde2330764 h1:jlYtpqdRoBC3Gke7MacXsVpSZL0g5nIBG/b9JVxpAVY=
 gosrc.io/xmpp v0.1.1-0.20190619153249-b1dde2330764/go.mod h1:WvSgrZF7lMvjd1SH8nVGi7ZGr6gNU7oUuBdwpFTs9nY=
+gosrc.io/xmpp v0.1.1-0.20190622092414-e9c704eff56e h1:dgWkSZHo0u54X+kFI8CUPiFoeX0rhmuEgykKfyFeHKI=
+gosrc.io/xmpp v0.1.1-0.20190622092414-e9c704eff56e/go.mod h1:WvSgrZF7lMvjd1SH8nVGi7ZGr6gNU7oUuBdwpFTs9nY=
