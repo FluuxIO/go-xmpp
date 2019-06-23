@@ -81,7 +81,7 @@ func (msg *Message) XMPPFormat() string {
 	return string(out)
 }
 
-// UnmarshalXML implements custom parsing for IQs
+// UnmarshalXML implements custom parsing for messages
 func (msg *Message) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	msg.XMLName = start.Name
 
