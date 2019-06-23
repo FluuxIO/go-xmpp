@@ -7,6 +7,7 @@ import (
 )
 
 type MsgExtension interface{}
+type PresExtension interface{}
 
 // The Registry for msg and IQ types is a global variable.
 // TODO: Move to the client init process to remove the dependency on a global variable.
@@ -76,6 +77,19 @@ func (r *registry) GetExtensionType(pktType PacketType, name xml.Name) reflect.T
 		return store["*"]
 	}
 	return result
+}
+
+// GetPresExtension returns an instance of PresExtension, by matching packet type and XML
+// tag name against the registry.
+func (r *registry) GetPresExtension(name xml.Name) PresExtension {
+	if extensionType := r.GetExtensionType(PKTPresence, name); extensionType != nil {
+		val := reflect.New(extensionType)
+		elt := val.Interface()
+		if presExt, ok := elt.(PresExtension); ok {
+			return presExt
+		}
+	}
+	return nil
 }
 
 // GetMsgExtension returns an instance of MsgExtension, by matching packet type and XML
