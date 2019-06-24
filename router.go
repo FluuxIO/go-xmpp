@@ -40,7 +40,6 @@ func (r *Router) route(s Sender, p Packet) {
 		match.Handler.HandlePacket(s, p)
 		return
 	}
-
 	// If there is no match and we receive an iq set or get, we need to send a reply
 	if iq, ok := p.(IQ); ok {
 		if iq.Type == IQTypeGet || iq.Type == IQTypeSet {
@@ -52,7 +51,7 @@ func (r *Router) route(s Sender, p Packet) {
 func iqNotImplemented(s Sender, iq IQ) {
 	err := Err{
 		XMLName: xml.Name{Local: "error"},
-		Code:    500,
+		Code:    501,
 		Type:    "cancel",
 		Reason:  "feature-not-implemented",
 	}
