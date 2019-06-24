@@ -18,10 +18,10 @@ type MucPresence struct {
 
 // History implements XEP-0045: Multi-User Chat - 19.1
 type History struct {
-	MaxChars   int       `xml:"maxchars,attr,omitempty"`
-	MaxStanzas int       `xml:"maxstanzas,attr,omitempty"`
-	Seconds    int       `xml:"seconds,attr,omitempty"`
-	Since      time.Time `xml:"since,attr,omitempty"`
+	MaxChars   *int       `xml:"maxchars,attr,omitempty"`
+	MaxStanzas *int       `xml:"maxstanzas,attr,omitempty"`
+	Seconds    *int       `xml:"seconds,attr,omitempty"`
+	Since      *time.Time `xml:"since,attr,omitempty"`
 }
 
 func init() {

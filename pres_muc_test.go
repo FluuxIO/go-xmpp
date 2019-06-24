@@ -54,30 +54,32 @@ func TestMucHistory(t *testing.T) {
 		t.Error("muc presence extension was not found")
 	}
 
-	if muc.History.MaxStanzas != 20 {
+	if *muc.History.MaxStanzas != 20 {
 		t.Errorf("incorrect max stanza: '%d'", muc.History.MaxStanzas)
 	}
 }
 
 // https://xmpp.org/extensions/xep-0045.html#example-37
 func TestMucNoHistory(t *testing.T) {
-	str := `<presence
-    from='hag66@shakespeare.lit/pda'
-    id='n13mt3l'
-    to='coven@chat.shakespeare.lit/thirdwitch'>
-  <x xmlns='http://jabber.org/protocol/muc'>
-    <history maxstanzas='0'/>
-  </x>
-</presence>`
+	str := "<presence" +
+		" id=\"n13mt3l\"" +
+		" from=\"hag66@shakespeare.lit/pda\"" +
+		" to=\"coven@chat.shakespeare.lit/thirdwitch\">" +
+		"<x xmlns=\"http://jabber.org/protocol/muc\">" +
+		"<history maxstanzas=\"0\"></history>" +
+		"</x>" +
+		"</presence>"
+
+	maxstanzas := 0
 
 	pres := xmpp.Presence{Attrs: xmpp.Attrs{
-			From: "hag66@shakespeare.lit/pda",
-			Id: "n13mt3l",
-			To: "coven@chat.shakespeare.lit/thirdwitch",
-		},
+		From: "hag66@shakespeare.lit/pda",
+		Id:   "n13mt3l",
+		To:   "coven@chat.shakespeare.lit/thirdwitch",
+	},
 		Extensions: []xmpp.PresExtension{
 			xmpp.MucPresence{
-				History: xmpp.History{MaxStanzas: 0},
+				History: xmpp.History{MaxStanzas: &maxstanzas},
 			},
 		},
 	}
@@ -86,7 +88,7 @@ func TestMucNoHistory(t *testing.T) {
 		t.Error("error on encode:", err)
 	}
 
-	if data != str {
-		t.Errorf("incorrect max stanza: '%d'", muc.History.MaxStanzas)
+	if string(data) != str {
+		t.Errorf("incorrect stanza: \n%s\n%s", str, data)
 	}
 }
