@@ -128,11 +128,11 @@ func (c *Component) recv() (err error) {
 		// Handle stream errors
 		switch p := val.(type) {
 		case StreamError:
-			c.router.Route(c, val)
+			c.router.route(c, val)
 			c.streamError(p.Error.Local, p.Text)
 			return errors.New("stream error: " + p.Error.Local)
 		}
-		c.router.Route(c, val)
+		c.router.route(c, val)
 	}
 }
 
