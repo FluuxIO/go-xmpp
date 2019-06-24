@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"encoding/xml"
 	"strings"
 )
 
@@ -32,10 +33,31 @@ func NewRouter() *Router {
 // route is called by the XMPP client to dispatch stanza received using the set up routes.
 // It is also used by test, but is not supposed to be used directly by users of the library.
 func (r *Router) route(s Sender, p Packet) {
+
 	var match RouteMatch
 	if r.Match(p, &match) {
+		// If we match, route the packet
 		match.Handler.HandlePacket(s, p)
+		return
 	}
+
+	// If there is no match and we receive an iq set or get, we need to send a reply
+	if iq, ok := p.(IQ); ok {
+		if iq.Type == IQTypeGet || iq.Type == IQTypeSet {
+			iqNotImplemented(s, iq)
+		}
+	}
+}
+
+func iqNotImplemented(s Sender, iq IQ) {
+	err := Err{
+		XMLName: xml.Name{Local: "error"},
+		Code:    500,
+		Type:    "cancel",
+		Reason:  "feature-not-implemented",
+	}
+	reply := iq.MakeError(err)
+	_ = s.Send(reply)
 }
 
 // NewRoute registers an empty routes
