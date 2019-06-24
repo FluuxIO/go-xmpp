@@ -58,3 +58,35 @@ func TestMucHistory(t *testing.T) {
 		t.Errorf("incorrect max stanza: '%d'", muc.History.MaxStanzas)
 	}
 }
+
+// https://xmpp.org/extensions/xep-0045.html#example-37
+func TestMucNoHistory(t *testing.T) {
+	str := `<presence
+    from='hag66@shakespeare.lit/pda'
+    id='n13mt3l'
+    to='coven@chat.shakespeare.lit/thirdwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'>
+    <history maxstanzas='0'/>
+  </x>
+</presence>`
+
+	pres := xmpp.Presence{Attrs: xmpp.Attrs{
+			From: "hag66@shakespeare.lit/pda",
+			Id: "n13mt3l",
+			To: "coven@chat.shakespeare.lit/thirdwitch",
+		},
+		Extensions: []xmpp.PresExtension{
+			xmpp.MucPresence{
+				History: xmpp.History{MaxStanzas: 0},
+			},
+		},
+	}
+	data, err := xml.Marshal(&pres)
+	if err != nil {
+		t.Error("error on encode:", err)
+	}
+
+	if data != str {
+		t.Errorf("incorrect max stanza: '%d'", muc.History.MaxStanzas)
+	}
+}
