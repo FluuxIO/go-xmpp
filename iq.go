@@ -23,7 +23,8 @@ type IQ struct { // Info/Query
 	//    request."
 	Payload IQPayload `xml:",omitempty"`
 	Error   Err       `xml:"error,omitempty"`
-	RawXML  string    `xml:",innerxml"`
+	// Any is used to decode unknown payload as a generique structure
+	Any *Node `xml:",any"`
 }
 
 type IQPayload interface {
@@ -114,7 +115,12 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				continue
 			}
 			// TODO: If unknown decode as generic node
-			return fmt.Errorf("unexpected element in iq: %s %s", tt.Name.Space, tt.Name.Local)
+			node := new(Node)
+			err = d.DecodeElement(node, &tt)
+			if err != nil {
+				return err
+			}
+			iq.Any = node
 		case xml.EndElement:
 			if tt == start.End() {
 				return nil
