@@ -210,13 +210,13 @@ func (c *Client) recv(keepaliveQuit chan<- struct{}) (err error) {
 		// Handle stream errors
 		switch packet := val.(type) {
 		case StreamError:
-			c.router.Route(c, val)
+			c.router.route(c, val)
 			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
 			return errors.New("stream error: " + packet.Error.Local)
 		}
 
-		c.router.Route(c, val)
+		c.router.route(c, val)
 	}
 }
 

@@ -29,7 +29,9 @@ func NewRouter() *Router {
 	return &Router{}
 }
 
-func (r *Router) Route(s Sender, p Packet) {
+// route is called by the XMPP client to dispatch stanza received using the set up routes.
+// It is also used by test, but is not supposed to be used directly by users of the library.
+func (r *Router) route(s Sender, p Packet) {
 	var match RouteMatch
 	if r.Match(p, &match) {
 		match.Handler.HandlePacket(s, p)
