@@ -153,3 +153,19 @@ func TestPayloadWithError(t *testing.T) {
 		t.Errorf("incorrect error value: '%s'", parsedIQ.Error.Reason)
 	}
 }
+
+func TestUnknownPayload(t *testing.T) {
+	iq := `<iq type="get" to="service.localhost" id="1" >
+ <query xmlns="unknown:ns"/>
+</iq>`
+	parsedIQ := xmpp.IQ{}
+	err := xml.Unmarshal([]byte(iq), &parsedIQ)
+	if err != nil {
+		t.Errorf("Unmarshal error: %#v (%s)", err, iq)
+		return
+	}
+
+	if parsedIQ.Any.XMLName.Space != "unknown:ns" {
+		t.Errorf("could not extract namespace: '%s'", parsedIQ.Any.XMLName.Space)
+	}
+}
