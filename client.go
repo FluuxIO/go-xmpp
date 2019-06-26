@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 //=============================================================================
@@ -153,7 +155,7 @@ func (c *Client) SetHandler(handler EventHandler) {
 }
 
 // Send marshals XMPP stanza and sends it to the server.
-func (c *Client) Send(packet Packet) error {
+func (c *Client) Send(packet stanza.Packet) error {
 	conn := c.conn
 	if conn == nil {
 		return errors.New("client is not connected")
@@ -191,7 +193,7 @@ func (c *Client) SendRaw(packet string) error {
 // Loop: Receive data from server
 func (c *Client) recv(keepaliveQuit chan<- struct{}) (err error) {
 	for {
-		val, err := nextPacket(c.Session.decoder)
+		val, err := stanza.NextPacket(c.Session.decoder)
 		if err != nil {
 			close(keepaliveQuit)
 			c.updateState(StateDisconnected)
@@ -200,7 +202,7 @@ func (c *Client) recv(keepaliveQuit chan<- struct{}) (err error) {
 
 		// Handle stream errors
 		switch packet := val.(type) {
-		case StreamError:
+		case stanza.StreamError:
 			c.router.route(c, val)
 			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)

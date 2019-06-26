@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/xml"
 	"testing"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 // ============================================================================
@@ -11,13 +13,13 @@ import (
 
 func TestNameMatcher(t *testing.T) {
 	router := NewRouter()
-	router.HandleFunc("message", func(s Sender, p Packet) {
+	router.HandleFunc("message", func(s Sender, p stanza.Packet) {
 		_ = s.SendRaw(successFlag)
 	})
 
 	// Check that a message packet is properly matched
 	conn := NewSenderMock()
-	msg := NewMessage(Attrs{Type: MessageTypeChat, To: "test@localhost", Id: "1"})
+	msg := stanza.NewMessage(stanza.Attrs{Type: stanza.MessageTypeChat, To: "test@localhost", Id: "1"})
 	msg.Body = "Hello"
 	router.route(conn, msg)
 	if conn.String() != successFlag {
@@ -26,8 +28,8 @@ func TestNameMatcher(t *testing.T) {
 
 	// Check that an IQ packet is not matched
 	conn = NewSenderMock()
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: "localhost", Id: "1"})
-	iq.Payload = &DiscoInfo{}
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	iq.Payload = &stanza.DiscoInfo{}
 	router.route(conn, iq)
 	if conn.String() == successFlag {
 		t.Error("IQ should not have been matched and routed")
@@ -37,18 +39,18 @@ func TestNameMatcher(t *testing.T) {
 func TestIQNSMatcher(t *testing.T) {
 	router := NewRouter()
 	router.NewRoute().
-		IQNamespaces(NSDiscoInfo, NSDiscoItems).
-		HandlerFunc(func(s Sender, p Packet) {
+		IQNamespaces(stanza.NSDiscoInfo, stanza.NSDiscoItems).
+		HandlerFunc(func(s Sender, p stanza.Packet) {
 			_ = s.SendRaw(successFlag)
 		})
 
 	// Check that an IQ with proper namespace does match
 	conn := NewSenderMock()
-	iqDisco := NewIQ(Attrs{Type: IQTypeGet, To: "localhost", Id: "1"})
+	iqDisco := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
 	// TODO: Add a function to generate payload with proper namespace initialisation
-	iqDisco.Payload = &DiscoInfo{
+	iqDisco.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
-			Space: NSDiscoInfo,
+			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		}}
 	router.route(conn, iqDisco)
@@ -58,9 +60,9 @@ func TestIQNSMatcher(t *testing.T) {
 
 	// Check that another namespace is not matched
 	conn = NewSenderMock()
-	iqVersion := NewIQ(Attrs{Type: IQTypeGet, To: "localhost", Id: "1"})
+	iqVersion := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
 	// TODO: Add a function to generate payload with proper namespace initialisation
-	iqVersion.Payload = &DiscoInfo{
+	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
@@ -75,13 +77,13 @@ func TestTypeMatcher(t *testing.T) {
 	router := NewRouter()
 	router.NewRoute().
 		StanzaType("normal").
-		HandlerFunc(func(s Sender, p Packet) {
+		HandlerFunc(func(s Sender, p stanza.Packet) {
 			_ = s.SendRaw(successFlag)
 		})
 
 	// Check that a packet with the proper type matches
 	conn := NewSenderMock()
-	message := NewMessage(Attrs{Type: "normal", To: "test@localhost", Id: "1"})
+	message := stanza.NewMessage(stanza.Attrs{Type: "normal", To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 	router.route(conn, message)
 
@@ -91,7 +93,7 @@ func TestTypeMatcher(t *testing.T) {
 
 	// We should match on default type 'normal' for message without a type
 	conn = NewSenderMock()
-	message = NewMessage(Attrs{To: "test@localhost", Id: "1"})
+	message = stanza.NewMessage(stanza.Attrs{To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 	router.route(conn, message)
 
@@ -101,8 +103,8 @@ func TestTypeMatcher(t *testing.T) {
 
 	// We do not match on other types
 	conn = NewSenderMock()
-	iqVersion := NewIQ(Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
-	iqVersion.Payload = &DiscoInfo{
+	iqVersion := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
@@ -119,38 +121,38 @@ func TestCompositeMatcher(t *testing.T) {
 	router.NewRoute().
 		IQNamespaces("jabber:iq:version").
 		StanzaType("get").
-		HandlerFunc(func(s Sender, p Packet) {
+		HandlerFunc(func(s Sender, p stanza.Packet) {
 			_ = s.SendRaw(successFlag)
 		})
 
 	// Data set
-	getVersionIq := NewIQ(Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
-	getVersionIq.Payload = &Version{
+	getVersionIq := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	getVersionIq.Payload = &stanza.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	setVersionIq := NewIQ(Attrs{Type: "set", From: "service.localhost", To: "test@localhost", Id: "1"})
-	setVersionIq.Payload = &Version{
+	setVersionIq := stanza.NewIQ(stanza.Attrs{Type: "set", From: "service.localhost", To: "test@localhost", Id: "1"})
+	setVersionIq.Payload = &stanza.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	GetDiscoIq := NewIQ(Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
-	GetDiscoIq.Payload = &DiscoInfo{
+	GetDiscoIq := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	GetDiscoIq.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "http://jabber.org/protocol/disco#info",
 			Local: "query",
 		}}
 
-	message := NewMessage(Attrs{Type: "normal", To: "test@localhost", Id: "1"})
+	message := stanza.NewMessage(stanza.Attrs{Type: "normal", To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 
 	tests := []struct {
 		name  string
-		input Packet
+		input stanza.Packet
 		want  bool
 	}{
 		{name: "match get version iq", input: getVersionIq, want: true},
@@ -178,13 +180,13 @@ func TestCompositeMatcher(t *testing.T) {
 func TestCatchallMatcher(t *testing.T) {
 	router := NewRouter()
 	router.NewRoute().
-		HandlerFunc(func(s Sender, p Packet) {
+		HandlerFunc(func(s Sender, p stanza.Packet) {
 			_ = s.SendRaw(successFlag)
 		})
 
 	// Check that we match on several packets
 	conn := NewSenderMock()
-	message := NewMessage(Attrs{Type: "chat", To: "test@localhost", Id: "1"})
+	message := stanza.NewMessage(stanza.Attrs{Type: "chat", To: "test@localhost", Id: "1"})
 	message.Body = "hello"
 	router.route(conn, message)
 
@@ -193,8 +195,8 @@ func TestCatchallMatcher(t *testing.T) {
 	}
 
 	conn = NewSenderMock()
-	iqVersion := NewIQ(Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
-	iqVersion.Payload = &DiscoInfo{
+	iqVersion := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
@@ -219,7 +221,7 @@ func NewSenderMock() SenderMock {
 	return SenderMock{buffer: new(bytes.Buffer)}
 }
 
-func (s SenderMock) Send(packet Packet) error {
+func (s SenderMock) Send(packet stanza.Packet) error {
 	out, err := xml.Marshal(packet)
 	if err != nil {
 		return err
@@ -239,7 +241,7 @@ func (s SenderMock) String() string {
 
 func TestSenderMock(t *testing.T) {
 	conn := NewSenderMock()
-	msg := NewMessage(Attrs{To: "test@localhost", Id: "1"})
+	msg := stanza.NewMessage(stanza.Attrs{To: "test@localhost", Id: "1"})
 	msg.Body = "Hello"
 	if err := conn.Send(msg); err != nil {
 		t.Error("Could not send message")

@@ -12,6 +12,7 @@ import (
 	"github.com/processone/mpg123"
 	"github.com/processone/soundcloud"
 	"gosrc.io/xmpp"
+	"gosrc.io/xmpp/stanza"
 )
 
 // Get the actual song Stream URL from SoundCloud website song URL and play it with mpg123 player.
@@ -41,12 +42,12 @@ func main() {
 	router := xmpp.NewRouter()
 	router.NewRoute().
 		Packet("message").
-		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+		HandlerFunc(func(s xmpp.Sender, p stanza.Packet) {
 			handleMessage(s, p, player)
 		})
 	router.NewRoute().
 		Packet("message").
-		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+		HandlerFunc(func(s xmpp.Sender, p stanza.Packet) {
 			handleIQ(s, p, player)
 		})
 
@@ -59,8 +60,8 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func handleMessage(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
-	msg, ok := p.(xmpp.Message)
+func handleMessage(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
+	msg, ok := p.(stanza.Message)
 	if !ok {
 		return
 	}
@@ -73,14 +74,14 @@ func handleMessage(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
 	}
 }
 
-func handleIQ(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
-	iq, ok := p.(xmpp.IQ)
+func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
+	iq, ok := p.(stanza.IQ)
 	if !ok {
 		return
 	}
 	switch payload := iq.Payload.(type) {
 	// We support IOT Control IQ
-	case *xmpp.ControlSet:
+	case *stanza.ControlSet:
 		var url string
 		for _, element := range payload.Fields {
 			if element.XMLName.Local == "string" && element.Name == "url" {
@@ -90,9 +91,9 @@ func handleIQ(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
 		}
 
 		playSCURL(player, url)
-		setResponse := new(xmpp.ControlSetResponse)
+		setResponse := new(stanza.ControlSetResponse)
 		// FIXME: Broken
-		reply := xmpp.IQ{Attrs: xmpp.Attrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
+		reply := stanza.IQ{Attrs: stanza.Attrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
 		_ = s.Send(reply)
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(s, "Radiohead", "Spectre")
@@ -102,9 +103,9 @@ func handleIQ(s xmpp.Sender, p xmpp.Packet, player *mpg123.Player) {
 }
 
 func sendUserTune(s xmpp.Sender, artist string, title string) {
-	tune := xmpp.Tune{Artist: artist, Title: title}
-	iq := xmpp.NewIQ(xmpp.Attrs{Type: "set", Id: "usertune-1", Lang: "en"})
-	payload := xmpp.PubSub{Publish: &xmpp.Publish{Node: "http://jabber.org/protocol/tune", Item: xmpp.Item{Tune: &tune}}}
+	tune := stanza.Tune{Artist: artist, Title: title}
+	iq := stanza.NewIQ(stanza.Attrs{Type: "set", Id: "usertune-1", Lang: "en"})
+	payload := stanza.PubSub{Publish: &stanza.Publish{Node: "http://jabber.org/protocol/tune", Item: stanza.Item{Tune: &tune}}}
 	iq.Payload = &payload
 	_ = s.Send(iq)
 }

@@ -7,6 +7,8 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 const (
@@ -126,11 +128,11 @@ func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 		switch elem := token.(type) {
 		// Wait for first startElement
 		case xml.StartElement:
-			if elem.Name.Space != NSStream || elem.Name.Local != "stream" {
+			if elem.Name.Space != stanza.NSStream || elem.Name.Local != "stream" {
 				err = errors.New("xmpp: expected <stream> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
 				return
 			}
-			if _, err := fmt.Fprintf(c, serverStreamOpen, "localhost", "streamid1", NSClient, NSStream); err != nil {
+			if _, err := fmt.Fprintf(c, serverStreamOpen, "localhost", "streamid1", stanza.NSClient, stanza.NSStream); err != nil {
 				t.Errorf("cannot write server stream open: %s", err)
 			}
 			return
@@ -152,14 +154,14 @@ func sendStreamFeatures(t *testing.T, c net.Conn, _ *xml.Decoder) {
 
 // TODO return err in case of error reading the auth params
 func readAuth(t *testing.T, decoder *xml.Decoder) string {
-	se, err := nextStart(decoder)
+	se, err := stanza.NextStart(decoder)
 	if err != nil {
 		t.Errorf("cannot read auth: %s", err)
 		return ""
 	}
 
 	var nv interface{}
-	nv = &auth{}
+	nv = &stanza.Auth{}
 	// Decode element into pointer storage
 	if err = decoder.DecodeElement(nv, &se); err != nil {
 		t.Errorf("cannot decode auth: %s", err)
@@ -167,7 +169,7 @@ func readAuth(t *testing.T, decoder *xml.Decoder) string {
 	}
 
 	switch v := nv.(type) {
-	case *auth:
+	case *stanza.Auth:
 		return v.Value
 	}
 	return ""
@@ -184,13 +186,13 @@ func sendBindFeature(t *testing.T, c net.Conn, _ *xml.Decoder) {
 }
 
 func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
-	se, err := nextStart(decoder)
+	se, err := stanza.NextStart(decoder)
 	if err != nil {
 		t.Errorf("cannot read bind: %s", err)
 		return
 	}
 
-	iq := &IQ{}
+	iq := &stanza.IQ{}
 	// Decode element into pointer storage
 	if err = decoder.DecodeElement(&iq, &se); err != nil {
 		t.Errorf("cannot decode bind iq: %s", err)
@@ -199,7 +201,7 @@ func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 
 	// TODO Check all elements
 	switch iq.Payload.(type) {
-	case *BindBind:
+	case *stanza.BindBind:
 		result := `<iq id='%s' type='result'>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
   	<jid>%s</jid>

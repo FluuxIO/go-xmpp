@@ -3,6 +3,8 @@ package xmpp
 import (
 	"encoding/xml"
 	"strings"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 /*
@@ -32,7 +34,7 @@ func NewRouter() *Router {
 
 // route is called by the XMPP client to dispatch stanza received using the set up routes.
 // It is also used by test, but is not supposed to be used directly by users of the library.
-func (r *Router) route(s Sender, p Packet) {
+func (r *Router) route(s Sender, p stanza.Packet) {
 
 	var match RouteMatch
 	if r.Match(p, &match) {
@@ -41,15 +43,15 @@ func (r *Router) route(s Sender, p Packet) {
 		return
 	}
 	// If there is no match and we receive an iq set or get, we need to send a reply
-	if iq, ok := p.(IQ); ok {
-		if iq.Type == IQTypeGet || iq.Type == IQTypeSet {
+	if iq, ok := p.(stanza.IQ); ok {
+		if iq.Type == stanza.IQTypeGet || iq.Type == stanza.IQTypeSet {
 			iqNotImplemented(s, iq)
 		}
 	}
 }
 
-func iqNotImplemented(s Sender, iq IQ) {
-	err := Err{
+func iqNotImplemented(s Sender, iq stanza.IQ) {
+	err := stanza.Err{
 		XMLName: xml.Name{Local: "error"},
 		Code:    501,
 		Type:    "cancel",
@@ -66,7 +68,7 @@ func (r *Router) NewRoute() *Route {
 	return route
 }
 
-func (r *Router) Match(p Packet, match *RouteMatch) bool {
+func (r *Router) Match(p stanza.Packet, match *RouteMatch) bool {
 	for _, route := range r.routes {
 		if route.Match(p, match) {
 			return true
@@ -83,14 +85,14 @@ func (r *Router) Handle(name string, handler Handler) *Route {
 
 // HandleFunc registers a new route with a matcher for for a given packet name (iq, message, presence)
 // See Route.Path() and Route.HandlerFunc().
-func (r *Router) HandleFunc(name string, f func(s Sender, p Packet)) *Route {
+func (r *Router) HandleFunc(name string, f func(s Sender, p stanza.Packet)) *Route {
 	return r.NewRoute().Packet(name).HandlerFunc(f)
 }
 
 // ============================================================================
 // Route
 type Handler interface {
-	HandlePacket(s Sender, p Packet)
+	HandlePacket(s Sender, p stanza.Packet)
 }
 
 type Route struct {
@@ -108,10 +110,10 @@ func (r *Route) Handler(handler Handler) *Route {
 // ordinary functions as XMPP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
 // Handler that calls f.
-type HandlerFunc func(s Sender, p Packet)
+type HandlerFunc func(s Sender, p stanza.Packet)
 
 // HandlePacket calls f(s, p)
-func (f HandlerFunc) HandlePacket(s Sender, p Packet) {
+func (f HandlerFunc) HandlePacket(s Sender, p stanza.Packet) {
 	f(s, p)
 }
 
@@ -126,7 +128,7 @@ func (r *Route) addMatcher(m matcher) *Route {
 	return r
 }
 
-func (r *Route) Match(p Packet, match *RouteMatch) bool {
+func (r *Route) Match(p stanza.Packet, match *RouteMatch) bool {
 	for _, m := range r.matchers {
 		if matched := m.Match(p, match); !matched {
 			return false
@@ -144,18 +146,18 @@ func (r *Route) Match(p Packet, match *RouteMatch) bool {
 
 type nameMatcher string
 
-func (n nameMatcher) Match(p Packet, match *RouteMatch) bool {
+func (n nameMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
 	var name string
 	// TODO: To avoid type switch everywhere in matching, I think we will need to have
 	//    to move to a concrete type for packets, to make matching and comparison more natural.
 	//    Current code structure is probably too rigid.
 	// Maybe packet types should even be from an enum.
 	switch p.(type) {
-	case Message:
+	case stanza.Message:
 		name = "message"
-	case IQ:
+	case stanza.IQ:
 		name = "iq"
-	case Presence:
+	case stanza.Presence:
 		name = "presence"
 	}
 	if name == string(n) {
@@ -177,14 +179,14 @@ func (r *Route) Packet(name string) *Route {
 // nsTypeMather matches on a list of IQ  payload namespaces
 type nsTypeMatcher []string
 
-func (m nsTypeMatcher) Match(p Packet, match *RouteMatch) bool {
-	var stanzaType StanzaType
+func (m nsTypeMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
+	var stanzaType stanza.StanzaType
 	switch packet := p.(type) {
-	case IQ:
+	case stanza.IQ:
 		stanzaType = packet.Type
-	case Presence:
+	case stanza.Presence:
 		stanzaType = packet.Type
-	case Message:
+	case stanza.Message:
 		if packet.Type == "" {
 			// optional on message, normal is the default type
 			stanzaType = "normal"
@@ -211,8 +213,8 @@ func (r *Route) StanzaType(types ...string) *Route {
 // nsIqMather matches on a list of IQ  payload namespaces
 type nsIQMatcher []string
 
-func (m nsIQMatcher) Match(p Packet, match *RouteMatch) bool {
-	iq, ok := p.(IQ)
+func (m nsIQMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
+	iq, ok := p.(stanza.IQ)
 	if !ok {
 		return false
 	}
@@ -235,7 +237,7 @@ func (r *Route) IQNamespaces(namespaces ...string) *Route {
 
 // Matchers are used to "specialize" routes and focus on specific packet features
 type matcher interface {
-	Match(Packet, *RouteMatch) bool
+	Match(stanza.Packet, *RouteMatch) bool
 }
 
 // RouteMatch extracts and gather match information

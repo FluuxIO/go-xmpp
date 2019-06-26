@@ -4,14 +4,14 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"gosrc.io/xmpp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func TestNoStartTLS(t *testing.T) {
 	streamFeatures := `<stream:features xmlns:stream='http://etherx.jabber.org/streams'>
 </stream:features>`
 
-	var parsedSF xmpp.StreamFeatures
+	var parsedSF stanza.StreamFeatures
 	if err := xml.Unmarshal([]byte(streamFeatures), &parsedSF); err != nil {
 		t.Errorf("Unmarshal(%s) returned error: %v", streamFeatures, err)
 	}
@@ -32,7 +32,7 @@ func TestStartTLS(t *testing.T) {
   </starttls>
 </stream:features>`
 
-	var parsedSF xmpp.StreamFeatures
+	var parsedSF stanza.StreamFeatures
 	if err := xml.Unmarshal([]byte(streamFeatures), &parsedSF); err != nil {
 		t.Errorf("Unmarshal(%s) returned error: %v", streamFeatures, err)
 	}
@@ -52,7 +52,7 @@ func TestStreamManagement(t *testing.T) {
     <sm xmlns='urn:xmpp:sm:3'/>
 </stream:features>`
 
-	var parsedSF xmpp.StreamFeatures
+	var parsedSF stanza.StreamFeatures
 	if err := xml.Unmarshal([]byte(streamFeatures), &parsedSF); err != nil {
 		t.Errorf("Unmarshal(%s) returned error: %v", streamFeatures, err)
 	}

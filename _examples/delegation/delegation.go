@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"gosrc.io/xmpp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func main() {
@@ -23,8 +24,8 @@ func main() {
 	router := xmpp.NewRouter()
 	router.HandleFunc("message", handleMessage)
 	router.NewRoute().
-		IQNamespaces(xmpp.NSDiscoInfo).
-		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+		IQNamespaces(stanza.NSDiscoInfo).
+		HandlerFunc(func(s xmpp.Sender, p stanza.Packet) {
 			discoInfo(s, p, opts)
 		})
 	router.NewRoute().
@@ -43,14 +44,14 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func handleMessage(_ xmpp.Sender, p xmpp.Packet) {
-	msg, ok := p.(xmpp.Message)
+func handleMessage(_ xmpp.Sender, p stanza.Packet) {
+	msg, ok := p.(stanza.Message)
 	if !ok {
 		return
 	}
 	var msgProcessed bool
 	for _, ext := range msg.Extensions {
-		delegation, ok := ext.(*xmpp.Delegation)
+		delegation, ok := ext.(*stanza.Delegation)
 		if ok {
 			msgProcessed = true
 			fmt.Printf("Delegation confirmed for namespace %s\n", delegation.Delegated.Namespace)
@@ -72,18 +73,18 @@ const (
 // TODO: replace xmpp.Sender by ctx xmpp.Context ?
 // ctx.Stream.Send / SendRaw
 // ctx.Opts
-func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
+func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
-	iq, ok := p.(xmpp.IQ)
+	iq, ok := p.(stanza.IQ)
 	if !ok {
 		return
 	}
-	info, ok := iq.Payload.(*xmpp.DiscoInfo)
+	info, ok := iq.Payload.(*stanza.DiscoInfo)
 	if !ok {
 		return
 	}
 
-	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
 
 	switch info.Node {
 	case "":
@@ -97,22 +98,22 @@ func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 	_ = c.Send(iqResp)
 }
 
-func discoInfoRoot(iqResp *xmpp.IQ, opts xmpp.ComponentOptions) {
+func discoInfoRoot(iqResp *stanza.IQ, opts xmpp.ComponentOptions) {
 	// Higher level discovery
-	identity := xmpp.Identity{
+	identity := stanza.Identity{
 		Name:     opts.Name,
 		Category: opts.Category,
 		Type:     opts.Type,
 	}
-	payload := xmpp.DiscoInfo{
+	payload := stanza.DiscoInfo{
 		XMLName: xml.Name{
-			Space: xmpp.NSDiscoInfo,
+			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
 		Identity: identity,
-		Features: []xmpp.Feature{
-			{Var: xmpp.NSDiscoInfo},
-			{Var: xmpp.NSDiscoItems},
+		Features: []stanza.Feature{
+			{Var: stanza.NSDiscoInfo},
+			{Var: stanza.NSDiscoItems},
 			{Var: "jabber:iq:version"},
 			{Var: "urn:xmpp:delegation:1"},
 		},
@@ -120,14 +121,14 @@ func discoInfoRoot(iqResp *xmpp.IQ, opts xmpp.ComponentOptions) {
 	iqResp.Payload = &payload
 }
 
-func discoInfoPubSub(iqResp *xmpp.IQ) {
-	payload := xmpp.DiscoInfo{
+func discoInfoPubSub(iqResp *stanza.IQ) {
+	payload := stanza.DiscoInfo{
 		XMLName: xml.Name{
-			Space: xmpp.NSDiscoInfo,
+			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
 		Node: pubsubNode,
-		Features: []xmpp.Feature{
+		Features: []stanza.Feature{
 			{Var: "http://jabber.org/protocol/pubsub"},
 			{Var: "http://jabber.org/protocol/pubsub#publish"},
 			{Var: "http://jabber.org/protocol/pubsub#subscribe"},
@@ -137,19 +138,19 @@ func discoInfoPubSub(iqResp *xmpp.IQ) {
 	iqResp.Payload = &payload
 }
 
-func discoInfoPEP(iqResp *xmpp.IQ) {
-	identity := xmpp.Identity{
+func discoInfoPEP(iqResp *stanza.IQ) {
+	identity := stanza.Identity{
 		Category: "pubsub",
 		Type:     "pep",
 	}
-	payload := xmpp.DiscoInfo{
+	payload := stanza.DiscoInfo{
 		XMLName: xml.Name{
-			Space: xmpp.NSDiscoInfo,
+			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
 		Identity: identity,
 		Node:     pepNode,
-		Features: []xmpp.Feature{
+		Features: []stanza.Feature{
 			{Var: "http://jabber.org/protocol/pubsub#access-presence"},
 			{Var: "http://jabber.org/protocol/pubsub#auto-create"},
 			{Var: "http://jabber.org/protocol/pubsub#auto-subscribe"},
@@ -166,25 +167,25 @@ func discoInfoPEP(iqResp *xmpp.IQ) {
 	iqResp.Payload = &payload
 }
 
-func handleDelegation(s xmpp.Sender, p xmpp.Packet) {
+func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 	// Type conversion & sanity checks
-	iq, ok := p.(xmpp.IQ)
+	iq, ok := p.(stanza.IQ)
 	if !ok {
 		return
 	}
 
-	delegation, ok := iq.Payload.(*xmpp.Delegation)
+	delegation, ok := iq.Payload.(*stanza.Delegation)
 	if !ok {
 		return
 	}
 	forwardedPacket := delegation.Forwarded.Stanza
 	fmt.Println(forwardedPacket)
-	forwardedIQ, ok := forwardedPacket.(xmpp.IQ)
+	forwardedIQ, ok := forwardedPacket.(stanza.IQ)
 	if !ok {
 		return
 	}
 
-	pubsub, ok := forwardedIQ.Payload.(*xmpp.PubSub)
+	pubsub, ok := forwardedIQ.Payload.(*stanza.PubSub)
 	if !ok {
 		// We only support pubsub delegation
 		return
@@ -192,8 +193,8 @@ func handleDelegation(s xmpp.Sender, p xmpp.Packet) {
 
 	if pubsub.Publish.XMLName.Local == "publish" {
 		// Prepare pubsub IQ reply
-		iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: forwardedIQ.To, To: forwardedIQ.From, Id: forwardedIQ.Id})
-		payload := xmpp.PubSub{
+		iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: forwardedIQ.To, To: forwardedIQ.From, Id: forwardedIQ.Id})
+		payload := stanza.PubSub{
 			XMLName: xml.Name{
 				Space: "http://jabber.org/protocol/pubsub",
 				Local: "pubsub",
@@ -201,13 +202,13 @@ func handleDelegation(s xmpp.Sender, p xmpp.Packet) {
 		}
 		iqResp.Payload = &payload
 		// Wrap the reply in delegation 'forward'
-		iqForward := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
-		delegPayload := xmpp.Delegation{
+		iqForward := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
+		delegPayload := stanza.Delegation{
 			XMLName: xml.Name{
 				Space: "urn:xmpp:delegation:1",
 				Local: "delegation",
 			},
-			Forwarded: &xmpp.Forwarded{
+			Forwarded: &stanza.Forwarded{
 				XMLName: xml.Name{
 					Space: "urn:xmpp:forward:0",
 					Local: "forward",

@@ -9,6 +9,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 const componentStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' xmlns='%s' xmlns:stream='%s'>"
@@ -72,13 +74,13 @@ func (c *Component) Connect() error {
 	c.conn = conn
 
 	// 1. Send stream open tag
-	if _, err := fmt.Fprintf(conn, componentStreamOpen, c.Domain, NSComponent, NSStream); err != nil {
+	if _, err := fmt.Fprintf(conn, componentStreamOpen, c.Domain, stanza.NSComponent, stanza.NSStream); err != nil {
 		return errors.New("cannot send stream open " + err.Error())
 	}
 	c.decoder = xml.NewDecoder(conn)
 
 	// 2. Initialize xml decoder and extract streamID from reply
-	streamId, err := initStream(c.decoder)
+	streamId, err := stanza.InitStream(c.decoder)
 	if err != nil {
 		return errors.New("cannot init decoder " + err.Error())
 	}
@@ -89,15 +91,15 @@ func (c *Component) Connect() error {
 	}
 
 	// 4. Check server response for authentication
-	val, err := nextPacket(c.decoder)
+	val, err := stanza.NextPacket(c.decoder)
 	if err != nil {
 		return err
 	}
 
 	switch v := val.(type) {
-	case StreamError:
+	case stanza.StreamError:
 		return errors.New("handshake failed " + v.Error.Local)
-	case Handshake:
+	case stanza.Handshake:
 		// Start the receiver go routine
 		go c.recv()
 		return nil
@@ -119,7 +121,7 @@ func (c *Component) SetHandler(handler EventHandler) {
 // Receiver Go routine receiver
 func (c *Component) recv() (err error) {
 	for {
-		val, err := nextPacket(c.decoder)
+		val, err := stanza.NextPacket(c.decoder)
 		if err != nil {
 			c.updateState(StateDisconnected)
 			return err
@@ -127,7 +129,7 @@ func (c *Component) recv() (err error) {
 
 		// Handle stream errors
 		switch p := val.(type) {
-		case StreamError:
+		case stanza.StreamError:
 			c.router.route(c, val)
 			c.streamError(p.Error.Local, p.Text)
 			return errors.New("stream error: " + p.Error.Local)
@@ -137,7 +139,7 @@ func (c *Component) recv() (err error) {
 }
 
 // Send marshalls XMPP stanza and sends it to the server.
-func (c *Component) Send(packet Packet) error {
+func (c *Component) Send(packet stanza.Packet) error {
 	conn := c.conn
 	if conn == nil {
 		return errors.New("component is not connected")
@@ -184,90 +186,6 @@ func (c *Component) handshake(streamId string) string {
 	encodedStr := hex.EncodeToString(hash)
 
 	return encodedStr
-}
-
-// ============================================================================
-// Handshake Stanza
-
-// Handshake is a stanza used by XMPP components to authenticate on XMPP
-// component port.
-type Handshake struct {
-	XMLName xml.Name `xml:"jabber:component:accept handshake"`
-	// TODO Add handshake value with test for proper serialization
-	// Value string     `xml:",innerxml"`
-}
-
-func (Handshake) Name() string {
-	return "component:handshake"
-}
-
-// Handshake decoding wrapper
-
-type handshakeDecoder struct{}
-
-var handshake handshakeDecoder
-
-func (handshakeDecoder) decode(p *xml.Decoder, se xml.StartElement) (Handshake, error) {
-	var packet Handshake
-	err := p.DecodeElement(&packet, &se)
-	return packet, err
-}
-
-// ============================================================================
-// Component delegation
-// XEP-0355
-
-// Delegation can be used both on message (for delegated) and IQ (for Forwarded),
-// depending on the context.
-type Delegation struct {
-	MsgExtension
-	XMLName   xml.Name   `xml:"urn:xmpp:delegation:1 delegation"`
-	Forwarded *Forwarded // This is used in iq to wrap delegated iqs
-	Delegated *Delegated // This is used in a message to confirm delegated namespace
-}
-
-func (d *Delegation) Namespace() string {
-	return d.XMLName.Space
-}
-
-type Forwarded struct {
-	XMLName xml.Name `xml:"urn:xmpp:forward:0 forwarded"`
-	Stanza  Packet
-}
-
-// UnmarshalXML is a custom unmarshal function used by xml.Unmarshal to
-// transform generic XML content into hierarchical Node structure.
-func (f *Forwarded) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	// Check subelements to extract required field as boolean
-	for {
-		t, err := d.Token()
-		if err != nil {
-			return err
-		}
-
-		switch tt := t.(type) {
-
-		case xml.StartElement:
-			if packet, err := decodeClient(d, tt); err == nil {
-				f.Stanza = packet
-			}
-
-		case xml.EndElement:
-			if tt == start.End() {
-				return nil
-			}
-		}
-	}
-}
-
-type Delegated struct {
-	XMLName   xml.Name `xml:"delegated"`
-	Namespace string   `xml:"namespace,attr,omitempty"`
-}
-
-func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:delegation:1", "delegation"}, Delegation{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:delegation:1", "delegation"}, Delegation{})
 }
 
 /*

@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"gosrc.io/xmpp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func main() {
@@ -35,15 +36,15 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func handleMessage(s xmpp.Sender, p xmpp.Packet) {
-	msg, ok := p.(xmpp.Message)
+func handleMessage(s xmpp.Sender, p stanza.Packet) {
+	msg, ok := p.(stanza.Message)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", p)
 		return
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", msg.Body, msg.From)
-	reply := xmpp.Message{Attrs: xmpp.Attrs{To: msg.From}, Body: msg.Body}
+	reply := stanza.Message{Attrs: stanza.Attrs{To: msg.From}, Body: msg.Body}
 	_ = s.Send(reply)
 }
 
