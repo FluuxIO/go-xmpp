@@ -85,20 +85,24 @@ Setting up the client / Checking the parameters
 // Default the port to 5222.
 // TODO: better config checks
 func NewClient(config Config, r *Router) (c *Client, err error) {
-	// TODO: If option address is nil, use the Jid domain to compose the address
-	if config.Address, err = checkAddress(config.Address); err != nil {
-		return nil, NewConnError(err, true)
-	}
-
-	if config.Password == "" {
-		err = errors.New("missing password")
-		return nil, NewConnError(err, true)
-	}
-
 	// Parse JID
 	if config.parsedJid, err = NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
 		return nil, NewConnError(err, true)
+	}
+	
+	if config.Password == "" {
+		err = errors.New("missing password")
+		return nil, NewConnError(err, true)
+	}
+	
+	// fallback to jid domain
+	if config.Address == "" {
+		config.Address = config.parsedJid.Domain
+	}
+	// if address has no port (behind his ipv6 address) - add default port
+	if strings.LastIndex(config.Address, ":") <= strings.LastIndex(config.Address, "]") {
+		config.Address += ":5222"
 	}
 
 	c = new(Client)
@@ -110,24 +114,6 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	}
 
 	return
-}
-
-// TODO Pass JID to be able to add default address based on JID, if addr is empty
-func checkAddress(addr string) (string, error) {
-	var err error
-	hostport := strings.Split(addr, ":")
-	if len(hostport) > 2 {
-		err = errors.New("too many colons in xmpp server address")
-		return addr, err
-	}
-
-	// Address is composed of two parts, we are good
-	if len(hostport) == 2 && hostport[1] != "" {
-		return addr, err
-	}
-
-	// Port was not passed, we append XMPP default port:
-	return strings.Join([]string{hostport[0], "5222"}, ":"), err
 }
 
 // Connect triggers actual TCP connection, based on previously defined parameters.
