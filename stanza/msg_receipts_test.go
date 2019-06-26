@@ -3,6 +3,8 @@ package stanza_test
 import (
 	"encoding/xml"
 	"testing"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 func TestDecodeRequest(t *testing.T) {
@@ -13,7 +15,7 @@ func TestDecodeRequest(t *testing.T) {
   <body>My lord, dispatch; read o'er these articles.</body>
   <request xmlns='urn:xmpp:receipts'/>
 </message>`
-	parsedMessage := Message{}
+	parsedMessage := stanza.Message{}
 	if err := xml.Unmarshal([]byte(str), &parsedMessage); err != nil {
 		t.Errorf("message receipt unmarshall error: %v", err)
 		return
@@ -29,7 +31,7 @@ func TestDecodeRequest(t *testing.T) {
 	}
 
 	switch ext := parsedMessage.Extensions[0].(type) {
-	case *ReceiptRequest:
+	case *stanza.ReceiptRequest:
 		if ext.XMLName.Local != "request" {
 			t.Errorf("unexpected extension: %s:%s", ext.XMLName.Space, ext.XMLName.Local)
 		}

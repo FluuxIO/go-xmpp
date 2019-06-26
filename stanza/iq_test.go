@@ -6,21 +6,22 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func TestUnmarshalIqs(t *testing.T) {
 	//var cs1 = new(iot.ControlSet)
 	var tests = []struct {
 		iqString string
-		parsedIQ IQ
+		parsedIQ stanza.IQ
 	}{
 		{"<iq id=\"1\" type=\"set\" to=\"test@localhost\"/>",
-			IQ{XMLName: xml.Name{Local: "iq"}, Attrs: Attrs{Type: IQTypeSet, To: "test@localhost", Id: "1"}}},
+			stanza.IQ{XMLName: xml.Name{Local: "iq"}, Attrs: stanza.Attrs{Type: stanza.IQTypeSet, To: "test@localhost", Id: "1"}}},
 		//{"<iq xmlns=\"jabber:client\" id=\"2\" type=\"set\" to=\"test@localhost\" from=\"server\"><set xmlns=\"urn:xmpp:iot:control\"/></iq>", IQ{XMLName: xml.Name{Space: "jabber:client", Local: "iq"}, PacketAttrs: PacketAttrs{To: "test@localhost", From: "server", Type: "set", Id: "2"}, Payload: cs1}},
 	}
 
 	for _, test := range tests {
-		parsedIQ := IQ{}
+		parsedIQ := stanza.IQ{}
 		err := xml.Unmarshal([]byte(test.iqString), &parsedIQ)
 		if err != nil {
 			t.Errorf("Unmarshal(%s) returned error", test.iqString)
@@ -34,16 +35,16 @@ func TestUnmarshalIqs(t *testing.T) {
 }
 
 func TestGenerateIq(t *testing.T) {
-	iq := NewIQ(Attrs{Type: IQTypeResult, From: "admin@localhost", To: "test@localhost", Id: "1"})
-	payload := DiscoInfo{
-		Identity: Identity{
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: "admin@localhost", To: "test@localhost", Id: "1"})
+	payload := stanza.DiscoInfo{
+		Identity: stanza.Identity{
 			Name:     "Test Gateway",
 			Category: "gateway",
 			Type:     "mqtt",
 		},
-		Features: []Feature{
-			{Var: NSDiscoInfo},
-			{Var: NSDiscoItems},
+		Features: []stanza.Feature{
+			{Var: stanza.NSDiscoInfo},
+			{Var: stanza.NSDiscoItems},
 		},
 	}
 	iq.Payload = &payload
@@ -57,7 +58,7 @@ func TestGenerateIq(t *testing.T) {
 		t.Error("empty error should not be serialized")
 	}
 
-	parsedIQ := IQ{}
+	parsedIQ := stanza.IQ{}
 	if err = xml.Unmarshal(data, &parsedIQ); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
@@ -68,7 +69,7 @@ func TestGenerateIq(t *testing.T) {
 }
 
 func TestErrorTag(t *testing.T) {
-	xError := Err{
+	xError := stanza.Err{
 		XMLName: xml.Name{Local: "error"},
 		Code:    503,
 		Type:    "cancel",
@@ -81,7 +82,7 @@ func TestErrorTag(t *testing.T) {
 		t.Errorf("cannot marshal xml structure: %s", err)
 	}
 
-	parsedError := Err{}
+	parsedError := stanza.Err{}
 	if err = xml.Unmarshal(data, &parsedError); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
@@ -92,8 +93,8 @@ func TestErrorTag(t *testing.T) {
 }
 
 func TestDiscoItems(t *testing.T) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, From: "romeo@montague.net/orchard", To: "catalog.shakespeare.lit", Id: "items3"})
-	payload := DiscoItems{
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "romeo@montague.net/orchard", To: "catalog.shakespeare.lit", Id: "items3"})
+	payload := stanza.DiscoItems{
 		Node: "music",
 	}
 	iq.Payload = &payload
@@ -103,7 +104,7 @@ func TestDiscoItems(t *testing.T) {
 		t.Errorf("cannot marshal xml structure")
 	}
 
-	parsedIQ := IQ{}
+	parsedIQ := stanza.IQ{}
 	if err = xml.Unmarshal(data, &parsedIQ); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
@@ -116,7 +117,7 @@ func TestDiscoItems(t *testing.T) {
 func TestUnmarshalPayload(t *testing.T) {
 	query := "<iq to='service.localhost' type='get' id='1'><query xmlns='jabber:iq:version'/></iq>"
 
-	parsedIQ := IQ{}
+	parsedIQ := stanza.IQ{}
 	err := xml.Unmarshal([]byte(query), &parsedIQ)
 	if err != nil {
 		t.Errorf("Unmarshal(%s) returned error", query)
@@ -141,7 +142,7 @@ func TestPayloadWithError(t *testing.T) {
  </error>
 </iq>`
 
-	parsedIQ := IQ{}
+	parsedIQ := stanza.IQ{}
 	err := xml.Unmarshal([]byte(iq), &parsedIQ)
 	if err != nil {
 		t.Errorf("Unmarshal error: %s", iq)
@@ -157,7 +158,7 @@ func TestUnknownPayload(t *testing.T) {
 	iq := `<iq type="get" to="service.localhost" id="1" >
  <query xmlns="unknown:ns"/>
 </iq>`
-	parsedIQ := IQ{}
+	parsedIQ := stanza.IQ{}
 	err := xml.Unmarshal([]byte(iq), &parsedIQ)
 	if err != nil {
 		t.Errorf("Unmarshal error: %#v (%s)", err, iq)

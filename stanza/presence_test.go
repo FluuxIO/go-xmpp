@@ -5,18 +5,19 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func TestGeneratePresence(t *testing.T) {
-	presence := NewPresence(Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
-	presence.Show = PresenceShowChat
+	presence := stanza.NewPresence(stanza.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
+	presence.Show = stanza.PresenceShowChat
 
 	data, err := xml.Marshal(presence)
 	if err != nil {
 		t.Errorf("cannot marshal xml structure")
 	}
 
-	var parsedPresence Presence
+	var parsedPresence stanza.Presence
 	if err = xml.Unmarshal(data, &parsedPresence); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
@@ -30,13 +31,13 @@ func TestPresenceSubElt(t *testing.T) {
 	// Test structure to ensure that show, status and priority are correctly defined as presence
 	// package sub-elements
 	type pres struct {
-		Show     PresenceShow `xml:"show"`
-		Status   string       `xml:"status"`
-		Priority int8         `xml:"priority"`
+		Show     stanza.PresenceShow `xml:"show"`
+		Status   string              `xml:"status"`
+		Priority int8                `xml:"priority"`
 	}
 
-	presence := NewPresence(Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
-	presence.Show = PresenceShowXA
+	presence := stanza.NewPresence(stanza.Attrs{From: "admin@localhost", To: "test@localhost", Id: "1"})
+	presence.Show = stanza.PresenceShowXA
 	presence.Status = "Coding"
 	presence.Priority = 10
 

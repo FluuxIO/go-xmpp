@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func TestGenerateMessage(t *testing.T) {
-	message := NewMessage(Attrs{Type: MessageTypeChat, From: "admin@localhost", To: "test@localhost", Id: "1"})
+	message := stanza.NewMessage(stanza.Attrs{Type: stanza.MessageTypeChat, From: "admin@localhost", To: "test@localhost", Id: "1"})
 	message.Body = "Hi"
 	message.Subject = "Msg Subject"
 
@@ -17,7 +18,7 @@ func TestGenerateMessage(t *testing.T) {
 		t.Errorf("cannot marshal xml structure")
 	}
 
-	parsedMessage := Message{}
+	parsedMessage := stanza.Message{}
 	if err = xml.Unmarshal(data, &parsedMessage); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
@@ -37,7 +38,7 @@ func TestDecodeError(t *testing.T) {
   </error>
 </message>`
 
-	parsedMessage := Message{}
+	parsedMessage := stanza.Message{}
 	if err := xml.Unmarshal([]byte(str), &parsedMessage); err != nil {
 		t.Errorf("message error stanza unmarshall error: %v", err)
 		return
@@ -49,15 +50,15 @@ func TestDecodeError(t *testing.T) {
 
 func TestGetOOB(t *testing.T) {
 	image := "https://localhost/image.png"
-	msg := NewMessage(Attrs{To: "test@localhost"})
-	ext := OOB{
+	msg := stanza.NewMessage(stanza.Attrs{To: "test@localhost"})
+	ext := stanza.OOB{
 		XMLName: xml.Name{Space: "jabber:x:oob", Local: "x"},
 		URL:     image,
 	}
 	msg.Extensions = append(msg.Extensions, &ext)
 
 	// OOB can properly be found
-	var oob OOB
+	var oob stanza.OOB
 	// Try to find and
 	if ok := msg.Get(&oob); !ok {
 		t.Error("could not find oob extension")
@@ -68,7 +69,7 @@ func TestGetOOB(t *testing.T) {
 	}
 
 	// Markable is not found
-	var m Markable
+	var m stanza.Markable
 	if ok := msg.Get(&m); ok {
 		t.Error("we should not have found markable extension")
 	}

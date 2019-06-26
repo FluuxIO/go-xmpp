@@ -3,6 +3,8 @@ package stanza_test
 import (
 	"encoding/xml"
 	"testing"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 // https://xmpp.org/extensions/xep-0045.html#example-27
@@ -16,12 +18,12 @@ func TestMucPassword(t *testing.T) {
   </x>
 </presence>`
 
-	var parsedPresence Presence
+	var parsedPresence stanza.Presence
 	if err := xml.Unmarshal([]byte(str), &parsedPresence); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", str)
 	}
 
-	var muc MucPresence
+	var muc stanza.MucPresence
 	if ok := parsedPresence.Get(&muc); !ok {
 		t.Error("muc presence extension was not found")
 	}
@@ -42,12 +44,12 @@ func TestMucHistory(t *testing.T) {
   </x>
 </presence>`
 
-	var parsedPresence Presence
+	var parsedPresence stanza.Presence
 	if err := xml.Unmarshal([]byte(str), &parsedPresence); err != nil {
 		t.Errorf("Unmarshal(%s) returned error", str)
 	}
 
-	var muc MucPresence
+	var muc stanza.MucPresence
 	if ok := parsedPresence.Get(&muc); !ok {
 		t.Error("muc presence extension was not found")
 	}
