@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -83,27 +82,23 @@ Setting up the client / Checking the parameters
 // NewClient generates a new XMPP client, based on Config passed as parameters.
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
-// TODO: better config checks
 func NewClient(config Config, r *Router) (c *Client, err error) {
 	// Parse JID
 	if config.parsedJid, err = NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
 		return nil, NewConnError(err, true)
 	}
-	
+
 	if config.Password == "" {
 		err = errors.New("missing password")
 		return nil, NewConnError(err, true)
 	}
-	
+
 	// fallback to jid domain
 	if config.Address == "" {
 		config.Address = config.parsedJid.Domain
 	}
-	// if address has no port (behind his ipv6 address) - add default port
-	if strings.LastIndex(config.Address, ":") <= strings.LastIndex(config.Address, "]") {
-		config.Address += ":5222"
-	}
+	config.Address = ensurePort(config.Address, 5222)
 
 	c = new(Client)
 	c.config = config
