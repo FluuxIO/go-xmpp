@@ -46,16 +46,18 @@ func TestMucHistory(t *testing.T) {
 
 	var parsedPresence xmpp.Presence
 	if err := xml.Unmarshal([]byte(str), &parsedPresence); err != nil {
-		t.Errorf("Unmarshal(%s) returned error", str)
+		t.Errorf("Unmarshal(%s) returned error: %s", str, err)
+		return
 	}
 
 	var muc xmpp.MucPresence
 	if ok := parsedPresence.Get(&muc); !ok {
 		t.Error("muc presence extension was not found")
+		return
 	}
 
-	if *muc.History.MaxStanzas != 20 {
-		t.Errorf("incorrect max stanza: '%d'", muc.History.MaxStanzas)
+	if v, ok := muc.History.MaxStanzas.Get(); !ok || v != 20 {
+		t.Errorf("incorrect MaxStanzas: '%#v'", muc.History.MaxStanzas)
 	}
 }
 
@@ -79,13 +81,14 @@ func TestMucNoHistory(t *testing.T) {
 	},
 		Extensions: []xmpp.PresExtension{
 			xmpp.MucPresence{
-				History: xmpp.History{MaxStanzas: &maxstanzas},
+				History: xmpp.History{MaxStanzas: xmpp.NewNullableInt(maxstanzas)},
 			},
 		},
 	}
 	data, err := xml.Marshal(&pres)
 	if err != nil {
 		t.Error("error on encode:", err)
+		return
 	}
 
 	if string(data) != str {
