@@ -154,12 +154,17 @@ func (c *Client) SetHandler(handler EventHandler) {
 
 // Send marshals XMPP stanza and sends it to the server.
 func (c *Client) Send(packet Packet) error {
+	conn := c.conn
+	if conn == nil {
+		return errors.New("client is not connected")
+	}
+
 	data, err := xml.Marshal(packet)
 	if err != nil {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	if _, err := fmt.Fprintf(c.conn, string(data)); err != nil {
+	if _, err := fmt.Fprintf(conn, string(data)); err != nil {
 		return errors.New("cannot send packet " + err.Error())
 	}
 	return nil
@@ -170,8 +175,13 @@ func (c *Client) Send(packet Packet) error {
 // disconnect the client. It is up to the user of this method to
 // carefully craft the XML content to produce valid XMPP.
 func (c *Client) SendRaw(packet string) error {
+	conn := c.conn
+	if conn == nil {
+		return errors.New("client is not connected")
+	}
+
 	var err error
-	_, err = fmt.Fprintf(c.Session.socketProxy, packet)
+	_, err = fmt.Fprintf(conn, packet)
 	return err
 }
 
