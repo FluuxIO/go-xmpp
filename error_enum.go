@@ -8,6 +8,6 @@ const (
 	ErrorTypeAuth     ErrorType = "auth"
 	ErrorTypeCancel   ErrorType = "cancel"
 	ErrorTypeContinue ErrorType = "continue"
-	ErrorTypeModify   ErrorType = "motify"
+	ErrorTypeModify   ErrorType = "modify"
 	ErrorTypeWait     ErrorType = "wait"
 )
