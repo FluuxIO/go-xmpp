@@ -70,6 +70,6 @@ func handleMessage(s xmpp.Sender, p xmpp.Packet) {
 }
 ```
 
-## Documentation
+## Reference documentation
 
-Please, check GoDoc for more information: [gosrc.io/xmpp](https://godoc.org/gosrc.io/xmpp)
+The code documentation is available on GoDoc: [gosrc.io/xmpp](https://godoc.org/gosrc.io/xmpp)
