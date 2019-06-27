@@ -24,7 +24,6 @@ type ControlField struct {
 }
 
 type ControlSetResponse struct {
-	IQPayload
 	XMLName xml.Name `xml:"urn:xmpp:iot:control setResponse"`
 }
 
