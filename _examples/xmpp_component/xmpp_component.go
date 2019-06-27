@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"gosrc.io/xmpp"
+	"gosrc.io/xmpp/stanza"
 )
 
 func main() {
@@ -21,12 +22,12 @@ func main() {
 	router := xmpp.NewRouter()
 	router.HandleFunc("message", handleMessage)
 	router.NewRoute().
-		IQNamespaces(xmpp.NSDiscoInfo).
-		HandlerFunc(func(s xmpp.Sender, p xmpp.Packet) {
+		IQNamespaces(stanza.NSDiscoInfo).
+		HandlerFunc(func(s xmpp.Sender, p stanza.Packet) {
 			discoInfo(s, p, opts)
 		})
 	router.NewRoute().
-		IQNamespaces(xmpp.NSDiscoItems).
+		IQNamespaces(stanza.NSDiscoItems).
 		HandlerFunc(discoItems)
 	router.NewRoute().
 		IQNamespaces("jabber:iq:version").
@@ -44,36 +45,36 @@ func main() {
 	log.Fatal(cm.Run())
 }
 
-func handleMessage(_ xmpp.Sender, p xmpp.Packet) {
-	msg, ok := p.(xmpp.Message)
+func handleMessage(_ xmpp.Sender, p stanza.Packet) {
+	msg, ok := p.(stanza.Message)
 	if !ok {
 		return
 	}
 	fmt.Println("Received message:", msg.Body)
 }
 
-func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
+func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
-	iq, ok := p.(xmpp.IQ)
+	iq, ok := p.(stanza.IQ)
 	if !ok || iq.Type != "get" {
 		return
 	}
 
-	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
-	identity := xmpp.Identity{
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	identity := stanza.Identity{
 		Name:     opts.Name,
 		Category: opts.Category,
 		Type:     opts.Type,
 	}
-	payload := xmpp.DiscoInfo{
+	payload := stanza.DiscoInfo{
 		XMLName: xml.Name{
-			Space: xmpp.NSDiscoInfo,
+			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
-		Identity: identity,
-		Features: []xmpp.Feature{
-			{Var: xmpp.NSDiscoInfo},
-			{Var: xmpp.NSDiscoItems},
+		Identity: []stanza.Identity{identity},
+		Features: []stanza.Feature{
+			{Var: stanza.NSDiscoInfo},
+			{Var: stanza.NSDiscoItems},
 			{Var: "jabber:iq:version"},
 			{Var: "urn:xmpp:delegation:1"},
 		},
@@ -83,24 +84,24 @@ func discoInfo(c xmpp.Sender, p xmpp.Packet, opts xmpp.ComponentOptions) {
 }
 
 // TODO: Handle iq error responses
-func discoItems(c xmpp.Sender, p xmpp.Packet) {
+func discoItems(c xmpp.Sender, p stanza.Packet) {
 	// Type conversion & sanity checks
-	iq, ok := p.(xmpp.IQ)
+	iq, ok := p.(stanza.IQ)
 	if !ok || iq.Type != "get" {
 		return
 	}
 
-	discoItems, ok := iq.Payload.(*xmpp.DiscoItems)
+	discoItems, ok := iq.Payload.(*stanza.DiscoItems)
 	if !ok {
 		return
 	}
 
-	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
 
-	var payload xmpp.DiscoItems
+	var payload stanza.DiscoItems
 	if discoItems.Node == "" {
-		payload = xmpp.DiscoItems{
-			Items: []xmpp.DiscoItem{
+		payload = stanza.DiscoItems{
+			Items: []stanza.DiscoItem{
 				{Name: "test node", JID: "service.localhost", Node: "node1"},
 			},
 		}
@@ -109,15 +110,15 @@ func discoItems(c xmpp.Sender, p xmpp.Packet) {
 	_ = c.Send(iqResp)
 }
 
-func handleVersion(c xmpp.Sender, p xmpp.Packet) {
+func handleVersion(c xmpp.Sender, p stanza.Packet) {
 	// Type conversion & sanity checks
-	iq, ok := p.(xmpp.IQ)
+	iq, ok := p.(stanza.IQ)
 	if !ok {
 		return
 	}
 
-	iqResp := xmpp.NewIQ(xmpp.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
-	var payload xmpp.Version
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	var payload stanza.Version
 	payload.Name = "Fluux XMPP Component"
 	payload.Version = "0.0.1"
 	iq.Payload = &payload

@@ -8,6 +8,8 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 // TODO: Should I move this as an extension of the client?
@@ -49,28 +51,28 @@ func (c *ServerCheck) Check() error {
 	decoder := xml.NewDecoder(tcpconn)
 
 	// Send stream open tag
-	if _, err = fmt.Fprintf(tcpconn, xmppStreamOpen, c.domain, NSClient, NSStream); err != nil {
+	if _, err = fmt.Fprintf(tcpconn, xmppStreamOpen, c.domain, stanza.NSClient, stanza.NSStream); err != nil {
 		return err
 	}
 
 	// Set xml decoder and extract streamID from reply (not used for now)
-	_, err = initStream(decoder)
+	_, err = stanza.InitStream(decoder)
 	if err != nil {
 		return err
 	}
 
 	// extract stream features
-	var f StreamFeatures
-	packet, err := nextPacket(decoder)
+	var f stanza.StreamFeatures
+	packet, err := stanza.NextPacket(decoder)
 	if err != nil {
 		err = fmt.Errorf("stream open decode features: %s", err)
 		return err
 	}
 
 	switch p := packet.(type) {
-	case StreamFeatures:
+	case stanza.StreamFeatures:
 		f = p
-	case StreamError:
+	case stanza.StreamError:
 		return errors.New("open stream error: " + p.Error.Local)
 	default:
 		return errors.New("expected packet received while expecting features, got " + p.Name())
@@ -79,13 +81,13 @@ func (c *ServerCheck) Check() error {
 	if _, ok := f.DoesStartTLS(); ok {
 		fmt.Fprintf(tcpconn, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
 
-		var k tlsProceed
+		var k stanza.TLSProceed
 		if err = decoder.DecodeElement(&k, nil); err != nil {
 			return fmt.Errorf("expecting starttls proceed: %s", err)
 		}
 
-		DefaultTlsConfig.ServerName = c.domain
-		tlsConn := tls.Client(tcpconn, &DefaultTlsConfig)
+		stanza.DefaultTlsConfig.ServerName = c.domain
+		tlsConn := tls.Client(tcpconn, &stanza.DefaultTlsConfig)
 		// We convert existing connection to TLS
 		if err = tlsConn.Handshake(); err != nil {
 			return err

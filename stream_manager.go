@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"golang.org/x/xerrors"
+	"gosrc.io/xmpp/stanza"
 )
 
 // The Fluux XMPP lib can manage client or component XMPP streams.
@@ -29,7 +30,7 @@ type StreamClient interface {
 
 // Sender is an interface provided by Stream clients to allow sending XMPP data.
 type Sender interface {
-	Send(packet Packet) error
+	Send(packet stanza.Packet) error
 	SendRaw(packet string) error
 }
 

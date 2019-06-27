@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 const xmppStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' xmlns='%s' xmlns:stream='%s' version='1.0'>"
@@ -15,7 +17,7 @@ type Session struct {
 	// Session info
 	BindJid      string // Jabber ID as provided by XMPP server
 	StreamId     string
-	Features     StreamFeatures
+	Features     stanza.StreamFeatures
 	TlsEnabled   bool
 	lastPacketId int
 
@@ -85,14 +87,14 @@ func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Config) {
 	s.decoder.CharsetReader = o.CharsetReader
 }
 
-func (s *Session) open(domain string) (f StreamFeatures) {
+func (s *Session) open(domain string) (f stanza.StreamFeatures) {
 	// Send stream open tag
-	if _, s.err = fmt.Fprintf(s.socketProxy, xmppStreamOpen, domain, NSClient, NSStream); s.err != nil {
+	if _, s.err = fmt.Fprintf(s.socketProxy, xmppStreamOpen, domain, stanza.NSClient, stanza.NSStream); s.err != nil {
 		return
 	}
 
 	// Set xml decoder and extract streamID from reply
-	s.StreamId, s.err = initStream(s.decoder) // TODO refactor / rename
+	s.StreamId, s.err = stanza.InitStream(s.decoder) // TODO refactor / rename
 	if s.err != nil {
 		return
 	}
@@ -112,7 +114,7 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 	if _, ok := s.Features.DoesStartTLS(); ok {
 		fmt.Fprintf(s.socketProxy, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
 
-		var k tlsProceed
+		var k stanza.TLSProceed
 		if s.err = s.decoder.DecodeElement(&k, nil); s.err != nil {
 			s.err = errors.New("expecting starttls proceed: " + s.err.Error())
 			return conn
@@ -120,8 +122,8 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 		s.TlsEnabled = true
 
 		// TODO: add option to accept all TLS certificates: insecureSkipTlsVerify (DefaultTlsConfig.InsecureSkipVerify)
-		DefaultTlsConfig.ServerName = domain
-		tlsConn := tls.Client(conn, &DefaultTlsConfig)
+		stanza.DefaultTlsConfig.ServerName = domain
+		tlsConn := tls.Client(conn, &stanza.DefaultTlsConfig)
 		// We convert existing connection to TLS
 		if s.err = tlsConn.Handshake(); s.err != nil {
 			return tlsConn
@@ -153,12 +155,12 @@ func (s *Session) bind(o Config) {
 	var resource = o.parsedJid.Resource
 	if resource != "" {
 		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'><resource>%s</resource></bind></iq>",
-			s.PacketId(), nsBind, resource)
+			s.PacketId(), stanza.NSBind, resource)
 	} else {
-		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'/></iq>", s.PacketId(), nsBind)
+		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'/></iq>", s.PacketId(), stanza.NSBind)
 	}
 
-	var iq IQ
+	var iq stanza.IQ
 	if s.err = s.decoder.Decode(&iq); s.err != nil {
 		s.err = errors.New("error decoding iq bind result: " + s.err.Error())
 		return
@@ -166,7 +168,7 @@ func (s *Session) bind(o Config) {
 
 	// TODO Check all elements
 	switch payload := iq.Payload.(type) {
-	case *BindBind:
+	case *stanza.BindBind:
 		s.BindJid = payload.Jid // our local id (with possibly randomly generated resource
 	default:
 		s.err = errors.New("iq bind result missing")
@@ -182,9 +184,9 @@ func (s *Session) rfc3921Session(o Config) {
 		return
 	}
 
-	var iq IQ
-	if s.Features.Session.optional.Local != "" {
-		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), nsSession)
+	var iq stanza.IQ
+	if s.Features.Session.Optional.Local != "" {
+		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), stanza.NSSession)
 		if s.err = s.decoder.Decode(&iq); s.err != nil {
 			s.err = errors.New("expecting iq result after session open: " + s.err.Error())
 			return
