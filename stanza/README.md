@@ -8,10 +8,11 @@ When creating stanzas, you can use two approaches:
 
 1. You can create IQ, Presence or Message structs, set the fields and manually prepare extensions struct to add to the
 stanza.
-2. You can use `stanza` Builder providing 
+2. You can use `stanza` build helper to be guided when creating the stanza, and have more controls performed on the
+final stanza.
 
-The methods are equivalent and you can use whatever suits you best. The Builder will generate the same type of
-struct that you can build by hand. 
+The methods are equivalent and you can use whatever suits you best. The helpers will finally generate the same type of
+struct that you can build by hand.
 
 ### Composing stanzas manually with structs
 
@@ -28,7 +29,7 @@ Here is for example how you would generate an IQ discovery result:
 			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
-		Identity: identity,
+		Identity: []stanza.Identity{identity},
 		Features: []stanza.Feature{
 			{Var: stanza.NSDiscoInfo},
 			{Var: stanza.NSDiscoItems},
@@ -38,19 +39,14 @@ Here is for example how you would generate an IQ discovery result:
 	}
 	iqResp.Payload = &payload
 
-### Using Builder
+### Using helpers
 
 Here is for example how you would generate an IQ discovery result using Builder:
 
-	b := stanza.NewBuilder()
-	iq := b.IQ(stanza.Attrs{Type: "get", To: "service.localhost", Id: "disco-get-1"})
-
-	payload := b.DiscoInfo()
-	identity := b.Identity("Test Component", "gateway", "service")
-	payload.SetFeatures(stanza.NSDiscoInfo, stanza.NSDiscoItems, "jabber:iq:version", "urn:xmpp:delegation:1").
-		SetIdentities(identity)
-
-	iq.Payload = payload
+	iq := stanza.NewIQ(stanza.Attrs{Type: "get", To: "service.localhost", Id: "disco-get-1"})
+	disco := iq.DiscoInfo()
+	disco.AddIdentity("Test Component", "gateway", "service")
+	disco.AddFeatures(stanza.NSDiscoInfo, stanza.NSDiscoItems, "jabber:iq:version", "urn:xmpp:delegation:1")
 
 ## Payload and extensions
 

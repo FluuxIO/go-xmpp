@@ -110,7 +110,7 @@ func discoInfoRoot(iqResp *stanza.IQ, opts xmpp.ComponentOptions) {
 			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
-		Identity: identity,
+		Identity: []stanza.Identity{identity},
 		Features: []stanza.Feature{
 			{Var: stanza.NSDiscoInfo},
 			{Var: stanza.NSDiscoItems},
@@ -148,7 +148,7 @@ func discoInfoPEP(iqResp *stanza.IQ) {
 			Space: stanza.NSDiscoInfo,
 			Local: "query",
 		},
-		Identity: identity,
+		Identity: []stanza.Identity{identity},
 		Node:     pepNode,
 		Features: []stanza.Feature{
 			{Var: "http://jabber.org/protocol/pubsub#access-presence"},

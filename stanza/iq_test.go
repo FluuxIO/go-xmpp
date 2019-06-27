@@ -37,11 +37,11 @@ func TestUnmarshalIqs(t *testing.T) {
 func TestGenerateIq(t *testing.T) {
 	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: "admin@localhost", To: "test@localhost", Id: "1"})
 	payload := stanza.DiscoInfo{
-		Identity: stanza.Identity{
-			Name:     "Test Gateway",
-			Category: "gateway",
-			Type:     "mqtt",
-		},
+		Identity: []stanza.Identity{
+			{Name: "Test Gateway",
+				Category: "gateway",
+				Type:     "mqtt",
+			}},
 		Features: []stanza.Feature{
 			{Var: stanza.NSDiscoInfo},
 			{Var: stanza.NSDiscoItems},
@@ -63,8 +63,8 @@ func TestGenerateIq(t *testing.T) {
 		t.Errorf("Unmarshal(%s) returned error", data)
 	}
 
-	if !xmlEqual(parsedIQ.Payload, iq.Payload) {
-		t.Errorf("non matching items\n%s", cmp.Diff(parsedIQ.Payload, iq.Payload))
+	if !xmlEqual(iq.Payload, parsedIQ.Payload) {
+		t.Errorf("non matching items\n%s", xmlDiff(iq.Payload, parsedIQ.Payload))
 	}
 }
 
