@@ -30,3 +30,10 @@ type ControlSetResponse struct {
 func (c *ControlSetResponse) Namespace() string {
 	return c.XMLName.Space
 }
+
+// ============================================================================
+// Registry init
+
+func init() {
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:iot:control", "set"}, ControlSet{})
+}

@@ -70,3 +70,10 @@ type sessionSession struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-session session"`
 	Optional xml.Name // If it does exist, it mean we are not required to open session
 }
+
+// ============================================================================
+// Registry init
+
+func init() {
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, BindBind{})
+}
