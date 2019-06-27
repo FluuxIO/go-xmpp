@@ -23,7 +23,7 @@ func (x *Err) Namespace() string {
 	return x.XMLName.Space
 }
 
-// UnmarshalXML implements custom parsing for IQs
+// UnmarshalXML implements custom parsing for XMPP errors
 func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	x.XMLName = start.Name
 
