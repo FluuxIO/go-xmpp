@@ -18,7 +18,7 @@ struct that you can build by hand.
 
 Here is for example how you would generate an IQ discovery result:
 
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
 	identity := stanza.Identity{
 		Name:     opts.Name,
 		Category: opts.Category,
@@ -52,7 +52,35 @@ Here is for example how you would generate an IQ discovery result using Builder:
 
 ### Message
 
+Here is the list of implemented message extensions:
+
+- `Delegation`
+
+- `Markable`
+- `MarkAcknowledged`
+- `MarkDisplayed`
+- `MarkReceived`
+
+- `StateActive`
+- `StateComposing`
+- `StateGone`
+- `StateInactive`
+- `StatePaused`
+
+- `HTML`
+
+- `OOB`
+
+- `ReceiptReceived`
+- `ReceiptRequest`
+
+- `Mood`
+
 ### Presence
+
+Here is the list of implemented presence extensions:
+
+- `MucPresence`
 
 ### IQ
 
@@ -62,8 +90,15 @@ having multiple payloads.
 
 Here is the list of structs implementing IQPayloads:
 
-- BindBind
-- Pubsub
+- `BindBind`
+- `ControlSet`
+- `ControlSetResponse`
+- `Delegation`
+- `DiscoInfo`
+- `DiscoItems`
+- `Pubsub`
+- `Version`
+- `Node`
 
 Finally, when the payload of the parsed stanza is unknown, the parser will provide the unknown payload as a generic
 `Node` element. You can also use the Node struct to add custom information on stanza generation. However, in both cases,

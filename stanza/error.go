@@ -19,10 +19,6 @@ type Err struct {
 	Text    string `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text,omitempty"`
 }
 
-func (x *Err) Namespace() string {
-	return x.XMLName.Space
-}
-
 // UnmarshalXML implements custom parsing for XMPP errors
 func (x *Err) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	x.XMLName = start.Name
