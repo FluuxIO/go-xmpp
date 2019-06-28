@@ -74,3 +74,35 @@ you may also consider [adding your own custom extensions on stanzas]().
 
 Extensions are registered on launch using the `Registry`. It can be used to register you own custom payload. You may
 want to do so to support extensions we did not yet implement, or to add your own custom extensions to your XMPP stanzas.
+
+To create an extension you need:
+1. to create a struct for that extension. It need to have XMLName for consistency and to tagged at the struct level with
+`xml` info.
+2. It need to implement one or several extensions interface: stanza.IQPayload, stanza.MsgExtension and / or
+stanza.PresExtension
+3. Add that custom extension to the stanza.TypeRegistry during the file init.
+
+Here an example code showing how to create a custom IQPayload. 
+
+```go
+package myclient
+
+import (
+	"encoding/xml"
+
+	"gosrc.io/xmpp/stanza"
+)
+
+type CustomPayload struct {
+	XMLName xml.Name `xml:"my:custom:payload query"`
+	Node    string   `xml:"node,attr,omitempty"`
+}
+
+func (c CustomPayload) Namespace() string {
+	return c.XMLName.Space
+}
+
+func init() {
+	stanza.TypeRegistry.MapExtension(stanza.PKTIQ, xml.Name{"my:custom:payload", "query"}, CustomPayload{})
+}
+```
