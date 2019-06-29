@@ -24,11 +24,14 @@ import (
 // set callback and trigger reconnection.
 type StreamClient interface {
 	Connect() error
+	Send(packet stanza.Packet) error
+	SendRaw(packet string) error
 	Disconnect()
 	SetHandler(handler EventHandler)
 }
 
 // Sender is an interface provided by Stream clients to allow sending XMPP data.
+// It is mostly use in callback to pass a limited subset of the stream client interface
 type Sender interface {
 	Send(packet stanza.Packet) error
 	SendRaw(packet string) error
@@ -46,7 +49,7 @@ type StreamManager struct {
 	wg sync.WaitGroup
 }
 
-type PostConnect func(c StreamClient)
+type PostConnect func(c Sender)
 
 // NewStreamManager creates a new StreamManager structure, intended to support
 // handling XMPP client state event changes and auto-trigger reconnection
@@ -59,7 +62,7 @@ func NewStreamManager(client StreamClient, pc PostConnect) *StreamManager {
 	}
 }
 
-// Run launchs the connection of the underlying client or component
+// Run launches the connection of the underlying client or component
 // and wait until Disconnect is called, or for the manager to terminate due
 // to an unrecoverable error.
 func (sm *StreamManager) Run() error {
