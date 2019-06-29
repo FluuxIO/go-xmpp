@@ -16,6 +16,20 @@ The goal is to make simple to write simple XMPP clients and components:
 
 The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
 
+## Stanza subpackage
+
+XMPP stanzas are basic and extensible XML elements. Stanzas (or sometimes special stanzas called 'nonzas') are used to leveraged the XMPP protocol features. During a session, a client (or a component) and a server will be exchanging stanzas back and forth.
+
+At a low-level, stanzas are XML fragments. However, Fluux XMPP library provides the building blocks to interact with stanzas at a high-level, providing a Go-friendly API.
+
+The `stanza` subpackage provides support for XMPP stream parsing, marshalling and unmarshalling of XMPP stanza. It is a bridge between high-level Go structure and low-level XMPP protocol.
+
+Parsing, marshalling and unmarshalling is automatically handled by Fluux XMPP client library. As a developer, you will generally manipulates only the high-level structs provided by the stanza package.
+
+The XMPP protocol, as the name implies is extensible. If your application is using custom stanza extensions, you can implement your own extensions directly in your own application.
+
+To learn more about the stanza package, you can read more in the [stanza package documentation](https://github.com/FluuxIO/go-xmpp/blob/master/stanza/README.md).
+
 ## Examples
 
 We have several [examples](https://github.com/FluuxIO/go-xmpp/tree/master/_examples) to help you get started using
