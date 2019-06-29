@@ -48,6 +48,8 @@ func (d *Delegation) Namespace() string {
 	return d.XMLName.Space
 }
 
+// Forwarded is used to wrapped forwarded stanzas.
+// TODO: Move it in another file, as it is not limited to components.
 type Forwarded struct {
 	XMLName xml.Name `xml:"urn:xmpp:forward:0 forwarded"`
 	Stanza  Packet
