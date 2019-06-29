@@ -99,6 +99,7 @@ func (s *StreamSession) IsOptional() bool {
 	if s.XMLName.Local == "session" {
 		return s.Optional
 	}
+	// If session element is missing, then we should not use session
 	return true
 }
 

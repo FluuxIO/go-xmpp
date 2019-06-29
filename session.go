@@ -179,6 +179,7 @@ func (s *Session) rfc3921Session(o Config) {
 	}
 
 	var iq stanza.IQ
+	// We only negotiate session binding if it is mandatory, we skip it when optional.
 	if !s.Features.Session.IsOptional() {
 		fmt.Fprintf(s.streamLogger, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), stanza.NSSession)
 		if s.err = s.decoder.Decode(&iq); s.err != nil {
