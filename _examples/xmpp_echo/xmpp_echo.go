@@ -18,7 +18,7 @@ func main() {
 		Address:      "localhost:5222",
 		Jid:          "test@localhost",
 		Password:     "test",
-		PacketLogger: os.Stdout,
+		StreamLogger: os.Stdout,
 		Insecure:     true,
 	}
 

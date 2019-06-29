@@ -26,8 +26,8 @@ type Session struct {
 	Out chan interface{}
 
 	// read / write
-	socketProxy io.ReadWriter
-	decoder     *xml.Decoder
+	streamLogger io.ReadWriter
+	decoder      *xml.Decoder
 
 	// error management
 	err error
@@ -65,7 +65,7 @@ func (s *Session) PacketId() string {
 }
 
 func (s *Session) init(conn net.Conn, o Config) {
-	s.setProxy(nil, conn, o)
+	s.setStreamLogger(nil, conn, o)
 	s.Features = s.open(o.parsedJid.Domain)
 }
 
@@ -74,22 +74,21 @@ func (s *Session) reset(conn net.Conn, newConn net.Conn, o Config) {
 		return
 	}
 
-	s.setProxy(conn, newConn, o)
+	s.setStreamLogger(conn, newConn, o)
 	s.Features = s.open(o.parsedJid.Domain)
 }
 
-// TODO: setProxyLogger ? better name ? This is not a TCP / HTTP proxy
-func (s *Session) setProxy(conn net.Conn, newConn net.Conn, o Config) {
+func (s *Session) setStreamLogger(conn net.Conn, newConn net.Conn, o Config) {
 	if newConn != conn {
-		s.socketProxy = newSocketProxy(newConn, o.PacketLogger)
+		s.streamLogger = newStreamLogger(newConn, o.StreamLogger)
 	}
-	s.decoder = xml.NewDecoder(s.socketProxy)
+	s.decoder = xml.NewDecoder(s.streamLogger)
 	s.decoder.CharsetReader = o.CharsetReader
 }
 
 func (s *Session) open(domain string) (f stanza.StreamFeatures) {
 	// Send stream open tag
-	if _, s.err = fmt.Fprintf(s.socketProxy, xmppStreamOpen, domain, stanza.NSClient, stanza.NSStream); s.err != nil {
+	if _, s.err = fmt.Fprintf(s.streamLogger, xmppStreamOpen, domain, stanza.NSClient, stanza.NSStream); s.err != nil {
 		return
 	}
 
@@ -112,7 +111,7 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 	}
 
 	if _, ok := s.Features.DoesStartTLS(); ok {
-		fmt.Fprintf(s.socketProxy, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
+		fmt.Fprintf(s.streamLogger, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
 
 		var k stanza.TLSProceed
 		if s.err = s.decoder.DecodeElement(&k, nil); s.err != nil {
@@ -143,7 +142,7 @@ func (s *Session) auth(o Config) {
 		return
 	}
 
-	s.err = authSASL(s.socketProxy, s.decoder, s.Features, o.parsedJid.Node, o.Password)
+	s.err = authSASL(s.streamLogger, s.decoder, s.Features, o.parsedJid.Node, o.Password)
 }
 
 func (s *Session) bind(o Config) {
@@ -154,10 +153,10 @@ func (s *Session) bind(o Config) {
 	// Send IQ message asking to bind to the local user name.
 	var resource = o.parsedJid.Resource
 	if resource != "" {
-		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'><resource>%s</resource></bind></iq>",
+		fmt.Fprintf(s.streamLogger, "<iq type='set' id='%s'><bind xmlns='%s'><resource>%s</resource></bind></iq>",
 			s.PacketId(), stanza.NSBind, resource)
 	} else {
-		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><bind xmlns='%s'/></iq>", s.PacketId(), stanza.NSBind)
+		fmt.Fprintf(s.streamLogger, "<iq type='set' id='%s'><bind xmlns='%s'/></iq>", s.PacketId(), stanza.NSBind)
 	}
 
 	var iq stanza.IQ
@@ -186,7 +185,7 @@ func (s *Session) rfc3921Session(o Config) {
 
 	var iq stanza.IQ
 	if s.Features.Session.Optional.Local != "" {
-		fmt.Fprintf(s.socketProxy, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), stanza.NSSession)
+		fmt.Fprintf(s.streamLogger, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), stanza.NSSession)
 		if s.err = s.decoder.Decode(&iq); s.err != nil {
 			s.err = errors.New("expecting iq result after session open: " + s.err.Error())
 			return

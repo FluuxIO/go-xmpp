@@ -133,7 +133,7 @@ func (c *Client) Connect() error {
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	fmt.Fprintf(c.Session.socketProxy, "<presence/>")
+	fmt.Fprintf(c.Session.streamLogger, "<presence/>")
 
 	// Start the keepalive go routine
 	keepaliveQuit := make(chan struct{})
@@ -166,10 +166,7 @@ func (c *Client) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	if _, err := fmt.Fprintf(conn, string(data)); err != nil {
-		return errors.New("cannot send packet " + err.Error())
-	}
-	return nil
+	return c.sendWithLogger(string(data))
 }
 
 // SendRaw sends an XMPP stanza as a string to the server.
@@ -182,8 +179,12 @@ func (c *Client) SendRaw(packet string) error {
 		return errors.New("client is not connected")
 	}
 
+	return c.sendWithLogger(packet)
+}
+
+func (c *Client) sendWithLogger(packet string) error {
 	var err error
-	_, err = fmt.Fprintf(conn, packet)
+	_, err = fmt.Fprintf(c.Session.streamLogger, packet)
 	return err
 }
 

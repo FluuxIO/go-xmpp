@@ -10,7 +10,7 @@ type Config struct {
 	Jid            string
 	parsedJid      *Jid // For easier manipulation
 	Password       string
-	PacketLogger   *os.File // Used for debugging
+	StreamLogger   *os.File // Used for debugging
 	Lang           string   // TODO: should default to 'en'
 	ConnectTimeout int      // Client timeout in seconds. Default to 15
 	// Insecure can be set to true to allow to open a session without TLS. If TLS

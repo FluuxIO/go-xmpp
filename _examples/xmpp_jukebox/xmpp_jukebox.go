@@ -35,7 +35,7 @@ func main() {
 		Address:  *address,
 		Jid:      *jid,
 		Password: *password,
-		// PacketLogger: os.Stdout,
+		// StreamLogger: os.Stdout,
 		Insecure: true,
 	}
 
