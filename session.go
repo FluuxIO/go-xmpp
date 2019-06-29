@@ -21,10 +21,6 @@ type Session struct {
 	TlsEnabled   bool
 	lastPacketId int
 
-	// Session interface
-	In  chan interface{}
-	Out chan interface{}
-
 	// read / write
 	streamLogger io.ReadWriter
 	decoder      *xml.Decoder
