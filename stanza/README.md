@@ -90,7 +90,6 @@ having multiple payloads.
 
 Here is the list of structs implementing IQPayloads:
 
-- `BindBind`
 - `ControlSet`
 - `ControlSetResponse`
 - `Delegation`
