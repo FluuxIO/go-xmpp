@@ -9,12 +9,22 @@ The goal is to make simple to write simple XMPP clients and components:
 - For automation (like for example monitoring of an XMPP service),
 - For building connected "things" by plugging them on an XMPP server,
 - For writing simple chatbot to control a service or a thing.
-- For writing XMPP servers components. Fluux XMPP supports:
+- For writing XMPP servers components.
+
+The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
+
+## Supported specifications
+
+### Clients
+
+- [RFC 6120: XMPP Core](https://xmpp.org/rfcs/rfc6120.html)
+- [RFC 6121: XMPP Instant Messaging and Presence](https://xmpp.org/rfcs/rfc6121.html)
+
+### Components
+
   - [XEP-0114: Jabber Component Protocol](https://xmpp.org/extensions/xep-0114.html)
   - [XEP-0355: Namespace Delegation](https://xmpp.org/extensions/xep-0355.html)
   - [XEP-0356: Privileged Entity](https://xmpp.org/extensions/xep-0356.html)
-
-The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
 
 ## Stanza subpackage
 
