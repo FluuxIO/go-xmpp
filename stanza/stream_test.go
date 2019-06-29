@@ -1,4 +1,4 @@
-package xmpp_test
+package stanza_test
 
 import (
 	"encoding/xml"
