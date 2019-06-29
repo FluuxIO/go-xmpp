@@ -161,7 +161,7 @@ func readAuth(t *testing.T, decoder *xml.Decoder) string {
 	}
 
 	var nv interface{}
-	nv = &stanza.Auth{}
+	nv = &stanza.SASLAuth{}
 	// Decode element into pointer storage
 	if err = decoder.DecodeElement(nv, &se); err != nil {
 		t.Errorf("cannot decode auth: %s", err)
@@ -169,14 +169,14 @@ func readAuth(t *testing.T, decoder *xml.Decoder) string {
 	}
 
 	switch v := nv.(type) {
-	case *stanza.Auth:
+	case *stanza.SASLAuth:
 		return v.Value
 	}
 	return ""
 }
 
 func sendBindFeature(t *testing.T, c net.Conn, _ *xml.Decoder) {
-	// This is a basic server, supporting only 1 stream feature: SASL Plain Auth
+	// This is a basic server, supporting only 1 stream feature after auth: session binding
 	features := `<stream:features>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
 </stream:features>`
@@ -201,7 +201,7 @@ func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 
 	// TODO Check all elements
 	switch iq.Payload.(type) {
-	case *stanza.BindBind:
+	case *stanza.Bind:
 		result := `<iq id='%s' type='result'>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
   	<jid>%s</jid>

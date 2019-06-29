@@ -167,7 +167,7 @@ func (s *Session) bind(o Config) {
 
 	// TODO Check all elements
 	switch payload := iq.Payload.(type) {
-	case *stanza.BindBind:
+	case *stanza.Bind:
 		s.BindJid = payload.Jid // our local id (with possibly randomly generated resource
 	default:
 		s.err = errors.New("iq bind result missing")
@@ -176,15 +176,14 @@ func (s *Session) bind(o Config) {
 	return
 }
 
-// TODO: remove when ejabberd is fixed: https://github.com/processone/ejabberd/issues/869
-// After the bind, if the session is required (as per old RFC 3921), we send the session open iq
+// After the bind, if the session is not optional (as per old RFC 3921), we send the session open iq.
 func (s *Session) rfc3921Session(o Config) {
 	if s.err != nil {
 		return
 	}
 
 	var iq stanza.IQ
-	if s.Features.Session.Optional.Local != "" {
+	if s.Features.Session.XMLName.Local == "session" && !s.Features.Session.Optional {
 		fmt.Fprintf(s.streamLogger, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), stanza.NSSession)
 		if s.err = s.decoder.Decode(&iq); s.err != nil {
 			s.err = errors.New("expecting iq result after session open: " + s.err.Error())

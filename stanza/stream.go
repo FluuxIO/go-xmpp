@@ -17,9 +17,10 @@ type StreamFeatures struct {
 	// Stream features
 	StartTLS         tlsStartTLS
 	Mechanisms       saslMechanisms
-	Bind             BindBind
-	Session          sessionSession
+	Bind             Bind
 	StreamManagement streamManagement
+	// Obsolete
+	Session StreamSession
 	// ProcessOne Stream Features
 	P1Push   p1Push
 	P1Rebind p1Rebind
