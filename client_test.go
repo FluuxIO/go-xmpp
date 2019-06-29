@@ -86,7 +86,28 @@ func TestClient_FeaturesTracking(t *testing.T) {
 	}
 
 	mock.Stop()
+}
 
+func TestClient_RFC3921Session(t *testing.T) {
+	// Setup Mock server
+	mock := ServerMock{}
+	mock.Start(t, testXMPPAddress, handlerConnectWithSession)
+
+	// Test / Check result
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test", Insecure: true}
+
+	var client *Client
+	var err error
+	router := NewRouter()
+	if client, err = NewClient(config, router); err != nil {
+		t.Errorf("connect create XMPP client: %s", err)
+	}
+
+	if err = client.Connect(); err != nil {
+		t.Errorf("XMPP connection failed: %s", err)
+	}
+
+	mock.Stop()
 }
 
 //=============================================================================
@@ -94,6 +115,7 @@ func TestClient_FeaturesTracking(t *testing.T) {
 
 const serverStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' id='%s' xmlns='%s' xmlns:stream='%s' version='1.0'>"
 
+// Test connection with a basic straightforward workflow
 func handlerConnectSuccess(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
 	checkOpenStream(t, c, decoder)
@@ -112,6 +134,21 @@ func handlerAbortTLS(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
 	checkOpenStream(t, c, decoder)
 	sendStreamFeatures(t, c, decoder) // Send initial features
+}
+
+// Test connection with mandatory session (RFC-3921)
+func handlerConnectWithSession(t *testing.T, c net.Conn) {
+	decoder := xml.NewDecoder(c)
+	checkOpenStream(t, c, decoder)
+
+	sendStreamFeatures(t, c, decoder) // Send initial features
+	readAuth(t, decoder)
+	fmt.Fprintln(c, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
+
+	checkOpenStream(t, c, decoder)    // Reset stream
+	sendRFC3921Feature(t, c, decoder) // Send post auth features
+	bind(t, c, decoder)
+	session(t, c, decoder)
 }
 
 func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
@@ -176,9 +213,20 @@ func readAuth(t *testing.T, decoder *xml.Decoder) string {
 }
 
 func sendBindFeature(t *testing.T, c net.Conn, _ *xml.Decoder) {
-	// This is a basic server, supporting only 1 stream feature after auth: session binding
+	// This is a basic server, supporting only 1 stream feature after auth: resource binding
 	features := `<stream:features>
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
+</stream:features>`
+	if _, err := fmt.Fprintln(c, features); err != nil {
+		t.Errorf("cannot send stream feature: %s", err)
+	}
+}
+
+func sendRFC3921Feature(t *testing.T, c net.Conn, _ *xml.Decoder) {
+	// This is a basic server, supporting only 2 features after auth: resource & session binding
+	features := `<stream:features>
+  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
+  <session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>
 </stream:features>`
 	if _, err := fmt.Fprintln(c, features); err != nil {
 		t.Errorf("cannot send stream feature: %s", err)
@@ -208,5 +256,26 @@ func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
   </bind>
 </iq>`
 		fmt.Fprintf(c, result, iq.Id, "test@localhost/test") // TODO use real JID
+	}
+}
+
+func session(t *testing.T, c net.Conn, decoder *xml.Decoder) {
+	se, err := stanza.NextStart(decoder)
+	if err != nil {
+		t.Errorf("cannot read session: %s", err)
+		return
+	}
+
+	iq := &stanza.IQ{}
+	// Decode element into pointer storage
+	if err = decoder.DecodeElement(&iq, &se); err != nil {
+		t.Errorf("cannot decode session iq: %s", err)
+		return
+	}
+
+	switch iq.Payload.(type) {
+	case *stanza.StreamSession:
+		result := `<iq id='%s' type='result'/>`
+		fmt.Fprintf(c, result, iq.Id)
 	}
 }

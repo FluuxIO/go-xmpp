@@ -183,7 +183,7 @@ func (s *Session) rfc3921Session(o Config) {
 	}
 
 	var iq stanza.IQ
-	if s.Features.Session.XMLName.Local == "session" && !s.Features.Session.Optional {
+	if !s.Features.Session.IsOptional() {
 		fmt.Fprintf(s.streamLogger, "<iq type='set' id='%s'><session xmlns='%s'/></iq>", s.PacketId(), stanza.NSSession)
 		if s.err = s.decoder.Decode(&iq); s.err != nil {
 			s.err = errors.New("expecting iq result after session open: " + s.err.Error())

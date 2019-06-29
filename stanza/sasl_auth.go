@@ -95,10 +95,17 @@ func (s *StreamSession) Namespace() string {
 	return s.XMLName.Space
 }
 
+func (s *StreamSession) IsOptional() bool {
+	if s.XMLName.Local == "session" {
+		return s.Optional
+	}
+	return true
+}
+
 // ============================================================================
 // Registry init
 
 func init() {
 	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, Bind{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-session", "bind"}, StreamSession{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-session", "session"}, StreamSession{})
 }
