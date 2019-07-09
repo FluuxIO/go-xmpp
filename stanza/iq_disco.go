@@ -56,8 +56,9 @@ func (d *DiscoInfo) AddFeatures(namespace ...string) {
 	}
 }
 
-func (d *DiscoInfo) SetNode(node string) {
+func (d *DiscoInfo) SetNode(node string) *DiscoInfo {
 	d.Node = node
+	return d
 }
 
 func (d *DiscoInfo) SetIdentities(ident ...Identity) *DiscoInfo {
@@ -66,6 +67,7 @@ func (d *DiscoInfo) SetIdentities(ident ...Identity) *DiscoInfo {
 }
 
 func (d *DiscoInfo) SetFeatures(namespace ...string) *DiscoInfo {
+	d.Features = []Feature{}
 	for _, ns := range namespace {
 		d.Features = append(d.Features, Feature{Var: ns})
 	}
@@ -104,11 +106,38 @@ func (d *DiscoItems) Namespace() string {
 	return d.XMLName.Space
 }
 
+// ---------------
+// Builder helpers
+
+// DiscoItems builds a default DiscoItems payload
+func (iq *IQ) DiscoItems() *DiscoItems {
+	d := DiscoItems{
+		XMLName: xml.Name{Space: "http://jabber.org/protocol/disco#items", Local: "query"},
+	}
+	iq.Payload = &d
+	return &d
+}
+
+func (d *DiscoItems) SetNode(node string) *DiscoItems {
+	d.Node = node
+	return d
+}
+
+func (d *DiscoItems) AddItem(jid, node, name string) *DiscoItems {
+	item := DiscoItem{
+		JID:  jid,
+		Node: node,
+		Name: name,
+	}
+	d.Items = append(d.Items, item)
+	return d
+}
+
 type DiscoItem struct {
 	XMLName xml.Name `xml:"item"`
-	Name    string   `xml:"name,attr,omitempty"`
 	JID     string   `xml:"jid,attr,omitempty"`
 	Node    string   `xml:"node,attr,omitempty"`
+	Name    string   `xml:"name,attr,omitempty"`
 }
 
 // ============================================================================
