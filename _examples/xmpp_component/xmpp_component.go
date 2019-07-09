@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
 	"log"
 
@@ -61,25 +60,9 @@ func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 	}
 
 	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
-	identity := stanza.Identity{
-		Name:     opts.Name,
-		Category: opts.Category,
-		Type:     opts.Type,
-	}
-	payload := stanza.DiscoInfo{
-		XMLName: xml.Name{
-			Space: stanza.NSDiscoInfo,
-			Local: "query",
-		},
-		Identity: []stanza.Identity{identity},
-		Features: []stanza.Feature{
-			{Var: stanza.NSDiscoInfo},
-			{Var: stanza.NSDiscoItems},
-			{Var: "jabber:iq:version"},
-			{Var: "urn:xmpp:delegation:1"},
-		},
-	}
-	iqResp.Payload = &payload
+	disco := iqResp.DiscoInfo()
+	disco.AddIdentity(opts.Name, opts.Category, opts.Type)
+	disco.AddFeatures(stanza.NSDiscoInfo, stanza.NSDiscoItems, "jabber:iq:version", "urn:xmpp:delegation:1")
 	_ = c.Send(iqResp)
 }
 
@@ -97,16 +80,11 @@ func discoItems(c xmpp.Sender, p stanza.Packet) {
 	}
 
 	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	items := iqResp.DiscoItems()
 
-	var payload stanza.DiscoItems
 	if discoItems.Node == "" {
-		payload = stanza.DiscoItems{
-			Items: []stanza.DiscoItem{
-				{Name: "test node", JID: "service.localhost", Node: "node1"},
-			},
-		}
+		items.AddItem("service.localhost", "node1", "test node")
 	}
-	iqResp.Payload = &payload
 	_ = c.Send(iqResp)
 }
 
@@ -118,9 +96,6 @@ func handleVersion(c xmpp.Sender, p stanza.Packet) {
 	}
 
 	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
-	var payload stanza.Version
-	payload.Name = "Fluux XMPP Component"
-	payload.Version = "0.0.1"
-	iq.Payload = &payload
+	iqResp.Version().SetInfo("Fluux XMPP Component", "0.0.1", "")
 	_ = c.Send(iqResp)
 }
