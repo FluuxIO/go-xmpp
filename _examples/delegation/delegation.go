@@ -99,26 +99,9 @@ func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 }
 
 func discoInfoRoot(iqResp *stanza.IQ, opts xmpp.ComponentOptions) {
-	// Higher level discovery
-	identity := stanza.Identity{
-		Name:     opts.Name,
-		Category: opts.Category,
-		Type:     opts.Type,
-	}
-	payload := stanza.DiscoInfo{
-		XMLName: xml.Name{
-			Space: stanza.NSDiscoInfo,
-			Local: "query",
-		},
-		Identity: []stanza.Identity{identity},
-		Features: []stanza.Feature{
-			{Var: stanza.NSDiscoInfo},
-			{Var: stanza.NSDiscoItems},
-			{Var: "jabber:iq:version"},
-			{Var: "urn:xmpp:delegation:1"},
-		},
-	}
-	iqResp.Payload = &payload
+	disco := iqResp.DiscoInfo()
+	disco.AddIdentity(opts.Name, opts.Category, opts.Type)
+	disco.AddFeatures(stanza.NSDiscoInfo, stanza.NSDiscoItems, "jabber:iq:version", "urn:xmpp:delegation:1")
 }
 
 func discoInfoPubSub(iqResp *stanza.IQ) {
