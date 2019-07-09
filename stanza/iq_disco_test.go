@@ -7,6 +7,7 @@ import (
 	"gosrc.io/xmpp/stanza"
 )
 
+// Test DiscoInfo Builder with several features
 func TestDiscoInfo_Builder(t *testing.T) {
 	iq := stanza.NewIQ(stanza.Attrs{Type: "get", To: "service.localhost", Id: "disco-get-1"})
 	disco := iq.DiscoInfo()
