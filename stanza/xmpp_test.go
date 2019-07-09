@@ -11,7 +11,7 @@ import (
 // ============================================================================
 // Marshaller / unmarshaller test
 
-func marshallUnmarshall(t *testing.T, iq stanza.IQ) (*stanza.IQ, error) {
+func checkMarshalling(t *testing.T, iq stanza.IQ) (*stanza.IQ, error) {
 	// Marshall
 	data, err := xml.Marshal(iq)
 	if err != nil {

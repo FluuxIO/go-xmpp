@@ -14,7 +14,7 @@ func TestDiscoInfo_Builder(t *testing.T) {
 	disco.AddIdentity("Test Component", "gateway", "service")
 	disco.AddFeatures(stanza.NSDiscoInfo, stanza.NSDiscoItems, "jabber:iq:version", "urn:xmpp:delegation:1")
 
-	parsedIQ, err := marshallUnmarshall(t, iq)
+	parsedIQ, err := checkMarshalling(t, iq)
 	if err != nil {
 		return
 	}
@@ -57,7 +57,7 @@ func TestDiscoItems_Builder(t *testing.T) {
 		AddItem("catalog.shakespeare.lit", "clothing", "Wear your literary taste with pride").
 		AddItem("catalog.shakespeare.lit", "music", "Music from the time of Shakespeare")
 
-	parsedIQ, err := marshallUnmarshall(t, iq)
+	parsedIQ, err := checkMarshalling(t, iq)
 	if err != nil {
 		return
 	}
@@ -78,6 +78,12 @@ func TestDiscoItems_Builder(t *testing.T) {
 		for i, item := range pp.Items {
 			if item.JID != items[i].JID {
 				t.Errorf("JID Mismatch (expected: %s): %s", items[i].JID, item.JID)
+			}
+			if item.Node != items[i].Node {
+				t.Errorf("Node Mismatch (expected: %s): %s", items[i].JID, item.JID)
+			}
+			if item.Name != items[i].Name {
+				t.Errorf("Name Mismatch (expected: %s): %s", items[i].JID, item.JID)
 			}
 		}
 	}
