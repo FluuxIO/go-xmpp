@@ -35,7 +35,7 @@ func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 
 	// starttls
 	var tlsConn net.Conn
-	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.Domain)
+	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.Domain, o.InsecureSkipTlsVerify)
 	if s.TlsEnabled {
 		s.reset(conn, tlsConn, o)
 	}
@@ -101,7 +101,7 @@ func (s *Session) open(domain string) (f stanza.StreamFeatures) {
 	return
 }
 
-func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
+func (s *Session) startTlsIfSupported(conn net.Conn, domain string, insecureSkipTlsVerify bool) net.Conn {
 	if s.err != nil {
 		return conn
 	}
@@ -116,16 +116,19 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 		}
 		s.TlsEnabled = true
 
-		// TODO: add option to accept all TLS certificates: insecureSkipTlsVerify (DefaultTlsConfig.InsecureSkipVerify)
 		stanza.DefaultTlsConfig.ServerName = domain
+		stanza.DefaultTlsConfig.InsecureSkipVerify = insecureSkipTlsVerify
 		tlsConn := tls.Client(conn, &stanza.DefaultTlsConfig)
 		// We convert existing connection to TLS
 		if s.err = tlsConn.Handshake(); s.err != nil {
 			return tlsConn
 		}
 
-		// We check that cert matches hostname
-		s.err = tlsConn.VerifyHostname(domain)
+		if !stanza.DefaultTlsConfig.InsecureSkipVerify {
+			// We check that cert matches hostname
+			s.err = tlsConn.VerifyHostname(domain)
+		}
+
 		return tlsConn
 	}
 

@@ -15,6 +15,7 @@ type Config struct {
 	ConnectTimeout int      // Client timeout in seconds. Default to 15
 	// Insecure can be set to true to allow to open a session without TLS. If TLS
 	// is supported on the server, we will still try to use it.
-	Insecure      bool
-	CharsetReader func(charset string, input io.Reader) (io.Reader, error) // passed to xml decoder
+	Insecure              bool
+	InsecureSkipTlsVerify bool
+	CharsetReader         func(charset string, input io.Reader) (io.Reader, error) // passed to xml decoder
 }
