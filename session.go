@@ -117,6 +117,10 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string, o Config) ne
 			return conn
 		}
 
+		if o.TLSConfig == nil {
+			o.TLSConfig = &tls.Config{}
+		}
+
 		if o.TLSConfig.ServerName == "" {
 			o.TLSConfig.ServerName = domain
 		}
