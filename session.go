@@ -35,13 +35,15 @@ func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 
 	// starttls
 	var tlsConn net.Conn
-	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.Domain)
-	if s.TlsEnabled {
-		s.reset(conn, tlsConn, o)
-	}
+	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.Domain, o)
 
 	if !s.TlsEnabled && !o.Insecure {
-		return nil, nil, NewConnError(errors.New("failed to negotiate TLS session"), true)
+		err := fmt.Errorf("failed to negotiate TLS session : %s", s.err)
+		return nil, nil, NewConnError(err, true)
+	}
+
+	if s.TlsEnabled {
+		s.reset(conn, tlsConn, o)
 	}
 
 	// auth
@@ -101,7 +103,7 @@ func (s *Session) open(domain string) (f stanza.StreamFeatures) {
 	return
 }
 
-func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
+func (s *Session) startTlsIfSupported(conn net.Conn, domain string, o Config) net.Conn {
 	if s.err != nil {
 		return conn
 	}
@@ -114,19 +116,28 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string) net.Conn {
 			s.err = errors.New("expecting starttls proceed: " + s.err.Error())
 			return conn
 		}
-		s.TlsEnabled = true
 
-		// TODO: add option to accept all TLS certificates: insecureSkipTlsVerify (DefaultTlsConfig.InsecureSkipVerify)
-		stanza.DefaultTlsConfig.ServerName = domain
-		tlsConn := tls.Client(conn, &stanza.DefaultTlsConfig)
+		o.TLSConfig.ServerName = domain
+		tlsConn := tls.Client(conn, &o.TLSConfig)
 		// We convert existing connection to TLS
 		if s.err = tlsConn.Handshake(); s.err != nil {
 			return tlsConn
 		}
 
-		// We check that cert matches hostname
-		s.err = tlsConn.VerifyHostname(domain)
+		if !o.TLSConfig.InsecureSkipVerify {
+			// We check that cert matches hostname
+			s.err = tlsConn.VerifyHostname(domain)
+		}
+
+		if s.err == nil {
+			s.TlsEnabled = true
+		}
 		return tlsConn
+	}
+
+	// If we do not allow cleartext connections, make it explicit that server do not support starttls
+	if !o.Insecure {
+		s.err = errors.New("XMPP server does not advertise support for starttls")
 	}
 
 	// starttls is not supported => we do not upgrade the connection:

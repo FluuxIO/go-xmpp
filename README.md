@@ -13,6 +13,32 @@ The goal is to make simple to write simple XMPP clients and components:
 
 The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
 
+## Configuration and connection
+
+### Allowing Insecure TLS connection during development
+
+It is not recommended to disable the check for domain name and certificate chain. Doing so would open your client
+to man-in-the-middle attacks.
+
+However, in development, XMPP servers often use self-signed certificates. In that situation, it is better to add the
+root CA that signed the certificate to your trusted list of root CA. It avoids changing the code and limit the risk
+of shipping an insecure client to production.
+
+That said, if you really want to allow your client to trust any TLS certificate, you can customize Go standard 
+`tls.Config` and set it in Config struct.
+
+Here is an example code to configure a client to allow connecting to a server with self-signed certificate. Note the 
+`InsecureSkipVerify` option. When using this `tls.Config` option, all the checks on the certificate are skipped.
+
+```go
+config := xmpp.Config{
+	Address:      "localhost:5222",
+	Jid:          "test@localhost",
+	Password:     "test",
+	TLSConfig:     tls.Config{InsecureSkipVerify: true},
+}
+```
+
 ## Supported specifications
 
 ### Clients
