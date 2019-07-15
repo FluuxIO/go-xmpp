@@ -119,7 +119,7 @@ func (sm *StreamManager) connect() error {
 			var actualErr ConnError
 			if xerrors.As(err, &actualErr) {
 				if actualErr.Permanent {
-					return xerrors.Errorf("unrecoverable connect error %w", actualErr)
+					return xerrors.Errorf("unrecoverable connect error %#v", actualErr)
 				}
 			}
 			backoff.wait()

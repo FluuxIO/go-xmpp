@@ -86,8 +86,9 @@ func (c *ServerCheck) Check() error {
 			return fmt.Errorf("expecting starttls proceed: %s", err)
 		}
 
-		stanza.DefaultTlsConfig.ServerName = c.domain
-		tlsConn := tls.Client(tcpconn, &stanza.DefaultTlsConfig)
+		var tlsConfig tls.Config
+		tlsConfig.ServerName = c.domain
+		tlsConn := tls.Client(tcpconn, &tlsConfig)
 		// We convert existing connection to TLS
 		if err = tlsConn.Handshake(); err != nil {
 			return err

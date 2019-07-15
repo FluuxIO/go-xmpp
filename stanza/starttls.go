@@ -1,11 +1,8 @@
 package stanza
 
 import (
-	"crypto/tls"
 	"encoding/xml"
 )
-
-var DefaultTlsConfig tls.Config
 
 // Used during stream initiation / session establishment
 type TLSProceed struct {

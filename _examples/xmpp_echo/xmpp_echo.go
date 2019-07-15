@@ -20,6 +20,7 @@ func main() {
 		Password:     "test",
 		StreamLogger: os.Stdout,
 		Insecure:     true,
+		// TLSConfig: tls.Config{InsecureSkipVerify: true},
 	}
 
 	router := xmpp.NewRouter()
