@@ -117,8 +117,10 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string, o Config) ne
 			return conn
 		}
 
-		o.TLSConfig.ServerName = domain
-		tlsConn := tls.Client(conn, &o.TLSConfig)
+		if o.TLSConfig.ServerName == "" {
+			o.TLSConfig.ServerName = domain
+		}
+		tlsConn := tls.Client(conn, o.TLSConfig)
 		// We convert existing connection to TLS
 		if s.err = tlsConn.Handshake(); s.err != nil {
 			return tlsConn

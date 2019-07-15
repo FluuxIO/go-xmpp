@@ -14,7 +14,9 @@ type Config struct {
 	StreamLogger   *os.File // Used for debugging
 	Lang           string   // TODO: should default to 'en'
 	ConnectTimeout int      // Client timeout in seconds. Default to 15
-	TLSConfig      tls.Config
+	// tls.Config must not be modified after having been passed to NewClient. The
+	// Client connect method may override the tls.Config.ServerName if it was not set.
+	TLSConfig *tls.Config
 	// Insecure can be set to true to allow to open a session without TLS. If TLS
 	// is supported on the server, we will still try to use it.
 	Insecure      bool
