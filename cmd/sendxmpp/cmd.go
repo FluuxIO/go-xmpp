@@ -39,6 +39,7 @@ var cmd = &cobra.Command{
 		var err error
 		client, err := xmpp.NewClient(xmpp.Config{
 			Jid:      viper.GetString("jid"),
+			Address:  viper.GetString("addr"),
 			Password: viper.GetString("password"),
 		}, xmpp.NewRouter())
 
@@ -96,6 +97,9 @@ func init() {
 
 	cmd.Flags().StringP("password", "", "", "using password for your jid (required)")
 	viper.BindPFlag("password", cmd.Flags().Lookup("password"))
+
+	cmd.Flags().StringP("addr", "", "", "host[:port]")
+	viper.BindPFlag("addr", cmd.Flags().Lookup("addr"))
 
 	cmd.Flags().BoolVarP(&stdIn, "stdin", "i", false, "read from stdin instatt of 2. argument")
 	cmd.Flags().BoolVarP(&receiverMUC, "muc", "m", false, "reciever is a muc (join it before sending messages)")

@@ -21,7 +21,8 @@ Examples:
 sendxmpp to@chat.sum7.eu "Hello World!"
 
 Flags:
-      --config string     config file (default is ~/.config/fluxxmpp.toml)
+      --addr string       host[:port]
+      --config string     config file (default is ~/.config/fluxxmpp.yml)
   -h, --help              help for sendxmpp
       --jid string        using jid (required)
   -m, --muc               reciever is a muc (join it before sending messages)
@@ -105,12 +106,16 @@ e.g. ~/.config/fluxxmpp.toml
 ```toml
 jid      = "bot@example.org"
 password = "secret"
+
+addr     = "example.com:5222"
 ```
 
 #### Enviroment variable
 ```bash
 export FLUXXMPP_JID='bot@example.org';
 export FLUXXMPP_PASSWORD='secret';
+
+export FLUXXMPP_ADDR='example.com:5222';
 
 sendxmpp to@example.org "Hello Welt";
 ```
@@ -120,5 +125,5 @@ Warning: This should not be used in productiv system.
 (Every user on the system could read the running processes with parameter - on this way the password)
 
 ```bash
-sendxmpp to@example.org "Hello Welt" --jid bot@example.org --password secret;
+sendxmpp to@example.org "Hello Welt" --jid bot@example.org --password secret --addr example.com:5222;
 ```
