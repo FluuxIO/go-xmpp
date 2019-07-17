@@ -99,6 +99,20 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	// fallback to jid domain
 	if config.Address == "" {
 		config.Address = config.parsedJid.Domain
+		
+		// fetch srv DNS-Entries
+		_, srvEntries, err := net.LookupSRV("xmpp-client", "tcp", config.parsedJid.Domain)
+		
+		if err == nil && len(srvEntries) > 0 {
+			// if find some use the entry with heightest weight
+			bestSrv := srvEntries[0]
+			for _, srv := range srvEntries {
+				if srv.Priority <= bestSrv.Priority && srv.Weight >= bestSrv.Weight {
+					bestSrv = srv
+					config.Address = ensurePort(srv.Target, srv.Port)
+				}
+			}
+		}
 	}
 	config.Address = ensurePort(config.Address, 5222)
 
