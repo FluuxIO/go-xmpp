@@ -19,22 +19,14 @@ var jid = ""
 var password = ""
 
 var receiverMUC = false
-var stdIn = false
 
 var cmd = &cobra.Command{
 	Use:     "sendxmpp <recieve,> [message]",
 	Example: `sendxmpp to@chat.sum7.eu "Hello World!"`,
-	Args:    cobra.RangeArgs(1, 2),
+	Args:    cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		receiver := strings.Split(args[0], ",")
-		msgText := ""
-
-		if !stdIn && len(args) < 2 {
-			log.Error("no message to send")
-			return
-		} else if !stdIn {
-			msgText = args[1]
-		}
+		msgText := args[1]
 
 		var err error
 		client, err := xmpp.NewClient(xmpp.Config{
@@ -62,7 +54,7 @@ var cmd = &cobra.Command{
 				}
 			}
 
-			if !stdIn {
+			if msgText != "-" {
 				send(c, receiver, msgText)
 				return
 			}
@@ -101,7 +93,6 @@ func init() {
 	cmd.Flags().StringP("addr", "", "", "host[:port]")
 	viper.BindPFlag("addr", cmd.Flags().Lookup("addr"))
 
-	cmd.Flags().BoolVarP(&stdIn, "stdin", "i", false, "read from stdin instatt of 2. argument")
 	cmd.Flags().BoolVarP(&receiverMUC, "muc", "m", false, "reciever is a muc (join it before sending messages)")
 }
 
