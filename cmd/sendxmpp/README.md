@@ -27,7 +27,6 @@ Flags:
       --jid string        using jid (required)
   -m, --muc               reciever is a muc (join it before sending messages)
       --password string   using password for your jid (required)
-  -i, --stdin             read from stdin instatt of 2. argument
 ```
 
 
@@ -47,7 +46,7 @@ $ sendxmpp to@example.org "Hello Welt"
 
 Message from STDIN:
 ```bash
-$  journalctl -f | sendxmpp to@example.org --stdin
+$  journalctl -f | sendxmpp to@example.org -
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:40:03.177+02:00
@@ -81,7 +80,7 @@ $ sendxmpp to1@example.org,to2@example.org "Multiple reciever"
 
 Send to MUC:
 ```bash
-journalctl -f | sendxmpp testit@conference.chat.sum7.eu --stdin --muc
+journalctl -f | sendxmpp testit@conference.chat.sum7.eu - --muc
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:52:56.269+02:00
