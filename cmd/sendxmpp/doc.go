@@ -1,6 +1,6 @@
 /*
 
-sendxmpp is a command-line to send to send messages to users
+sendxmpp is a command-line tool to send to send XMPP messages to users
 
 */
 package main
