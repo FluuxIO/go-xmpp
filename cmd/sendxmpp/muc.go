@@ -7,6 +7,7 @@ import (
 	"gosrc.io/xmpp/stanza"
 )
 
+// FIXME: Remove global variables
 var mucsToLeave []string
 
 func joinMUC(c xmpp.Sender, to, nick string) error {

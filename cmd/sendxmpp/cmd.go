@@ -15,10 +15,8 @@ import (
 
 var configFile = ""
 
-var jid = ""
-var password = ""
-
-var receiverMUC = false
+// FIXME: Remove global variables
+var isMUCRecipient = false
 
 var cmd = &cobra.Command{
 	Use:     "sendxmpp <recipient,> [message]",
@@ -48,7 +46,7 @@ var cmd = &cobra.Command{
 
 			log.Info("client connected")
 
-			if receiverMUC {
+			if isMUCRecipient {
 				for _, muc := range receiver {
 					joinMUC(c, muc, "sendxmpp")
 				}
@@ -93,7 +91,7 @@ func init() {
 	cmd.Flags().StringP("addr", "", "", "host[:port]")
 	viper.BindPFlag("addr", cmd.Flags().Lookup("addr"))
 
-	cmd.Flags().BoolVarP(&receiverMUC, "muc", "m", false, "recipient is a muc (join it before sending messages)")
+	cmd.Flags().BoolVarP(&isMUCRecipient, "muc", "m", false, "recipient is a muc (join it before sending messages)")
 }
 
 // initConfig reads in config file and ENV variables if set.
