@@ -1,6 +1,6 @@
 # sendXMPP
 
-sendxmpp is a tool to send messages from commandline
+sendxmpp is a tool to send messages from command-line.
 
 ## Installation
 
@@ -15,7 +15,7 @@ $ go get -u gosrc.io/xmpp/cmd/sendxmpp
 ```
 $ sendxmpp --help
 Usage:
-  sendxmpp <recieve,> [message] [flags]
+  sendxmpp <recipient,> [message] [flags]
 
 Examples:
 sendxmpp to@chat.sum7.eu "Hello World!"
@@ -25,7 +25,7 @@ Flags:
       --config string     config file (default is ~/.config/fluxxmpp.yml)
   -h, --help              help for sendxmpp
       --jid string        using jid (required)
-  -m, --muc               reciever is a muc (join it before sending messages)
+  -m, --muc               recipient is a muc (join it before sending messages)
       --password string   using password for your jid (required)
 ```
 
@@ -34,12 +34,12 @@ Flags:
 
 Message from arguments:
 ```bash
-$ sendxmpp to@example.org "Hello Welt"
+$ sendxmpp to@example.org "Hello World!"
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:42:43.310+02:00
  info send message
-   ⇢  muc=false text="Hello Welt" to="to@example.org"
+   ⇢  muc=false text="Hello World!" to="to@example.org"
    ⇢  send.go:31 main.send
    ⇢  2019-07-17T23:42:43.310+02:00
 ```
@@ -62,18 +62,18 @@ $  journalctl -f | sendxmpp to@example.org -
 ```
 
 
-Multiple reciever:
+Multiple recipients:
 ```bash
-$ sendxmpp to1@example.org,to2@example.org "Multiple reciever"
+$ sendxmpp to1@example.org,to2@example.org "Multiple recipient"
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:47:57.650+02:00
  info send message
-   ⇢  muc=false text="Multiple reciever" to="to1@example.org"
+   ⇢  muc=false text="Multiple recipient" to="to1@example.org"
    ⇢  send.go:31 main.send
    ⇢  2019-07-17T23:47:57.651+02:00
  info send message
-   ⇢  muc=false text="Multiple reciever" to="to2@example.org"
+   ⇢  muc=false text="Multiple recipient" to="to2@example.org"
    ⇢  send.go:31 main.send
    ⇢  2019-07-17T23:47:57.652+02:00
 ```
@@ -98,6 +98,7 @@ journalctl -f | sendxmpp testit@conference.chat.sum7.eu - --muc
 ### Authentification
 
 #### Configuration file
+
 In `/etc/`, `~/.config` and `.` (here).
 You could create the file name `fluxxmpp` with you favorite file extenion (e.g. `toml`, `yml`).
 
@@ -109,7 +110,8 @@ password = "secret"
 addr     = "example.com:5222"
 ```
 
-#### Enviroment variable
+#### Environment variables
+
 ```bash
 export FLUXXMPP_JID='bot@example.org';
 export FLUXXMPP_PASSWORD='secret';
@@ -119,10 +121,11 @@ export FLUXXMPP_ADDR='example.com:5222';
 sendxmpp to@example.org "Hello Welt";
 ```
 
-#### Parameter
-Warning: This should not be used in productiv system.
-(Every user on the system could read the running processes with parameter - on this way the password)
+#### Parameters
+
+Warning: This should not be used for production systems, as all users on the system
+can read the running processes, and their parameters (and thus the password).
 
 ```bash
-sendxmpp to@example.org "Hello Welt" --jid bot@example.org --password secret --addr example.com:5222;
+sendxmpp to@example.org "Hello World!" --jid bot@example.org --password secret --addr example.com:5222;
 ```
