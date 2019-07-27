@@ -96,15 +96,15 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 		return nil, NewConnError(err, true)
 	}
 
-	// fallback to jid domain
+	// Fallback to jid domain
 	if config.Address == "" {
 		config.Address = config.parsedJid.Domain
 
-		// fetch srv DNS-Entries
+		// Fetch SRV DNS-Entries
 		_, srvEntries, err := net.LookupSRV("xmpp-client", "tcp", config.parsedJid.Domain)
 
 		if err == nil && len(srvEntries) > 0 {
-			// if find some use the entry with heightest weight
+			// If we found matching DNS records, use the entry with highest weight
 			bestSrv := srvEntries[0]
 			for _, srv := range srvEntries {
 				if srv.Priority <= bestSrv.Priority && srv.Weight >= bestSrv.Weight {
