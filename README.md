@@ -8,7 +8,7 @@ The goal is to make simple to write simple XMPP clients and components:
 
 - For automation (like for example monitoring of an XMPP service),
 - For building connected "things" by plugging them on an XMPP server,
-- For writing simple chatbot to control a service or a thing.
+- For writing simple chatbot to control a service or a thing,
 - For writing XMPP servers components.
 
 The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
