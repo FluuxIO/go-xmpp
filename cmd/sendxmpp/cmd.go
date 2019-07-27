@@ -21,7 +21,7 @@ var password = ""
 var receiverMUC = false
 
 var cmd = &cobra.Command{
-	Use:     "sendxmpp <recieve,> [message]",
+	Use:     "sendxmpp <recipient,> [message]",
 	Example: `sendxmpp to@chat.sum7.eu "Hello World!"`,
 	Args:    cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,7 +36,7 @@ var cmd = &cobra.Command{
 		}, xmpp.NewRouter())
 
 		if err != nil {
-			log.Errorf("error on startup xmpp client: %s", err)
+			log.Errorf("error when starting xmpp client: %s", err)
 			return
 		}
 
@@ -93,7 +93,7 @@ func init() {
 	cmd.Flags().StringP("addr", "", "", "host[:port]")
 	viper.BindPFlag("addr", cmd.Flags().Lookup("addr"))
 
-	cmd.Flags().BoolVarP(&receiverMUC, "muc", "m", false, "reciever is a muc (join it before sending messages)")
+	cmd.Flags().BoolVarP(&receiverMUC, "muc", "m", false, "recipient is a muc (join it before sending messages)")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -112,6 +112,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		log.Warnf("no configuration found (somebody could read your password from progress argument list): %s", err)
+		log.Warnf("no configuration found (somebody could read your password from process argument list): %s", err)
 	}
 }
