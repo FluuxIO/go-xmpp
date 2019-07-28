@@ -1,5 +1,12 @@
 # TODO
 
+## Issues
+
+- Remove global variable (like mucToleave)
+- Does not report error when trying to connect to a non open port (for example localhost with no server running).
+
+## Features
+
 - configuration
   - allow unencrypted
   - skip tls verification
