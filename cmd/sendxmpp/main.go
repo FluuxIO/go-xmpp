@@ -6,5 +6,7 @@ import (
 
 func main() {
 	log.AddHook(&hook{})
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
