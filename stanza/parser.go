@@ -63,6 +63,8 @@ func NextPacket(p *xml.Decoder) (Packet, error) {
 		return decodeClient(p, se)
 	case NSComponent:
 		return decodeComponent(p, se)
+	case NSStreamManagement:
+		return sm.decode(p, se)
 	default:
 		return nil, errors.New("unknown namespace " +
 			se.Name.Space + " <" + se.Name.Local + "/>")
@@ -133,7 +135,7 @@ func decodeClient(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	}
 }
 
-// decodeClient decodes all known packets in the component namespace.
+// decodeComponent decodes all known packets in the component namespace.
 func decodeComponent(p *xml.Decoder, se xml.StartElement) (Packet, error) {
 	switch se.Name.Local {
 	case "handshake": // handshake is used to authenticate components
