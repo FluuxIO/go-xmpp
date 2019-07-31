@@ -282,9 +282,6 @@ func keepalive(conn net.Conn, quit <-chan struct{}) {
 				_ = conn.Close()
 				return
 			}
-		case <-time.After(3 * time.Second):
-			_ = conn.Close()
-			return
 		case <-quit:
 			ticker.Stop()
 			return
