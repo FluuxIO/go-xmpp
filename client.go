@@ -252,14 +252,12 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) 
 			return errors.New("stream error: " + packet.Error.Local)
 		// Process Stream management nonzas
 		case stanza.SMRequest:
-			fmt.Println("MREMOND: inbound: ", state.Inbound)
 			answer := stanza.SMAnswer{XMLName: xml.Name{
 				Space: stanza.NSStreamManagement,
 				Local: "a",
 			}, H: state.Inbound}
 			c.Send(answer)
 		default:
-			fmt.Println(packet)
 			state.Inbound++
 		}
 

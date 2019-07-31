@@ -195,7 +195,6 @@ func (s *Session) resume(o Config) bool {
 			}
 			return true
 		case stanza.SMFailed:
-			fmt.Println("MREMOND SM Failed")
 		default:
 			s.err = errors.New("unexpected reply to SM resume")
 		}
@@ -272,7 +271,6 @@ func (s *Session) EnableStreamManagement(o Config) {
 		case stanza.SMFailed:
 			// TODO: Store error in SMState, for later inspection
 		default:
-			fmt.Println(p)
 			s.err = errors.New("unexpected reply to SM enable")
 		}
 	}
