@@ -2,7 +2,6 @@ package stanza
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
 /*
@@ -99,7 +98,6 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				var xmppError Err
 				err = d.DecodeElement(&xmppError, &tt)
 				if err != nil {
-					fmt.Println(err)
 					return err
 				}
 				iq.Error = xmppError
