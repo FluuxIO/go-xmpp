@@ -24,6 +24,7 @@ import (
 // set callback and trigger reconnection.
 type StreamClient interface {
 	Connect() error
+	Resume(state SMState) error
 	Send(packet stanza.Packet) error
 	SendRaw(packet string) error
 	Disconnect()
@@ -78,7 +79,7 @@ func (sm *StreamManager) Run() error {
 			sm.Metrics.setLoginTime()
 		case StateDisconnected:
 			// Reconnect on disconnection
-			sm.connect()
+			sm.resume(e.SMState)
 		case StateStreamError:
 			sm.client.Disconnect()
 			// Only try reconnecting if we have not been kicked by another session to avoid connection loop.
@@ -106,8 +107,13 @@ func (sm *StreamManager) Stop() {
 	sm.wg.Done()
 }
 
-// connect manages the reconnection loop and apply the define backoff to avoid overloading the server.
 func (sm *StreamManager) connect() error {
+	var state SMState
+	return sm.resume(state)
+}
+
+// resume manages the reconnection loop and apply the define backoff to avoid overloading the server.
+func (sm *StreamManager) resume(state SMState) error {
 	var backoff backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
@@ -115,7 +121,7 @@ func (sm *StreamManager) connect() error {
 		// TODO: Make it possible to define logger to log disconnect and reconnection attempts
 		sm.Metrics = initMetrics()
 
-		if err = sm.client.Connect(); err != nil {
+		if err = sm.client.Resume(state); err != nil {
 			var actualErr ConnError
 			if xerrors.As(err, &actualErr) {
 				if actualErr.Permanent {

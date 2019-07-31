@@ -17,6 +17,7 @@ type Session struct {
 	// Session info
 	BindJid      string // Jabber ID as provided by XMPP server
 	StreamId     string
+	SMState      SMState
 	Features     stanza.StreamFeatures
 	TlsEnabled   bool
 	lastPacketId int
@@ -29,8 +30,9 @@ type Session struct {
 	err error
 }
 
-func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
+func NewSession(conn net.Conn, o Config, state SMState) (net.Conn, *Session, error) {
 	s := new(Session)
+	s.SMState = state
 	s.init(conn, o)
 
 	// starttls
@@ -54,9 +56,17 @@ func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 	s.auth(o)
 	s.reset(tlsConn, tlsConn, o)
 
-	// bind resource and 'start' XMPP session
+	// attempt resumption
+	if s.resume(o) {
+		return tlsConn, s, s.err
+	}
+
+	// otherwise, bind resource and 'start' XMPP session
 	s.bind(o)
 	s.rfc3921Session(o)
+
+	// Enable stream management if supported
+	s.EnableStreamManagement(o)
 
 	return tlsConn, s, s.err
 }
@@ -161,6 +171,39 @@ func (s *Session) auth(o Config) {
 	s.err = authSASL(s.streamLogger, s.decoder, s.Features, o.parsedJid.Node, o.Password)
 }
 
+// Attempt to resume session using stream management
+func (s *Session) resume(o Config) bool {
+	if !s.Features.DoesStreamManagement() {
+		return false
+	}
+	if s.SMState.Id == "" {
+		return false
+	}
+
+	fmt.Fprintf(s.streamLogger, "<resume xmlns='%s' h='%d' previd='%s'/>",
+		stanza.NSStreamManagement, s.SMState.Inbound, s.SMState.Id)
+
+	var packet stanza.Packet
+	packet, s.err = stanza.NextPacket(s.decoder)
+	if s.err == nil {
+		switch p := packet.(type) {
+		case stanza.SMResumed:
+			if p.PrevId != s.SMState.Id {
+				s.err = errors.New("session resumption: mismatched id")
+				s.SMState = SMState{}
+				return false
+			}
+			return true
+		case stanza.SMFailed:
+			fmt.Println("MREMOND SM Failed")
+		default:
+			s.err = errors.New("unexpected reply to SM resume")
+		}
+	}
+	s.SMState = SMState{}
+	return false
+}
+
 func (s *Session) bind(o Config) {
 	if s.err != nil {
 		return
@@ -207,4 +250,32 @@ func (s *Session) rfc3921Session(o Config) {
 			return
 		}
 	}
+}
+
+// Enable stream management, with session resumption, if supported.
+func (s *Session) EnableStreamManagement(o Config) {
+	if s.err != nil {
+		return
+	}
+	if !s.Features.DoesStreamManagement() {
+		return
+	}
+
+	fmt.Fprintf(s.streamLogger, "<enable xmlns='%s' resume='true'/>", stanza.NSStreamManagement)
+
+	var packet stanza.Packet
+	packet, s.err = stanza.NextPacket(s.decoder)
+	if s.err == nil {
+		switch p := packet.(type) {
+		case stanza.SMEnabled:
+			s.SMState = SMState{Id: p.Id}
+		case stanza.SMFailed:
+			// TODO: Store error in SMState
+		default:
+			fmt.Println(p)
+			s.err = errors.New("unexpected reply to SM enable")
+		}
+	}
+
+	return
 }

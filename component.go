@@ -108,6 +108,10 @@ func (c *Component) Connect() error {
 	}
 }
 
+func (c *Component) Resume() error {
+	return errors.New("components do not support stream management")
+}
+
 func (c *Component) Disconnect() {
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
