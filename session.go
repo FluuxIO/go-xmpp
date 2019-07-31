@@ -270,7 +270,7 @@ func (s *Session) EnableStreamManagement(o Config) {
 		case stanza.SMEnabled:
 			s.SMState = SMState{Id: p.Id}
 		case stanza.SMFailed:
-			// TODO: Store error in SMState
+			// TODO: Store error in SMState, for later inspection
 		default:
 			fmt.Println(p)
 			s.err = errors.New("unexpected reply to SM enable")
