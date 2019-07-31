@@ -37,6 +37,10 @@ func NewSession(conn net.Conn, o Config) (net.Conn, *Session, error) {
 	var tlsConn net.Conn
 	tlsConn = s.startTlsIfSupported(conn, o.parsedJid.Domain, o)
 
+	if s.err != nil {
+		return nil, nil, NewConnError(s.err, true)
+	}
+
 	if !s.TlsEnabled && !o.Insecure {
 		err := fmt.Errorf("failed to negotiate TLS session : %s", s.err)
 		return nil, nil, NewConnError(err, true)
@@ -131,7 +135,6 @@ func (s *Session) startTlsIfSupported(conn net.Conn, domain string, o Config) ne
 		}
 
 		if !o.TLSConfig.InsecureSkipVerify {
-			// We check that cert matches hostname
 			s.err = tlsConn.VerifyHostname(domain)
 		}
 
