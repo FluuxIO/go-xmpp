@@ -10,7 +10,7 @@ var domain = ""
 var cmdCheck = &cobra.Command{
 	Use:     "check <host[:port]>",
 	Short:   "is a command-line to check if you XMPP TLS certificate is valid and warn you before it expires",
-	Example: "fluxxmpp check chat.sum7.eu:5222 --domain meckerspace.de",
+	Example: "fluuxmpp check chat.sum7.eu:5222 --domain meckerspace.de",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		runCheck(args[0], domain)
