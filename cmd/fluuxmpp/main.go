@@ -7,8 +7,8 @@ import (
 
 // cmdRoot represents the base command when called without any subcommands
 var cmdRoot = &cobra.Command{
-	Use:   "fluxxmpp",
-	Short: "fluxxIO's xmpp comandline tool",
+	Use:   "fluuxmpp",
+	Short: "fluuxIO's xmpp comandline tool",
 }
 
 func main() {

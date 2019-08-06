@@ -21,7 +21,7 @@ var isMUCRecipient = false
 var cmdSend = &cobra.Command{
 	Use:     "send <recipient,> [message]",
 	Short:   "is a command-line tool to send to send XMPP messages to users",
-	Example: `fluxxmpp send to@chat.sum7.eu "Hello World!"`,
+	Example: `fluuxmpp send to@chat.sum7.eu "Hello World!"`,
 	Args:    cobra.ExactArgs(2),
 	Run:     sendxmpp,
 }
@@ -99,7 +99,7 @@ func init() {
 	cmdRoot.AddCommand(cmdSend)
 
 	cobra.OnInitialize(initConfigFile)
-	cmdSend.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is ~/.config/fluxxmpp.yml)")
+	cmdSend.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is ~/.config/fluuxmpp.yml)")
 
 	cmdSend.Flags().StringP("jid", "", "", "using jid (required)")
 	viper.BindPFlag("jid", cmdSend.Flags().Lookup("jid"))
@@ -119,7 +119,7 @@ func initConfigFile() {
 		viper.SetConfigFile(configFile)
 	}
 
-	viper.SetConfigName("fluxxmpp")
+	viper.SetConfigName("fluuxmpp")
 	viper.AddConfigPath("/etc/")
 	viper.AddConfigPath("$HOME/.config")
 	viper.AddConfigPath(".")
