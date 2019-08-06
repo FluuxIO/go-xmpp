@@ -1,11 +1,18 @@
 # TODO
 
-## Issues
+## check
+### Features
+
+- Use a config file to define the checks to perform as client on an XMPP server.
+
+## send
+
+### Issues
 
 - Remove global variable (like mucToleave)
 - Does not report error when trying to connect to a non open port (for example localhost with no server running).
 
-## Features
+### Features
 
 - configuration
   - allow unencrypted
