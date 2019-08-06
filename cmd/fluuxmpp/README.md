@@ -1,6 +1,6 @@
 # fluuxmpp
 
-fluuxIO's xmpp comandline tool
+fluuxIO's XMPP command-line tool
 
 ## Installation
 
