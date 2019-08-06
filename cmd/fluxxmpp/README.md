@@ -1,29 +1,68 @@
-# sendXMPP
+# fluxxmpp
 
-sendxmpp is a tool to send messages from command-line.
+fluxxIO's xmpp comandline tool
 
 ## Installation
 
-To install `sendxmpp` in your Go path:
+To install `fluxxmpp` in your Go path:
 
 ```
-$ go get -u gosrc.io/xmpp/cmd/sendxmpp
+$ go get -u gosrc.io/xmpp/cmd/fluxxmpp
 ```
 
 ## Usage
 
 ```
-$ sendxmpp --help
+$ fluxxmpp --help
+fluxxIO's xmpp comandline tool
+
 Usage:
-  sendxmpp <recipient,> [message] [flags]
+  fluxxmpp [command]
+
+Available Commands:
+  check       is a command-line to check if you XMPP TLS certificate is valid and warn you before it expires
+  help        Help about any command
+  send        is a command-line tool to send to send XMPP messages to users
+
+Flags:
+  -h, --help   help for fluxxmpp
+
+Use "fluxxmpp [command] --help" for more information about a command.
+```
+
+### check tls
+
+```
+$ fluxxmpp check --help
+is a command-line to check if you XMPP TLS certificate is valid and warn you before it expires
+
+Usage:
+  fluxxmpp check <host[:port]> [flags]
 
 Examples:
-sendxmpp to@chat.sum7.eu "Hello World!"
+fluxxmpp check chat.sum7.eu:5222 --domain meckerspace.de
+
+Flags:
+  -d, --domain string   domain if host handle multiple domains
+  -h, --help            help for check
+```
+
+### sending messages
+
+```
+$ fluxxmpp send --help
+is a command-line tool to send to send XMPP messages to users
+
+Usage:
+  fluxxmpp send <recipient,> [message] [flags]
+
+Examples:
+fluxxmpp send to@chat.sum7.eu "Hello World!"
 
 Flags:
       --addr string       host[:port]
       --config string     config file (default is ~/.config/fluxxmpp.yml)
-  -h, --help              help for sendxmpp
+  -h, --help              help for send
       --jid string        using jid (required)
   -m, --muc               recipient is a muc (join it before sending messages)
       --password string   using password for your jid (required)
@@ -32,9 +71,37 @@ Flags:
 
 ## Examples
 
+### check tls
+
+If you server is on standard port and XMPP domains matches the hostname you can simply use:
+
+```
+$ fluxxmpp check chat.sum7.eu
+ info All checks passed
+   ⇢  address="chat.sum7.eu" domain=""
+   ⇢  main.go:43 main.runCheck
+   ⇢  2019-07-16T22:01:39.765+02:00
+```
+
+You can also pass the port and the XMPP domain if different from the server hostname:
+
+```
+$ fluxxmpp check chat.sum7.eu:5222 --domain meckerspace.de
+ info All checks passed
+   ⇢  address="chat.sum7.eu:5222" domain="meckerspace.de"
+   ⇢  main.go:43 main.runCheck
+   ⇢  2019-07-16T22:01:33.270+02:00
+```
+
+Error code will be non-zero in case of error. You can thus use it directly with your usual 
+monitoring scripts.
+
+
+### sending messages
+
 Message from arguments:
 ```bash
-$ sendxmpp to@example.org "Hello World!"
+$ fluxxmpp send to@example.org "Hello World!"
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:42:43.310+02:00
@@ -46,7 +113,7 @@ $ sendxmpp to@example.org "Hello World!"
 
 Message from STDIN:
 ```bash
-$  journalctl -f | sendxmpp to@example.org -
+$  journalctl -f | fluxxmpp send to@example.org -
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:40:03.177+02:00
@@ -64,7 +131,7 @@ $  journalctl -f | sendxmpp to@example.org -
 
 Multiple recipients:
 ```bash
-$ sendxmpp to1@example.org,to2@example.org "Multiple recipient"
+$ fluxxmpp send to1@example.org,to2@example.org "Multiple recipient"
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:47:57.650+02:00
@@ -80,7 +147,7 @@ $ sendxmpp to1@example.org,to2@example.org "Multiple recipient"
 
 Send to MUC:
 ```bash
-journalctl -f | sendxmpp testit@conference.chat.sum7.eu - --muc
+journalctl -f | fluxxmpp send testit@conference.chat.sum7.eu - --muc
  info client connected
    ⇢  cmd.go:56 main.glob..func1.1
    ⇢  2019-07-17T23:52:56.269+02:00
@@ -95,9 +162,9 @@ journalctl -f | sendxmpp testit@conference.chat.sum7.eu - --muc
 ^C
 ```
 
-### Authentification
+## Authentification
 
-#### Configuration file
+### Configuration file
 
 In `/etc/`, `~/.config` and `.` (here).
 You could create the file name `fluxxmpp` with you favorite file extenion (e.g. `toml`, `yml`).
@@ -110,7 +177,7 @@ password = "secret"
 addr     = "example.com:5222"
 ```
 
-#### Environment variables
+### Environment variables
 
 ```bash
 export FLUXXMPP_JID='bot@example.org';
@@ -118,14 +185,14 @@ export FLUXXMPP_PASSWORD='secret';
 
 export FLUXXMPP_ADDR='example.com:5222';
 
-sendxmpp to@example.org "Hello Welt";
+fluxxmpp send to@example.org "Hello Welt";
 ```
 
-#### Parameters
+### Parameters
 
 Warning: This should not be used for production systems, as all users on the system
 can read the running processes, and their parameters (and thus the password).
 
 ```bash
-sendxmpp to@example.org "Hello World!" --jid bot@example.org --password secret --addr example.com:5222;
+fluxxmpp send to@example.org "Hello World!" --jid bot@example.org --password secret --addr example.com:5222;
 ```

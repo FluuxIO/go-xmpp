@@ -18,9 +18,10 @@ var configFile = ""
 // FIXME: Remove global variables
 var isMUCRecipient = false
 
-var cmd = &cobra.Command{
-	Use:     "sendxmpp <recipient,> [message]",
-	Example: `sendxmpp to@chat.sum7.eu "Hello World!"`,
+var cmdSend = &cobra.Command{
+	Use:     "send <recipient,> [message]",
+	Short:   "is a command-line tool to send to send XMPP messages to users",
+	Example: `fluxxmpp send to@chat.sum7.eu "Hello World!"`,
 	Args:    cobra.ExactArgs(2),
 	Run:     sendxmpp,
 }
@@ -95,23 +96,25 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-	cmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is ~/.config/fluxxmpp.yml)")
+	cmdRoot.AddCommand(cmdSend)
 
-	cmd.Flags().StringP("jid", "", "", "using jid (required)")
-	viper.BindPFlag("jid", cmd.Flags().Lookup("jid"))
+	cobra.OnInitialize(initConfigFile)
+	cmdSend.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is ~/.config/fluxxmpp.yml)")
 
-	cmd.Flags().StringP("password", "", "", "using password for your jid (required)")
-	viper.BindPFlag("password", cmd.Flags().Lookup("password"))
+	cmdSend.Flags().StringP("jid", "", "", "using jid (required)")
+	viper.BindPFlag("jid", cmdSend.Flags().Lookup("jid"))
 
-	cmd.Flags().StringP("addr", "", "", "host[:port]")
-	viper.BindPFlag("addr", cmd.Flags().Lookup("addr"))
+	cmdSend.Flags().StringP("password", "", "", "using password for your jid (required)")
+	viper.BindPFlag("password", cmdSend.Flags().Lookup("password"))
 
-	cmd.Flags().BoolVarP(&isMUCRecipient, "muc", "m", false, "recipient is a muc (join it before sending messages)")
+	cmdSend.Flags().StringP("addr", "", "", "host[:port]")
+	viper.BindPFlag("addr", cmdSend.Flags().Lookup("addr"))
+
+	cmdSend.Flags().BoolVarP(&isMUCRecipient, "muc", "m", false, "recipient is a muc (join it before sending messages)")
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig() {
+func initConfigFile() {
 	if configFile != "" {
 		viper.SetConfigFile(configFile)
 	}

@@ -6,15 +6,11 @@ import (
 	"gosrc.io/xmpp"
 )
 
-func main() {
-	log.AddHook(&hook{})
-	cmd.Execute()
-}
-
 var domain = ""
-var cmd = &cobra.Command{
-	Use:     "xmpp-check <host[:port]>",
-	Example: "xmpp-check chat.sum7.eu:5222 --domain meckerspace.de",
+var cmdCheck = &cobra.Command{
+	Use:     "check <host[:port]>",
+	Short:   "is a command-line to check if you XMPP TLS certificate is valid and warn you before it expires",
+	Example: "fluxxmpp check chat.sum7.eu:5222 --domain meckerspace.de",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		runCheck(args[0], domain)
@@ -22,7 +18,8 @@ var cmd = &cobra.Command{
 }
 
 func init() {
-	cmd.Flags().StringVarP(&domain, "domain", "d", "", "domain if host handle multiple domains")
+	cmdRoot.AddCommand(cmdCheck)
+	cmdCheck.Flags().StringVarP(&domain, "domain", "d", "", "domain if host handle multiple domains")
 }
 
 func runCheck(address, domain string) {
