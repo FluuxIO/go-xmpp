@@ -108,7 +108,7 @@ func (c *Component) Connect() error {
 	}
 }
 
-func (c *Component) Resume() error {
+func (c *Component) Resume(SMState) error {
 	return errors.New("components do not support stream management")
 }
 
