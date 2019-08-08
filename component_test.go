@@ -23,3 +23,10 @@ func TestHandshake(t *testing.T) {
 func TestGenerateHandshake(t *testing.T) {
 	// TODO
 }
+
+// Test that NewStreamManager can accept a Component.
+//
+// This validates that Component conforms to StreamClient interface.
+func TestStreamManager(t *testing.T) {
+	NewStreamManager(&Component{}, nil)
+}
