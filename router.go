@@ -98,7 +98,7 @@ type Handler interface {
 type Route struct {
 	handler Handler
 	// Matchers are used to "specialize" routes and focus on specific packet features
-	matchers []matcher
+	matchers []Matcher
 }
 
 func (r *Route) Handler(handler Handler) *Route {
@@ -122,8 +122,8 @@ func (r *Route) HandlerFunc(f HandlerFunc) *Route {
 	return r.Handler(f)
 }
 
-// addMatcher adds a matcher to the route
-func (r *Route) addMatcher(m matcher) *Route {
+// AddMatcher adds a matcher to the route
+func (r *Route) AddMatcher(m Matcher) *Route {
 	r.matchers = append(r.matchers, m)
 	return r
 }
@@ -170,7 +170,7 @@ func (n nameMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
 // It matches on the Local part of the xml.Name
 func (r *Route) Packet(name string) *Route {
 	name = strings.ToLower(name)
-	return r.addMatcher(nameMatcher(name))
+	return r.AddMatcher(nameMatcher(name))
 }
 
 // -------------------------
@@ -204,7 +204,7 @@ func (r *Route) StanzaType(types ...string) *Route {
 	for k, v := range types {
 		types[k] = strings.ToLower(v)
 	}
-	return r.addMatcher(nsTypeMatcher(types))
+	return r.AddMatcher(nsTypeMatcher(types))
 }
 
 // -------------------------
@@ -229,14 +229,15 @@ func (r *Route) IQNamespaces(namespaces ...string) *Route {
 	for k, v := range namespaces {
 		namespaces[k] = strings.ToLower(v)
 	}
-	return r.addMatcher(nsIQMatcher(namespaces))
+	return r.AddMatcher(nsIQMatcher(namespaces))
 }
 
 // ============================================================================
 // Matchers
 
-// Matchers are used to "specialize" routes and focus on specific packet features
-type matcher interface {
+// Matchers are used to "specialize" routes and focus on specific packet features.
+// You can register attach them to a route via the AddMatcher method.
+type Matcher interface {
 	Match(stanza.Packet, *RouteMatch) bool
 }
 
