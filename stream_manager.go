@@ -152,7 +152,7 @@ type Metrics struct {
 	ConnectTime time.Duration
 	// LoginTime returns the between client initiation of the TCP/IP
 	// connection to the server and the return of the login result.
-	// This includes ConnectTime, but also XMPP level protocol negociation
+	// This includes ConnectTime, but also XMPP level protocol negotiation
 	// like starttls.
 	LoginTime time.Duration
 }

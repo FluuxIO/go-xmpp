@@ -167,7 +167,7 @@ journalctl -f | fluuxmpp send testit@conference.chat.sum7.eu - --muc
 ### Configuration file
 
 In `/etc/`, `~/.config` and `.` (here).
-You could create the file name `fluuxmpp` with you favorite file extenion (e.g. `toml`, `yml`).
+You could create the file name `fluuxmpp` with you favorite file extension (e.g. `toml`, `yml`).
 
 e.g. ~/.config/fluuxmpp.toml
 ```toml
