@@ -66,50 +66,58 @@ func NewComponent(opts ComponentOptions, r *Router) (*Component, error) {
 // Connect triggers component connection to XMPP server component port.
 // TODO: Failed handshake should be a permanent error
 func (c *Component) Connect() error {
+	var state SMState
+	return c.Resume(state)
+}
+func (c *Component) Resume(sm SMState) error {
 	var conn net.Conn
 	var err error
 	if conn, err = net.DialTimeout("tcp", c.Address, time.Duration(5)*time.Second); err != nil {
 		return err
 	}
 	c.conn = conn
+	c.updateState(StateConnected)
 
 	// 1. Send stream open tag
 	if _, err := fmt.Fprintf(conn, componentStreamOpen, c.Domain, stanza.NSComponent, stanza.NSStream); err != nil {
-		return errors.New("cannot send stream open " + err.Error())
+		c.updateState(StateStreamError)
+		return NewConnError(errors.New("cannot send stream open "+err.Error()), false)
 	}
 	c.decoder = xml.NewDecoder(conn)
 
 	// 2. Initialize xml decoder and extract streamID from reply
 	streamId, err := stanza.InitStream(c.decoder)
 	if err != nil {
-		return errors.New("cannot init decoder " + err.Error())
+		c.updateState(StateStreamError)
+		return NewConnError(errors.New("cannot init decoder "+err.Error()), false)
 	}
 
 	// 3. Authentication
 	if _, err := fmt.Fprintf(conn, "<handshake>%s</handshake>", c.handshake(streamId)); err != nil {
-		return errors.New("cannot send handshake " + err.Error())
+		c.updateState(StateStreamError)
+		return NewConnError(errors.New("cannot send handshake "+err.Error()), false)
 	}
 
 	// 4. Check server response for authentication
 	val, err := stanza.NextPacket(c.decoder)
 	if err != nil {
-		return err
+		c.updateState(StateDisconnected)
+		return NewConnError(err, true)
 	}
 
 	switch v := val.(type) {
 	case stanza.StreamError:
-		return errors.New("handshake failed " + v.Error.Local)
+		c.streamError("conflict", "no auth loop")
+		return NewConnError(errors.New("handshake failed "+v.Error.Local), true)
 	case stanza.Handshake:
 		// Start the receiver go routine
+		c.updateState(StateSessionEstablished)
 		go c.recv()
 		return nil
 	default:
-		return errors.New("expecting handshake result, got " + v.Name())
+		c.updateState(StateStreamError)
+		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)
 	}
-}
-
-func (c *Component) Resume(SMState) error {
-	return errors.New("components do not support stream management")
 }
 
 func (c *Component) Disconnect() {
