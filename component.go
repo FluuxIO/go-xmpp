@@ -123,7 +123,10 @@ func (c *Component) Resume(sm SMState) error {
 func (c *Component) Disconnect() {
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
-	_ = c.conn.Close()
+	conn := c.conn
+	if conn != nil {
+		_ = conn.Close()
+	}
 }
 
 func (c *Component) SetHandler(handler EventHandler) {
