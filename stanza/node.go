@@ -8,10 +8,11 @@ import "encoding/xml"
 // Node is a generic structure to represent XML data. It is used to parse
 // unreferenced or custom stanza payload.
 type Node struct {
-	XMLName xml.Name
-	Attrs   []xml.Attr `xml:"-"`
-	Content string     `xml:",innerxml"`
-	Nodes   []Node     `xml:",any"`
+	XMLName       xml.Name
+	Attrs         []xml.Attr `xml:"-"`
+	Content       string     `xml:",innerxml"`
+	Nodes         []Node     `xml:",any"`
+	CharacterData string     `xml:",chardata"`
 }
 
 func (n *Node) Namespace() string {
@@ -47,5 +48,8 @@ func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 
 	err = e.EncodeToken(start)
 	e.EncodeElement(n.Nodes, xml.StartElement{Name: n.XMLName})
+	if n.CharacterData != "" {
+		e.EncodeToken(xml.CharData(n.CharacterData))
+	}
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
