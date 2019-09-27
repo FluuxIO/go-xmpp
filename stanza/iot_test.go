@@ -21,6 +21,6 @@ func TestControlSet(t *testing.T) {
 	}
 
 	if cs, ok := parsedIQ.Payload.(*ControlSet); !ok {
-		t.Errorf("Paylod is not an iot control set: %v", cs)
+		t.Errorf("Payload is not an iot control set: %v", cs)
 	}
 }
