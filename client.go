@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"time"
 
@@ -211,7 +212,7 @@ func (c *Client) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	return c.sendWithLogger(string(data))
+	return c.sendWithWriter(c.Session.streamLogger, data)
 }
 
 // SendRaw sends an XMPP stanza as a string to the server.
@@ -224,12 +225,12 @@ func (c *Client) SendRaw(packet string) error {
 		return errors.New("client is not connected")
 	}
 
-	return c.sendWithLogger(packet)
+	return c.sendWithWriter(c.Session.streamLogger, []byte(packet))
 }
 
-func (c *Client) sendWithLogger(packet string) error {
+func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 	var err error
-	_, err = fmt.Fprintf(c.Session.streamLogger, packet)
+	_, err = writer.Write(packet)
 	return err
 }
 
