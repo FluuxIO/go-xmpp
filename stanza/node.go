@@ -10,7 +10,7 @@ import "encoding/xml"
 type Node struct {
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
-	Content string     `xml:",innerxml"`
+	Content string     `xml:",cdata"`
 	Nodes   []Node     `xml:",any"`
 }
 
@@ -47,5 +47,8 @@ func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 
 	err = e.EncodeToken(start)
 	e.EncodeElement(n.Nodes, xml.StartElement{Name: n.XMLName})
+	if n.Content != "" {
+		e.EncodeToken(xml.CharData(n.Content))
+	}
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }

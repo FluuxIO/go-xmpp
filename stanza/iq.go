@@ -22,7 +22,7 @@ type IQ struct { // Info/Query
 	//    request."
 	Payload IQPayload `xml:",omitempty"`
 	Error   Err       `xml:"error,omitempty"`
-	// Any is used to decode unknown payload as a generique structure
+	// Any is used to decode unknown payload as a generic structure
 	Any *Node `xml:",any"`
 }
 
