@@ -10,7 +10,7 @@ type Config struct {
 	Address        string
 	Jid            string
 	parsedJid      *Jid // For easier manipulation
-	Password       string
+	Credential     Credential
 	StreamLogger   *os.File // Used for debugging
 	Lang           string   // TODO: should default to 'en'
 	ConnectTimeout int      // Client timeout in seconds. Default to 15

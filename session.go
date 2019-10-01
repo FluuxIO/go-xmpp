@@ -168,7 +168,7 @@ func (s *Session) auth(o Config) {
 		return
 	}
 
-	s.err = authSASL(s.streamLogger, s.decoder, s.Features, o.parsedJid.Node, o.Password)
+	s.err = authSASL(s.streamLogger, s.decoder, s.Features, o.parsedJid.Node, o.Credential)
 }
 
 // Attempt to resume session using stream management

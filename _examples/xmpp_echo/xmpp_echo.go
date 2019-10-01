@@ -17,7 +17,7 @@ func main() {
 	config := xmpp.Config{
 		Address:      "localhost:5222",
 		Jid:          "test@localhost",
-		Password:     "test",
+		Credential:   xmpp.Password("test"),
 		StreamLogger: os.Stdout,
 		Insecure:     true,
 		// TLSConfig: tls.Config{InsecureSkipVerify: true},

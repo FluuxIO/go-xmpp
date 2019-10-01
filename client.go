@@ -111,8 +111,8 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 		return nil, NewConnError(err, true)
 	}
 
-	if config.Password == "" {
-		err = errors.New("missing password")
+	if config.Credential.secret == "" {
+		err = errors.New("missing credential")
 		return nil, NewConnError(err, true)
 	}
 

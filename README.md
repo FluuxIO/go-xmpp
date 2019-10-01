@@ -34,8 +34,8 @@ Here is an example code to configure a client to allow connecting to a server wi
 config := xmpp.Config{
 	Address:      "localhost:5222",
 	Jid:          "test@localhost",
-	Password:     "test",
-	TLSConfig:     tls.Config{InsecureSkipVerify: true},
+	Credential:   xmpp.Password("Test"),
+	TLSConfig:    tls.Config{InsecureSkipVerify: true},
 }
 ```
 
@@ -96,7 +96,7 @@ func main() {
 	config := xmpp.Config{
 		Address:      "localhost:5222",
 		Jid:          "test@localhost",
-		Password:     "test",
+	    Credential:   xmpp.Password("Test"),
 		StreamLogger: os.Stdout,
 		Insecure:     true,
 	}
