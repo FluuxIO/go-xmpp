@@ -37,28 +37,30 @@ func OAuthToken(token string) Credential {
 // Authentication flow for SASL mechanisms
 
 func authSASL(socket io.ReadWriter, decoder *xml.Decoder, f stanza.StreamFeatures, user string, credential Credential) (err error) {
-	// TODO: Implement other type of SASL mechanisms
-	havePlain := false
-	for _, m := range f.Mechanisms.Mechanism {
-		if m == "PLAIN" {
-			havePlain = true
+	var matchingMech string
+	for _, mech := range credential.mechanisms {
+		if isSupportedMech(mech, f.Mechanisms.Mechanism) {
+			matchingMech = mech
 			break
 		}
 	}
-	if !havePlain {
-		err := fmt.Errorf("PLAIN authentication is not supported by server: %v", f.Mechanisms.Mechanism)
+
+	switch matchingMech {
+	case "PLAIN", "X-OAUTH2":
+		// TODO: Implement other type of SASL mechanisms
+		return authPlain(socket, decoder, matchingMech, user, credential.secret)
+	default:
+		err := fmt.Errorf("no matching authentication (%v) supported by server: %v", credential.mechanisms, f.Mechanisms.Mechanism)
 		return NewConnError(err, true)
 	}
-
-	return authPlain(socket, decoder, user, credential)
 }
 
 // Plain authentication: send base64-encoded \x00 user \x00 password
-func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, credential Credential) error {
-	raw := "\x00" + user + "\x00" + credential.secret
+func authPlain(socket io.ReadWriter, decoder *xml.Decoder, mech string, user string, secret string) error {
+	raw := "\x00" + user + "\x00" + secret
 	enc := make([]byte, base64.StdEncoding.EncodedLen(len(raw)))
 	base64.StdEncoding.Encode(enc, []byte(raw))
-	fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='PLAIN'>%s</auth>", stanza.NSSASL, enc)
+	fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='%s'>%s</auth>", stanza.NSSASL, mech, enc)
 
 	// Next message should be either success or failure.
 	val, err := stanza.NextPacket(decoder)
@@ -76,4 +78,14 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, user string, credenti
 		return errors.New("expected SASL success or failure, got " + v.Name())
 	}
 	return err
+}
+
+// isSupportedMech returns true if the mechanism is supported in the provided list.
+func isSupportedMech(mech string, mechanisms []string) bool {
+	for _, m := range mechanisms {
+		if mech == m {
+			return true
+		}
+	}
+	return false
 }
