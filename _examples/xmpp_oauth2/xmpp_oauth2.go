@@ -1,5 +1,5 @@
 /*
-xmpp_echo is a demo client that connect on an XMPP server and echo message received back to original sender.
+xmpp_oauth2 is a demo client that connect on an XMPP server using OAuth2 and prints received messages.
 */
 
 package main
@@ -17,9 +17,9 @@ func main() {
 	config := xmpp.Config{
 		Address:      "localhost:5222",
 		Jid:          "test@localhost",
-		Credential:   xmpp.Password("test"),
+		Credential:   xmpp.OAuthToken("OdAIsBlY83SLBaqQoClAn7vrZSHxixT8"),
 		StreamLogger: os.Stdout,
-		Insecure:     true,
+		// Insecure:     true,
 		// TLSConfig: tls.Config{InsecureSkipVerify: true},
 	}
 
@@ -45,6 +45,4 @@ func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", msg.Body, msg.From)
-	reply := stanza.Message{Attrs: stanza.Attrs{To: msg.From}, Body: msg.Body}
-	_ = s.Send(reply)
 }
