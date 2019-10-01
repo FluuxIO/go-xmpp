@@ -25,7 +25,7 @@ func TestClient_Connect(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerConnectSuccess)
 
 	// Test / Check result
-	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test", Insecure: true}
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Credential: Password("test"), Insecure: true}
 
 	var client *Client
 	var err error
@@ -47,7 +47,7 @@ func TestClient_NoInsecure(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerAbortTLS)
 
 	// Test / Check result
-	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Credential: Password("test")}
 
 	var client *Client
 	var err error
@@ -71,7 +71,7 @@ func TestClient_FeaturesTracking(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerAbortTLS)
 
 	// Test / Check result
-	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test"}
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Credential: Password("test")}
 
 	var client *Client
 	var err error
@@ -94,7 +94,7 @@ func TestClient_RFC3921Session(t *testing.T) {
 	mock.Start(t, testXMPPAddress, handlerConnectWithSession)
 
 	// Test / Check result
-	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Password: "test", Insecure: true}
+	config := Config{Address: testXMPPAddress, Jid: "test@localhost", Credential: Password("test"), Insecure: true}
 
 	var client *Client
 	var err error
