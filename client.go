@@ -90,7 +90,7 @@ type Client struct {
 	// Session gather data that can be accessed by users of this library
 	Session *Session
 	// TCP level connection / can be replaced by a TLS session after starttls
-	conn net.Conn
+	transport Transport
 	// Router is used to dispatch packets
 	router *Router
 	// Track and broadcast connection state
@@ -139,6 +139,7 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	c = new(Client)
 	c.config = config
 	c.router = r
+	c.transport = &XMPPTransport{}
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
@@ -159,21 +160,21 @@ func (c *Client) Connect() error {
 func (c *Client) Resume(state SMState) error {
 	var err error
 
-	c.conn, err = net.DialTimeout("tcp", c.config.Address, time.Duration(c.config.ConnectTimeout)*time.Second)
+	err = c.transport.Connect(c.config.Address, c.config)
 	if err != nil {
 		return err
 	}
 	c.updateState(StateConnected)
 
 	// Client is ok, we now open XMPP session
-	if c.conn, c.Session, err = NewSession(c.conn, c.config, state); err != nil {
+	if c.Session, err = NewSession(c.transport, c.config, state); err != nil {
 		return err
 	}
 	c.updateState(StateSessionEstablished)
 
 	// Start the keepalive go routine
 	keepaliveQuit := make(chan struct{})
-	go keepalive(c.conn, keepaliveQuit)
+	go keepalive(c.transport, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
 	go c.recv(state, keepaliveQuit)
@@ -190,7 +191,7 @@ func (c *Client) Resume(state SMState) error {
 func (c *Client) Disconnect() {
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
-	conn := c.conn
+	conn := c.transport
 	if conn != nil {
 		_ = conn.Close()
 	}
@@ -202,7 +203,7 @@ func (c *Client) SetHandler(handler EventHandler) {
 
 // Send marshals XMPP stanza and sends it to the server.
 func (c *Client) Send(packet stanza.Packet) error {
-	conn := c.conn
+	conn := c.transport
 	if conn == nil {
 		return errors.New("client is not connected")
 	}
@@ -220,7 +221,7 @@ func (c *Client) Send(packet stanza.Packet) error {
 // disconnect the client. It is up to the user of this method to
 // carefully craft the XML content to produce valid XMPP.
 func (c *Client) SendRaw(packet string) error {
-	conn := c.conn
+	conn := c.transport
 	if conn == nil {
 		return errors.New("client is not connected")
 	}
@@ -272,16 +273,16 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) 
 // Loop: send whitespace keepalive to server
 // This is use to keep the connection open, but also to detect connection loss
 // and trigger proper client connection shutdown.
-func keepalive(conn net.Conn, quit <-chan struct{}) {
+func keepalive(transport Transport, quit <-chan struct{}) {
 	// TODO: Make keepalive interval configurable
 	ticker := time.NewTicker(30 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			if n, err := fmt.Fprintf(conn, "\n"); err != nil || n != 1 {
-				// When keep alive fails, we force close the connection. In all cases, the recv will also fail.
+			if n, err := fmt.Fprintf(transport, "\n"); err != nil || n != 1 {
+				// When keep alive fails, we force close the transportection. In all cases, the recv will also fail.
 				ticker.Stop()
-				_ = conn.Close()
+				_ = transport.Close()
 				return
 			}
 		case <-quit:
