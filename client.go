@@ -191,9 +191,8 @@ func (c *Client) Resume(state SMState) error {
 func (c *Client) Disconnect() {
 	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
-	conn := c.transport
-	if conn != nil {
-		_ = conn.Close()
+	if c.transport != nil {
+		_ = c.transport.Close()
 	}
 }
 
