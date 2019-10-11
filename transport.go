@@ -6,10 +6,17 @@ import (
 	"time"
 )
 
+type TransportConfiguration struct {
+	ConnectTimeout int // Client timeout in seconds. Default to 15
+	// tls.Config must not be modified after having been passed to NewClient. Any
+	// changes made after connecting are ignored.
+	TLSConfig *tls.Config
+}
+
 type Transport interface {
-	Connect(address string, c Config) error
+	Connect(address string) error
 	DoesStartTLS() bool
-	StartTLS(domain string, c Config) error
+	StartTLS(domain string) error
 
 	Read(p []byte) (n int, err error)
 	Write(p []byte) (n int, err error)
@@ -18,15 +25,16 @@ type Transport interface {
 
 // XMPPTransport implements the XMPP native TCP transport
 type XMPPTransport struct {
+	Config    TransportConfiguration
 	TLSConfig *tls.Config
 	// TCP level connection / can be replaced by a TLS session after starttls
 	conn net.Conn
 }
 
-func (t *XMPPTransport) Connect(address string, c Config) error {
+func (t *XMPPTransport) Connect(address string) error {
 	var err error
 
-	t.conn, err = net.DialTimeout("tcp", address, time.Duration(c.ConnectTimeout)*time.Second)
+	t.conn, err = net.DialTimeout("tcp", address, time.Duration(t.Config.ConnectTimeout)*time.Second)
 	return err
 }
 
@@ -34,17 +42,13 @@ func (t XMPPTransport) DoesStartTLS() bool {
 	return true
 }
 
-func (t *XMPPTransport) StartTLS(domain string, c Config) error {
-	if t.TLSConfig == nil {
-		if c.TLSConfig != nil {
-			t.TLSConfig = c.TLSConfig
-		} else {
-			t.TLSConfig = &tls.Config{}
-		}
+func (t *XMPPTransport) StartTLS(domain string) error {
+	if t.Config.TLSConfig == nil {
+		t.Config.TLSConfig = &tls.Config{}
 	}
 
-	if t.TLSConfig.ServerName == "" {
-		t.TLSConfig.ServerName = domain
+	if t.Config.TLSConfig.ServerName == "" {
+		t.Config.TLSConfig.ServerName = domain
 	}
 	tlsConn := tls.Client(t.conn, t.TLSConfig)
 	// We convert existing connection to TLS

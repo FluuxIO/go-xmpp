@@ -132,7 +132,7 @@ func (s *Session) startTlsIfSupported(transport Transport, domain string, o Conf
 			return
 		}
 
-		s.err = transport.StartTLS(domain, o)
+		s.err = transport.StartTLS(domain)
 
 		if s.err == nil {
 			s.TlsEnabled = true
