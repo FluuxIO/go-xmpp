@@ -160,7 +160,7 @@ func (c *Client) Connect() error {
 func (c *Client) Resume(state SMState) error {
 	var err error
 
-	err = c.transport.Connect(c.config.Address)
+	err = c.transport.Connect()
 	if err != nil {
 		return err
 	}

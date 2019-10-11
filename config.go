@@ -10,7 +10,6 @@ type Config struct {
 	// changes made after connecting are ignored.
 	TransportConfiguration
 
-	Address        string
 	Jid            string
 	parsedJid      *Jid // For easier manipulation
 	Credential     Credential

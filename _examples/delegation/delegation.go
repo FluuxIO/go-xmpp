@@ -11,9 +11,11 @@ import (
 
 func main() {
 	opts := xmpp.ComponentOptions{
-		Domain:  "service.localhost",
-		Secret:  "mypass",
-		Address: "localhost:9999",
+		TransportConfiguration: xmpp.TransportConfiguration{
+			Address: "localhost:9999",
+		},
+		Domain: "service.localhost",
+		Secret: "mypass",
 
 		// TODO: Move that part to a component discovery handler
 		Name:     "Test Component",
