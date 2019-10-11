@@ -67,7 +67,7 @@ func (c *Component) Connect() error {
 }
 func (c *Component) Resume(sm SMState) error {
 	var err error
-	c.transport = &XMPPTransport{Config: c.ComponentOptions.TransportConfiguration}
+	c.transport = NewTransport(c.ComponentOptions.TransportConfiguration)
 	if err = c.transport.Connect(); err != nil {
 		return err
 	}

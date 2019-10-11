@@ -143,7 +143,7 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
 
-	c.transport = &XMPPTransport{Config: config.TransportConfiguration}
+	c.transport = NewTransport(config.TransportConfiguration)
 
 	return
 }
