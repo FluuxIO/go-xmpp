@@ -15,7 +15,9 @@ import (
 
 func main() {
 	config := xmpp.Config{
-		Address:      "localhost:5222",
+		TransportConfiguration: xmpp.TransportConfiguration{
+			Address: "localhost:5222",
+		},
 		Jid:          "test@localhost",
 		Credential:   xmpp.Password("test"),
 		StreamLogger: os.Stdout,

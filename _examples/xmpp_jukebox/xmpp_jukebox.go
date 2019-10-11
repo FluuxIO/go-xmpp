@@ -32,7 +32,9 @@ func main() {
 
 	// 2. Prepare XMPP client
 	config := xmpp.Config{
-		Address:    *address,
+		TransportConfiguration: xmpp.TransportConfiguration{
+			Address: *address,
+		},
 		Jid:        *jid,
 		Credential: xmpp.Password(*password),
 		// StreamLogger: os.Stdout,

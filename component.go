@@ -23,9 +23,6 @@ type ComponentOptions struct {
 	Domain string
 	// Secret is the "password" used by the XMPP server to secure component access
 	Secret string
-	// Address is the XMPP Host and port to connect to. Host is of
-	// the form 'serverhost:port' i.e "localhost:8888"
-	Address string
 
 	// =================================
 	// Component discovery
@@ -71,7 +68,7 @@ func (c *Component) Connect() error {
 func (c *Component) Resume(sm SMState) error {
 	var err error
 	c.transport = &XMPPTransport{Config: c.ComponentOptions.TransportConfiguration}
-	if err = c.transport.Connect(c.Address); err != nil {
+	if err = c.transport.Connect(); err != nil {
 		return err
 	}
 	c.updateState(StateConnected)

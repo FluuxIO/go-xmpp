@@ -15,12 +15,14 @@ import (
 
 func main() {
 	config := xmpp.Config{
-		Address:      "localhost:5222",
+		TransportConfiguration: xmpp.TransportConfiguration{
+			Address: "localhost:5222",
+			// TLSConfig: tls.Config{InsecureSkipVerify: true},
+		},
 		Jid:          "test@localhost",
 		Credential:   xmpp.OAuthToken("OdAIsBlY83SLBaqQoClAn7vrZSHxixT8"),
 		StreamLogger: os.Stdout,
 		// Insecure:     true,
-		// TLSConfig: tls.Config{InsecureSkipVerify: true},
 	}
 
 	router := xmpp.NewRouter()
