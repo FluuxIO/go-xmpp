@@ -2,7 +2,10 @@ package xmpp
 
 import (
 	"crypto/tls"
+	"errors"
 )
+
+var TLSNotSupported = errors.New("Transport does not support StartTLS")
 
 type TransportConfiguration struct {
 	// Address is the XMPP Host and port to connect to. Host is of
@@ -18,6 +21,8 @@ type Transport interface {
 	Connect() error
 	DoesStartTLS() bool
 	StartTLS(domain string) error
+
+	IsSecure() bool
 
 	Read(p []byte) (n int, err error)
 	Write(p []byte) (n int, err error)
