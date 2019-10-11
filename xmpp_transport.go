@@ -11,7 +11,8 @@ type XMPPTransport struct {
 	Config    TransportConfiguration
 	TLSConfig *tls.Config
 	// TCP level connection / can be replaced by a TLS session after starttls
-	conn net.Conn
+	conn     net.Conn
+	isSecure bool
 }
 
 func (t *XMPPTransport) Connect() error {
@@ -23,6 +24,10 @@ func (t *XMPPTransport) Connect() error {
 
 func (t XMPPTransport) DoesStartTLS() bool {
 	return true
+}
+
+func (t XMPPTransport) IsSecure() bool {
+	return t.isSecure
 }
 
 func (t *XMPPTransport) StartTLS(domain string) error {
@@ -45,6 +50,7 @@ func (t *XMPPTransport) StartTLS(domain string) error {
 		}
 	}
 
+	t.isSecure = true
 	return nil
 }
 

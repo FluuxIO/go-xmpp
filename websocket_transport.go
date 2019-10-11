@@ -2,7 +2,6 @@ package xmpp
 
 import (
 	"context"
-	"errors"
 	"net"
 	"strings"
 	"time"
@@ -23,9 +22,6 @@ func (t *WebsocketTransport) Connect() error {
 	ctx, cancel := context.WithTimeout(t.ctx, time.Duration(t.Config.ConnectTimeout)*time.Second)
 	defer cancel()
 
-	if !c.Insecure && strings.HasPrefix(address, "wss:") {
-		return errors.New("Websocket address is not secure")
-	}
 	wsConn, _, err := websocket.Dial(ctx, t.Config.Address, nil)
 	if err != nil {
 		t.wsConn = wsConn
@@ -34,8 +30,16 @@ func (t *WebsocketTransport) Connect() error {
 	return err
 }
 
+func (t WebsocketTransport) StartTLS(domain string) error {
+	return TLSNotSupported
+}
+
 func (t WebsocketTransport) DoesStartTLS() bool {
 	return false
+}
+
+func (t WebsocketTransport) IsSecure() bool {
+	return strings.HasPrefix(t.Config.Address, "wss:")
 }
 
 func (t WebsocketTransport) Read(p []byte) (n int, err error) {

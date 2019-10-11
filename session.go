@@ -39,7 +39,7 @@ func NewSession(transport Transport, o Config, state SMState) (*Session, error) 
 		return nil, NewConnError(s.err, true)
 	}
 
-	if !s.TlsEnabled && !o.Insecure {
+	if !transport.IsSecure() && !o.Insecure {
 		err := fmt.Errorf("failed to negotiate TLS session : %s", s.err)
 		return nil, NewConnError(err, true)
 	}
