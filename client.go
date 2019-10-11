@@ -88,8 +88,7 @@ type Client struct {
 	// Store user defined options and states
 	config Config
 	// Session gather data that can be accessed by users of this library
-	Session *Session
-	// TCP level connection / can be replaced by a TLS session after starttls
+	Session   *Session
 	transport Transport
 	// Router is used to dispatch packets
 	router *Router
@@ -139,11 +138,12 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	c = new(Client)
 	c.config = config
 	c.router = r
-	c.transport = &XMPPTransport{}
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
+
+	c.transport = &XMPPTransport{Config: config.TransportConfiguration}
 
 	return
 }
@@ -160,7 +160,7 @@ func (c *Client) Connect() error {
 func (c *Client) Resume(state SMState) error {
 	var err error
 
-	err = c.transport.Connect(c.config.Address, c.config)
+	err = c.transport.Connect(c.config.Address)
 	if err != nil {
 		return err
 	}
