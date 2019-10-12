@@ -39,5 +39,7 @@ func NewTransport(config TransportConfiguration) Transport {
 	if strings.HasPrefix(config.Address, "ws:") || strings.HasPrefix(config.Address, "wss:") {
 		return &WebsocketTransport{Config: config}
 	}
+
+	config.Address = ensurePort(config.Address, 5222)
 	return &XMPPTransport{Config: config}
 }

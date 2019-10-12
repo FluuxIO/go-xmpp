@@ -133,8 +133,6 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 			}
 		}
 	}
-	config.Address = ensurePort(config.Address, 5222)
-
 	c = new(Client)
 	c.config = config
 	c.router = r
