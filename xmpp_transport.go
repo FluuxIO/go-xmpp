@@ -35,11 +35,13 @@ func (t XMPPTransport) IsSecure() bool {
 
 func (t *XMPPTransport) StartTLS(domain string) error {
 	if t.Config.TLSConfig == nil {
-		t.Config.TLSConfig = &tls.Config{}
+		t.TLSConfig = &tls.Config{}
+	} else {
+		t.TLSConfig = t.Config.TLSConfig.Clone()
 	}
 
-	if t.Config.TLSConfig.ServerName == "" {
-		t.Config.TLSConfig.ServerName = domain
+	if t.TLSConfig.ServerName == "" {
+		t.TLSConfig.ServerName = domain
 	}
 	tlsConn := tls.Client(t.conn, t.TLSConfig)
 	// We convert existing connection to TLS
