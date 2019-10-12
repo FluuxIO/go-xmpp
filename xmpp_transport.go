@@ -19,7 +19,10 @@ func (t *XMPPTransport) Connect() error {
 	var err error
 
 	t.conn, err = net.DialTimeout("tcp", t.Config.Address, time.Duration(t.Config.ConnectTimeout)*time.Second)
-	return err
+	if err != nil {
+		return NewConnError(err, true)
+	}
+	return nil
 }
 
 func (t XMPPTransport) DoesStartTLS() bool {
