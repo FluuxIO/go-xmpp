@@ -23,7 +23,7 @@ func (t *WebsocketTransport) Connect() error {
 	defer cancel()
 
 	wsConn, _, err := websocket.Dial(ctx, t.Config.Address, nil)
-	if err != nil {
+	if err == nil {
 		t.wsConn = wsConn
 		t.netConn = websocket.NetConn(t.ctx, t.wsConn, websocket.MessageText)
 	}
