@@ -23,11 +23,12 @@ func (t *WebsocketTransport) Connect() error {
 	defer cancel()
 
 	wsConn, _, err := websocket.Dial(ctx, t.Config.Address, nil)
-	if err == nil {
-		t.wsConn = wsConn
-		t.netConn = websocket.NetConn(t.ctx, t.wsConn, websocket.MessageText)
+	if err != nil {
+		return NewConnError(err, true)
 	}
-	return err
+	t.wsConn = wsConn
+	t.netConn = websocket.NetConn(t.ctx, t.wsConn, websocket.MessageText)
+	return nil
 }
 
 func (t WebsocketTransport) StartTLS(domain string) error {
