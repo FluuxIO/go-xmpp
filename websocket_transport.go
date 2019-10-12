@@ -19,10 +19,13 @@ type WebsocketTransport struct {
 func (t *WebsocketTransport) Connect() error {
 	t.ctx = context.Background()
 
-	ctx, cancel := context.WithTimeout(t.ctx, time.Duration(t.Config.ConnectTimeout)*time.Second)
-	defer cancel()
+	if t.Config.ConnectTimeout > 0 {
+		ctx, cancel := context.WithTimeout(t.ctx, time.Duration(t.Config.ConnectTimeout)*time.Second)
+		t.ctx = ctx
+		defer cancel()
+	}
 
-	wsConn, _, err := websocket.Dial(ctx, t.Config.Address, nil)
+	wsConn, _, err := websocket.Dial(t.ctx, t.Config.Address, nil)
 	if err != nil {
 		return NewConnError(err, true)
 	}
