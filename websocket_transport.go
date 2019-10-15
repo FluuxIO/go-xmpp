@@ -9,6 +9,8 @@ import (
 	"nhooyr.io/websocket"
 )
 
+const pingTimeout = time.Duration(5) * time.Second
+
 type WebsocketTransport struct {
 	Config  TransportConfiguration
 	wsConn  *websocket.Conn
@@ -44,6 +46,14 @@ func (t WebsocketTransport) DoesStartTLS() bool {
 
 func (t WebsocketTransport) IsSecure() bool {
 	return strings.HasPrefix(t.Config.Address, "wss:")
+}
+
+func (t WebsocketTransport) Ping() error {
+	ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
+	defer cancel()
+	// Note that we do not use wsConn.Ping(), because not all websocket servers
+	// (ejabberd for example) implement ping frames
+	return t.wsConn.Write(ctx, websocket.MessageText, []byte(" "))
 }
 
 func (t WebsocketTransport) Read(p []byte) (n int, err error) {

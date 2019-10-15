@@ -2,6 +2,7 @@ package xmpp
 
 import (
 	"crypto/tls"
+	"errors"
 	"net"
 	"time"
 )
@@ -56,6 +57,17 @@ func (t *XMPPTransport) StartTLS(domain string) error {
 	}
 
 	t.isSecure = true
+	return nil
+}
+
+func (t XMPPTransport) Ping() error {
+	n, err := t.conn.Write([]byte("\n"))
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return errors.New("Could not write ping")
+	}
 	return nil
 }
 

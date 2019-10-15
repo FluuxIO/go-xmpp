@@ -276,8 +276,8 @@ func keepalive(transport Transport, quit <-chan struct{}) {
 	for {
 		select {
 		case <-ticker.C:
-			if n, err := fmt.Fprintf(transport, "\n"); err != nil || n != 1 {
-				// When keep alive fails, we force close the transportection. In all cases, the recv will also fail.
+			if err := transport.Ping(); err != nil {
+				// When keepalive fails, we force close the transport. In all cases, the recv will also fail.
 				ticker.Stop()
 				_ = transport.Close()
 				return
