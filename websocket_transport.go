@@ -2,6 +2,7 @@ package xmpp
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strings"
 	"time"
@@ -10,6 +11,8 @@ import (
 )
 
 const pingTimeout = time.Duration(5) * time.Second
+
+var ServerDoesNotSupportXmppOverWebsocket = errors.New("The websocket server does not support the xmpp subprotocol")
 
 type WebsocketTransport struct {
 	Config  TransportConfiguration
@@ -27,9 +30,14 @@ func (t *WebsocketTransport) Connect() error {
 		defer cancel()
 	}
 
-	wsConn, _, err := websocket.Dial(t.ctx, t.Config.Address, nil)
+	wsConn, response, err := websocket.Dial(t.ctx, t.Config.Address, &websocket.DialOptions{
+		Subprotocols: []string{"xmpp"},
+	})
 	if err != nil {
 		return NewConnError(err, true)
+	}
+	if response.Header.Get("Sec-WebSocket-Protocol") != "xmpp" {
+		return ServerDoesNotSupportXmppOverWebsocket
 	}
 	t.wsConn = wsConn
 	t.netConn = websocket.NetConn(t.ctx, t.wsConn, websocket.MessageText)
