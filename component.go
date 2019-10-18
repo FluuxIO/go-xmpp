@@ -67,33 +67,25 @@ func (c *Component) Connect() error {
 }
 func (c *Component) Resume(sm SMState) error {
 	var err error
+	var streamId string
+	if c.ComponentOptions.TransportConfiguration.Domain == "" {
+		c.ComponentOptions.TransportConfiguration.Domain = c.ComponentOptions.Domain
+	}
 	c.transport = NewTransport(c.ComponentOptions.TransportConfiguration)
-	if err = c.transport.Connect(); err != nil {
+
+	if streamId, err = c.transport.Connect(); err != nil {
+		c.updateState(StateStreamError)
 		return err
 	}
 	c.updateState(StateConnected)
 
-	// 1. Send stream open tag
-	if _, err := fmt.Fprintf(c.transport, componentStreamOpen, c.Domain, stanza.NSComponent, stanza.NSStream); err != nil {
-		c.updateState(StateStreamError)
-		return NewConnError(errors.New("cannot send stream open "+err.Error()), false)
-	}
-	c.decoder = xml.NewDecoder(c.transport)
-
-	// 2. Initialize xml decoder and extract streamID from reply
-	streamId, err := stanza.InitStream(c.decoder)
-	if err != nil {
-		c.updateState(StateStreamError)
-		return NewConnError(errors.New("cannot init decoder "+err.Error()), false)
-	}
-
-	// 3. Authentication
+	// Authentication
 	if _, err := fmt.Fprintf(c.transport, "<handshake>%s</handshake>", c.handshake(streamId)); err != nil {
 		c.updateState(StateStreamError)
 		return NewConnError(errors.New("cannot send handshake "+err.Error()), false)
 	}
 
-	// 4. Check server response for authentication
+	// Check server response for authentication
 	val, err := stanza.NextPacket(c.decoder)
 	if err != nil {
 		c.updateState(StateDisconnected)
@@ -116,7 +108,6 @@ func (c *Component) Resume(sm SMState) error {
 }
 
 func (c *Component) Disconnect() {
-	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	if c.transport != nil {
 		_ = c.transport.Close()

@@ -141,7 +141,14 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 		c.config.ConnectTimeout = 15 // 15 second as default
 	}
 
+	if config.TransportConfiguration.Domain == "" {
+		config.TransportConfiguration.Domain = config.parsedJid.Domain
+	}
 	c.transport = NewTransport(config.TransportConfiguration)
+
+	if config.StreamLogger != nil {
+		c.transport.LogTraffic(config.StreamLogger)
+	}
 
 	return
 }
@@ -158,7 +165,7 @@ func (c *Client) Connect() error {
 func (c *Client) Resume(state SMState) error {
 	var err error
 
-	err = c.transport.Connect()
+	streamId, err := c.transport.Connect()
 	if err != nil {
 		return err
 	}
@@ -168,6 +175,7 @@ func (c *Client) Resume(state SMState) error {
 	if c.Session, err = NewSession(c.transport, c.config, state); err != nil {
 		return err
 	}
+	c.Session.StreamId = streamId
 	c.updateState(StateSessionEstablished)
 
 	// Start the keepalive go routine
@@ -181,13 +189,12 @@ func (c *Client) Resume(state SMState) error {
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	fmt.Fprintf(c.Session.streamLogger, "<presence/>")
+	fmt.Fprintf(c.transport, "<presence/>")
 
 	return err
 }
 
 func (c *Client) Disconnect() {
-	_ = c.SendRaw("</stream:stream>")
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	if c.transport != nil {
 		_ = c.transport.Close()
@@ -210,7 +217,7 @@ func (c *Client) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	return c.sendWithWriter(c.Session.streamLogger, data)
+	return c.sendWithWriter(c.transport, data)
 }
 
 // SendRaw sends an XMPP stanza as a string to the server.
@@ -223,7 +230,7 @@ func (c *Client) SendRaw(packet string) error {
 		return errors.New("client is not connected")
 	}
 
-	return c.sendWithWriter(c.Session.streamLogger, []byte(packet))
+	return c.sendWithWriter(c.transport, []byte(packet))
 }
 
 func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
@@ -238,7 +245,7 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 // Loop: Receive data from server
 func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) {
 	for {
-		val, err := stanza.NextPacket(c.Session.decoder)
+		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			close(keepaliveQuit)
 			c.disconnected(state)

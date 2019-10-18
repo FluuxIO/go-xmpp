@@ -12,6 +12,7 @@ func main() {
 	opts := xmpp.ComponentOptions{
 		TransportConfiguration: xmpp.TransportConfiguration{
 			Address: "localhost:8888",
+			Domain:  "service2.localhost",
 		},
 		Domain:   "service2.localhost",
 		Secret:   "mypass",
