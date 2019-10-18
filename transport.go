@@ -2,7 +2,9 @@ package xmpp
 
 import (
 	"crypto/tls"
+	"encoding/xml"
 	"errors"
+	"io"
 	"strings"
 )
 
@@ -12,17 +14,22 @@ type TransportConfiguration struct {
 	// Address is the XMPP Host and port to connect to. Host is of
 	// the form 'serverhost:port' i.e "localhost:8888"
 	Address        string
+	Domain         string
 	ConnectTimeout int // Client timeout in seconds. Default to 15
 	// tls.Config must not be modified after having been passed to NewClient. Any
 	// changes made after connecting are ignored.
-	TLSConfig *tls.Config
+	TLSConfig     *tls.Config
+	CharsetReader func(charset string, input io.Reader) (io.Reader, error) // passed to xml decoder
 }
 
 type Transport interface {
-	Connect() error
+	Connect() (string, error)
 	DoesStartTLS() bool
-	StartTLS(domain string) error
+	StartTLS() error
 
+	LogTraffic(logFile io.Writer)
+
+	GetDecoder() *xml.Decoder
 	IsSecure() bool
 
 	Ping() error

@@ -16,7 +16,8 @@ import (
 func main() {
 	config := xmpp.Config{
 		TransportConfiguration: xmpp.TransportConfiguration{
-			Address: "localhost:5222",
+			// Address: "localhost:5222",
+			Address: "ws://127.0.0.1:5280/xmpp",
 		},
 		Jid:          "test@localhost",
 		Credential:   xmpp.Password("test"),

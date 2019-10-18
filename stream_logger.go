@@ -2,17 +2,16 @@ package xmpp
 
 import (
 	"io"
-	"os"
 )
 
 // Mediated Read / Write on socket
 // Used if logFile from Config is not nil
 type streamLogger struct {
 	socket  io.ReadWriter // Actual connection
-	logFile *os.File
+	logFile io.Writer
 }
 
-func newStreamLogger(conn io.ReadWriter, logFile *os.File) io.ReadWriter {
+func newStreamLogger(conn io.ReadWriter, logFile io.Writer) io.ReadWriter {
 	if logFile == nil {
 		return conn
 	} else {
