@@ -173,6 +173,7 @@ func (c *Client) Resume(state SMState) error {
 
 	// Client is ok, we now open XMPP session
 	if c.Session, err = NewSession(c.transport, c.config, state); err != nil {
+		c.transport.Close()
 		return err
 	}
 	c.Session.StreamId = streamId
