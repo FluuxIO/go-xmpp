@@ -78,6 +78,11 @@ func (t *XMPPTransport) StartTLS() error {
 		return err
 	}
 
+	t.conn = tlsConn
+	t.readWriter = newStreamLogger(tlsConn, t.logFile)
+	t.decoder = xml.NewDecoder(t.readWriter)
+	t.decoder.CharsetReader = t.Config.CharsetReader
+
 	if !t.TLSConfig.InsecureSkipVerify {
 		if err := tlsConn.VerifyHostname(t.Config.Domain); err != nil {
 			return err
