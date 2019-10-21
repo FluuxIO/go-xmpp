@@ -19,6 +19,7 @@ type XMPPTransport struct {
 	decoder    *xml.Decoder
 	conn       net.Conn
 	readWriter io.ReadWriter
+	logFile    io.Writer
 	isSecure   bool
 }
 
@@ -32,20 +33,21 @@ func (t *XMPPTransport) Connect() (string, error) {
 		return "", NewConnError(err, true)
 	}
 
-	if _, err = fmt.Fprintf(t.conn, xmppStreamOpen, t.Config.Domain, stanza.NSClient, stanza.NSStream); err != nil {
+	t.readWriter = newStreamLogger(t.conn, t.logFile)
+
+	if _, err = fmt.Fprintf(t.readWriter, xmppStreamOpen, t.Config.Domain, stanza.NSClient, stanza.NSStream); err != nil {
 		t.conn.Close()
 		return "", NewConnError(err, true)
 	}
 
 	t.decoder = xml.NewDecoder(t.readWriter)
 	t.decoder.CharsetReader = t.Config.CharsetReader
-	sessionId, err := stanza.InitStream(t.decoder)
+	sessionID, err := stanza.InitStream(t.decoder)
 	if err != nil {
 		t.conn.Close()
 		return "", NewConnError(err, false)
 	}
-	t.readWriter = t.conn
-	return sessionId, nil
+	return sessionID, nil
 }
 
 func (t XMPPTransport) DoesStartTLS() bool {
@@ -111,5 +113,5 @@ func (t XMPPTransport) Close() error {
 }
 
 func (t *XMPPTransport) LogTraffic(logFile io.Writer) {
-	t.readWriter = &streamLogger{t.conn, logFile}
+	t.logFile = logFile
 }
