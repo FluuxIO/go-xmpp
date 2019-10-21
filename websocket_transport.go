@@ -100,7 +100,7 @@ func (t WebsocketTransport) startReader() {
 			if n > 0 {
 				// We need to make a copy, otherwise we will overwrite the slice content
 				// on the next iteration of the for loop.
-				tmp := make([]byte, len(buffer))
+				tmp := make([]byte, n)
 				copy(tmp, buffer)
 				t.queue <- tmp
 			}
