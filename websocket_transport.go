@@ -108,8 +108,8 @@ func (t WebsocketTransport) startReader() {
 	}()
 }
 
-func (t WebsocketTransport) StartTLS() error {
-	return TLSNotSupported
+func (t WebsocketTransport) StartTLS() (string, error) {
+	return "", ErrTLSNotSupported
 }
 
 func (t WebsocketTransport) DoesStartTLS() bool {

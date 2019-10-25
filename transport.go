@@ -4,11 +4,13 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 )
 
-var TLSNotSupported = errors.New("Transport does not support StartTLS")
+var ErrTransportProtocolNotSupported = errors.New("Transport protocol not supported")
+var ErrTLSNotSupported = errors.New("Transport does not support StartTLS")
 
 type TransportConfiguration struct {
 	// Address is the XMPP Host and port to connect to. Host is of
@@ -25,7 +27,7 @@ type TransportConfiguration struct {
 type Transport interface {
 	Connect() (string, error)
 	DoesStartTLS() bool
-	StartTLS() error
+	StartTLS() (string, error)
 
 	LogTraffic(logFile io.Writer)
 
@@ -38,16 +40,34 @@ type Transport interface {
 	Close() error
 }
 
-// NewTransport creates a new Transport instance.
+// NewClientTransport creates a new Transport instance for clients.
 // The type of transport is determined by the address in the configuration:
 // - if the address is a URL with the `ws` or `wss` scheme WebsocketTransport is used
 // - in all other cases a XMPPTransport is used
 // For XMPPTransport it is mandatory for the address to have a port specified.
-func NewTransport(config TransportConfiguration) Transport {
+func NewClientTransport(config TransportConfiguration) Transport {
 	if strings.HasPrefix(config.Address, "ws:") || strings.HasPrefix(config.Address, "wss:") {
 		return &WebsocketTransport{Config: config}
 	}
 
 	config.Address = ensurePort(config.Address, 5222)
-	return &XMPPTransport{Config: config}
+	return &XMPPTransport{
+		Config:        config,
+		openStatement: clientStreamOpen,
+	}
+}
+
+// NewComponentTransport creates a new Transport instance for components.
+// Only XMPP transports are allowed. If you try to use any other protocol an error
+// will be returned.
+func NewComponentTransport(config TransportConfiguration) (Transport, error) {
+	if strings.HasPrefix(config.Address, "ws:") || strings.HasPrefix(config.Address, "wss:") {
+		return nil, fmt.Errorf("Components only support XMPP transport: %w", ErrTransportProtocolNotSupported)
+	}
+
+	config.Address = ensurePort(config.Address, 5222)
+	return &XMPPTransport{
+		Config:        config,
+		openStatement: componentStreamOpen,
+	}, nil
 }

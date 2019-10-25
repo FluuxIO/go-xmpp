@@ -11,8 +11,6 @@ import (
 	"gosrc.io/xmpp/stanza"
 )
 
-const componentStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' xmlns='%s' xmlns:stream='%s'>"
-
 type ComponentOptions struct {
 	TransportConfiguration
 
@@ -71,7 +69,11 @@ func (c *Component) Resume(sm SMState) error {
 	if c.ComponentOptions.TransportConfiguration.Domain == "" {
 		c.ComponentOptions.TransportConfiguration.Domain = c.ComponentOptions.Domain
 	}
-	c.transport = NewTransport(c.ComponentOptions.TransportConfiguration)
+	c.transport, err = NewComponentTransport(c.ComponentOptions.TransportConfiguration)
+	if err != nil {
+		c.updateState(StateStreamError)
+		return err
+	}
 
 	if streamId, err = c.transport.Connect(); err != nil {
 		c.updateState(StateStreamError)

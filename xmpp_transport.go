@@ -14,16 +14,19 @@ import (
 
 // XMPPTransport implements the XMPP native TCP transport
 type XMPPTransport struct {
-	Config     TransportConfiguration
-	TLSConfig  *tls.Config
-	decoder    *xml.Decoder
-	conn       net.Conn
-	readWriter io.ReadWriter
-	logFile    io.Writer
-	isSecure   bool
+	openStatement string
+	Config        TransportConfiguration
+	TLSConfig     *tls.Config
+	decoder       *xml.Decoder
+	conn          net.Conn
+	readWriter    io.ReadWriter
+	logFile       io.Writer
+	isSecure      bool
 }
 
-const xmppStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' xmlns='%s' xmlns:stream='%s' version='1.0'>"
+var componentStreamOpen = fmt.Sprintf("<?xml version='1.0'?><stream:stream to='%%s' xmlns='%s' xmlns:stream='%s'>", stanza.NSComponent, stanza.NSStream)
+
+var clientStreamOpen = fmt.Sprintf("<?xml version='1.0'?><stream:stream to='%%s' xmlns='%s' xmlns:stream='%s' version='1.0'>", stanza.NSClient, stanza.NSStream)
 
 func (t *XMPPTransport) Connect() (string, error) {
 	var err error
@@ -34,8 +37,11 @@ func (t *XMPPTransport) Connect() (string, error) {
 	}
 
 	t.readWriter = newStreamLogger(t.conn, t.logFile)
+	return t.startStream()
+}
 
-	if _, err = fmt.Fprintf(t.readWriter, xmppStreamOpen, t.Config.Domain, stanza.NSClient, stanza.NSStream); err != nil {
+func (t *XMPPTransport) startStream() (string, error) {
+	if _, err := fmt.Fprintf(t.readWriter, t.openStatement, t.Config.Domain); err != nil {
 		t.conn.Close()
 		return "", NewConnError(err, true)
 	}
@@ -62,7 +68,7 @@ func (t XMPPTransport) IsSecure() bool {
 	return t.isSecure
 }
 
-func (t *XMPPTransport) StartTLS() error {
+func (t *XMPPTransport) StartTLS() (string, error) {
 	if t.Config.TLSConfig == nil {
 		t.TLSConfig = &tls.Config{}
 	} else {
@@ -75,7 +81,7 @@ func (t *XMPPTransport) StartTLS() error {
 	tlsConn := tls.Client(t.conn, t.TLSConfig)
 	// We convert existing connection to TLS
 	if err := tlsConn.Handshake(); err != nil {
-		return err
+		return "", err
 	}
 
 	t.conn = tlsConn
@@ -85,12 +91,13 @@ func (t *XMPPTransport) StartTLS() error {
 
 	if !t.TLSConfig.InsecureSkipVerify {
 		if err := tlsConn.VerifyHostname(t.Config.Domain); err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	t.isSecure = true
-	return nil
+
+	return t.startStream()
 }
 
 func (t XMPPTransport) Ping() error {
