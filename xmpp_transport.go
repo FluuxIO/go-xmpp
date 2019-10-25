@@ -37,20 +37,20 @@ func (t *XMPPTransport) Connect() (string, error) {
 	}
 
 	t.readWriter = newStreamLogger(t.conn, t.logFile)
-	return t.startStream()
+	t.decoder = xml.NewDecoder(t.readWriter)
+	t.decoder.CharsetReader = t.Config.CharsetReader
+	return t.StartStream()
 }
 
-func (t *XMPPTransport) startStream() (string, error) {
-	if _, err := fmt.Fprintf(t.readWriter, t.openStatement, t.Config.Domain); err != nil {
-		t.conn.Close()
+func (t XMPPTransport) StartStream() (string, error) {
+	if _, err := fmt.Fprintf(t, t.openStatement, t.Config.Domain); err != nil {
+		t.Close()
 		return "", NewConnError(err, true)
 	}
 
-	t.decoder = xml.NewDecoder(t.readWriter)
-	t.decoder.CharsetReader = t.Config.CharsetReader
-	sessionID, err := stanza.InitStream(t.decoder)
+	sessionID, err := stanza.InitStream(t.GetDecoder())
 	if err != nil {
-		t.conn.Close()
+		t.Close()
 		return "", NewConnError(err, false)
 	}
 	return sessionID, nil
@@ -58,6 +58,10 @@ func (t *XMPPTransport) startStream() (string, error) {
 
 func (t XMPPTransport) DoesStartTLS() bool {
 	return true
+}
+
+func (t XMPPTransport) GetDomain() string {
+	return t.Config.Domain
 }
 
 func (t XMPPTransport) GetDecoder() *xml.Decoder {
@@ -68,7 +72,7 @@ func (t XMPPTransport) IsSecure() bool {
 	return t.isSecure
 }
 
-func (t *XMPPTransport) StartTLS() (string, error) {
+func (t *XMPPTransport) StartTLS() error {
 	if t.Config.TLSConfig == nil {
 		t.TLSConfig = &tls.Config{}
 	} else {
@@ -81,7 +85,7 @@ func (t *XMPPTransport) StartTLS() (string, error) {
 	tlsConn := tls.Client(t.conn, t.TLSConfig)
 	// We convert existing connection to TLS
 	if err := tlsConn.Handshake(); err != nil {
-		return "", err
+		return err
 	}
 
 	t.conn = tlsConn
@@ -91,13 +95,12 @@ func (t *XMPPTransport) StartTLS() (string, error) {
 
 	if !t.TLSConfig.InsecureSkipVerify {
 		if err := tlsConn.VerifyHostname(t.Config.Domain); err != nil {
-			return "", err
+			return err
 		}
 	}
 
 	t.isSecure = true
-
-	return t.startStream()
+	return nil
 }
 
 func (t XMPPTransport) Ping() error {

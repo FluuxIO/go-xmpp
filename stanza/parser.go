@@ -24,8 +24,10 @@ func InitStream(p *xml.Decoder) (sessionID string, err error) {
 
 		switch elem := t.(type) {
 		case xml.StartElement:
-			if elem.Name.Space != NSStream || elem.Name.Local != "stream" {
-				err = errors.New("xmpp: expected <stream> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
+			isStreamOpen := elem.Name.Space == NSStream && elem.Name.Local == "stream"
+			isFrameOpen := elem.Name.Space == NSFraming && elem.Name.Local == "open"
+			if !isStreamOpen && !isFrameOpen {
+				err = errors.New("xmpp: expected <stream> or <open> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
 				return sessionID, err
 			}
 

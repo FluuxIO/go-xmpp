@@ -57,29 +57,24 @@ func (t *WebsocketTransport) Connect() (string, error) {
 	t.wsConn = wsConn
 	t.startReader()
 
-	handshake := fmt.Sprintf(`<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="%s" version="1.0" />`, t.Config.Domain)
-	if _, err = t.Write([]byte(handshake)); err != nil {
-		t.cleanup(websocket.StatusBadGateway)
-		return "", NewConnError(err, false)
-	}
-
-	handshakeResponse := make([]byte, 2048)
-	if _, err = t.Read(handshakeResponse); err != nil {
-		t.cleanup(websocket.StatusBadGateway)
-
-		return "", NewConnError(err, false)
-	}
-
-	var openResponse = stanza.WebsocketOpen{}
-	if err = xml.Unmarshal(handshakeResponse, &openResponse); err != nil {
-		t.cleanup(websocket.StatusBadGateway)
-		return "", NewConnError(err, false)
-	}
-
 	t.decoder = xml.NewDecoder(t)
 	t.decoder.CharsetReader = t.Config.CharsetReader
 
-	return openResponse.Id, nil
+	return t.StartStream()
+}
+
+func (t WebsocketTransport) StartStream() (string, error) {
+	if _, err := fmt.Fprintf(t, `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="%s" version="1.0" />`, t.Config.Domain); err != nil {
+		t.cleanup(websocket.StatusBadGateway)
+		return "", NewConnError(err, true)
+	}
+
+	sessionID, err := stanza.InitStream(t.GetDecoder())
+	if err != nil {
+		t.Close()
+		return "", NewConnError(err, false)
+	}
+	return sessionID, nil
 }
 
 // startReader runs a go function that keeps reading from the websocket. This
@@ -108,12 +103,16 @@ func (t WebsocketTransport) startReader() {
 	}()
 }
 
-func (t WebsocketTransport) StartTLS() (string, error) {
-	return "", ErrTLSNotSupported
+func (t WebsocketTransport) StartTLS() error {
+	return ErrTLSNotSupported
 }
 
 func (t WebsocketTransport) DoesStartTLS() bool {
 	return false
+}
+
+func (t WebsocketTransport) GetDomain() string {
+	return t.Config.Domain
 }
 
 func (t WebsocketTransport) GetDecoder() *xml.Decoder {
@@ -152,20 +151,21 @@ func (t WebsocketTransport) Write(p []byte) (int, error) {
 
 func (t WebsocketTransport) Close() error {
 	t.Write([]byte("<close xmlns=\"urn:ietf:params:xml:ns:xmpp-framing\" />"))
-	return t.wsConn.Close(websocket.StatusGoingAway, "Done")
+	return t.cleanup(websocket.StatusGoingAway)
 }
 
 func (t *WebsocketTransport) LogTraffic(logFile io.Writer) {
 	t.logFile = logFile
 }
 
-func (t *WebsocketTransport) cleanup(code websocket.StatusCode) {
+func (t *WebsocketTransport) cleanup(code websocket.StatusCode) error {
+	var err error
 	if t.queue != nil {
 		close(t.queue)
 		t.queue = nil
 	}
 	if t.wsConn != nil {
-		t.wsConn.Close(websocket.StatusGoingAway, "Done")
+		err = t.wsConn.Close(websocket.StatusGoingAway, "Done")
 		t.wsConn = nil
 	}
 	if t.closeFunc != nil {
@@ -173,4 +173,5 @@ func (t *WebsocketTransport) cleanup(code websocket.StatusCode) {
 		t.closeFunc = nil
 		t.closeCtx = nil
 	}
+	return err
 }
