@@ -27,10 +27,11 @@ type TransportConfiguration struct {
 type Transport interface {
 	Connect() (string, error)
 	DoesStartTLS() bool
-	StartTLS() (string, error)
+	StartTLS() error
 
 	LogTraffic(logFile io.Writer)
 
+	StartStream() (string, error)
 	GetDecoder() *xml.Decoder
 	IsSecure() bool
 

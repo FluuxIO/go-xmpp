@@ -73,9 +73,10 @@ func (s *Session) init(o Config) {
 }
 
 func (s *Session) reset(o Config) {
-	if s.err != nil {
+	if s.StreamId, s.err = s.transport.StartStream(); s.err != nil {
 		return
 	}
+
 	s.Features = s.open(o.parsedJid.Domain)
 }
 
@@ -108,7 +109,7 @@ func (s *Session) startTlsIfSupported(o Config) {
 			return
 		}
 
-		s.StreamId, s.err = s.transport.StartTLS()
+		s.err = s.transport.StartTLS()
 
 		if s.err == nil {
 			s.TlsEnabled = true
