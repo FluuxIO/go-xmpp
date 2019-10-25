@@ -144,7 +144,7 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	if config.TransportConfiguration.Domain == "" {
 		config.TransportConfiguration.Domain = config.parsedJid.Domain
 	}
-	c.transport = NewTransport(config.TransportConfiguration)
+	c.transport = NewClientTransport(config.TransportConfiguration)
 
 	if config.StreamLogger != nil {
 		c.transport.LogTraffic(config.StreamLogger)

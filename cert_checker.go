@@ -51,7 +51,7 @@ func (c *ServerCheck) Check() error {
 	decoder := xml.NewDecoder(tcpconn)
 
 	// Send stream open tag
-	if _, err = fmt.Fprintf(tcpconn, xmppStreamOpen, c.domain, stanza.NSClient, stanza.NSStream); err != nil {
+	if _, err = fmt.Fprintf(tcpconn, clientStreamOpen, c.domain); err != nil {
 		return err
 	}
 

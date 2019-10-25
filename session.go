@@ -108,7 +108,7 @@ func (s *Session) startTlsIfSupported(o Config) {
 			return
 		}
 
-		s.err = s.transport.StartTLS()
+		s.StreamId, s.err = s.transport.StartTLS()
 
 		if s.err == nil {
 			s.TlsEnabled = true
