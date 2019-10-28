@@ -29,10 +29,12 @@ func NewSession(transport Transport, o Config, state SMState) (*Session, error) 
 	s.SMState = state
 	s.init(o)
 
-	s.startTlsIfSupported(o)
-
 	if s.err != nil {
 		return nil, NewConnError(s.err, true)
+	}
+
+	if !transport.IsSecure() {
+		s.startTlsIfSupported(o)
 	}
 
 	if !transport.IsSecure() && !o.Insecure {
