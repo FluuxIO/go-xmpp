@@ -34,6 +34,24 @@ func TestUnmarshalIqs(t *testing.T) {
 	}
 }
 
+func TestGenerateIqId(t *testing.T) {
+	t.Parallel()
+	iq := stanza.NewIQ(stanza.Attrs{Id: "1"})
+	if iq.Id != "1" {
+		t.Errorf("NewIQ replaced id with %s", iq.Id)
+	}
+
+	iq = stanza.NewIQ(stanza.Attrs{})
+	if iq.Id != "1" {
+		t.Error("NewIQ did not generate an Id")
+	}
+
+	otherIq := stanza.NewIQ(stanza.Attrs{})
+	if iq.Id == otherIq.Id {
+		t.Errorf("NewIQ generated two identical ids: %s", iq.Id)
+	}
+}
+
 func TestGenerateIq(t *testing.T) {
 	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: "admin@localhost", To: "test@localhost", Id: "1"})
 	payload := stanza.DiscoInfo{
