@@ -13,18 +13,18 @@ import (
 // ============================================================================
 // Test route & matchers
 
-func TestIqResultRoutes(t *testing.T) {
+func TestIQResultRoutes(t *testing.T) {
 	t.Parallel()
 	router := NewRouter()
 
-	if router.iqResultRoutes == nil {
+	if router.IQResultRoutes == nil {
 		t.Fatal("NewRouter does not initialize isResultRoutes")
 	}
 
 	// Check other IQ does not matcah
 	conn := NewSenderMock()
 	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "4321"})
-	router.NewIqResultRoute(context.Background(), "1234").HandlerFunc(func(s Sender, p stanza.Packet) {
+	router.NewIQResultRoute(context.Background(), "1234").HandlerFunc(func(ctx context.Context, s Sender, iq stanza.IQ) {
 		_ = s.SendRaw(successFlag)
 	})
 	if conn.String() == successFlag {
@@ -51,7 +51,7 @@ func TestIqResultRoutes(t *testing.T) {
 	conn = NewSenderMock()
 	ctx, cancel := context.WithCancel(context.Background())
 	iq = stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
-	router.NewIqResultRoute(ctx, "1234").HandlerFunc(func(s Sender, p stanza.Packet) {
+	router.NewIQResultRoute(ctx, "1234").HandlerFunc(func(ctx context.Context, s Sender, iq stanza.IQ) {
 		_ = s.SendRaw(successFlag)
 	}).TimeoutHandlerFunc(func(err error) {
 		conn.SendRaw(cancelledFlag)

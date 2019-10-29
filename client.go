@@ -235,14 +235,14 @@ func (c *Client) Send(packet stanza.Packet) error {
 //           // Handle the result here
 //   })
 //
-func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ, handler HandlerFunc) (*IqResultRoute, error) {
+func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ, handler IQResultHandlerFunc) (*IQResultRoute, error) {
 	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}
 	if err := c.Send(iq); err != nil {
 		return nil, err
 	}
-	return c.router.NewIqResultRoute(ctx, iq.Attrs.Id).HandlerFunc(handler), nil
+	return c.router.NewIQResultRoute(ctx, iq.Attrs.Id).HandlerFunc(handler), nil
 }
 
 // SendRaw sends an XMPP stanza as a string to the server.
