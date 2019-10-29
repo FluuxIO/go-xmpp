@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -81,6 +82,8 @@ func (em EventManager) streamError(error, desc string) {
 
 // Client
 // ============================================================================
+
+var ErrCanOnlySendGetOrSetIq = errors.New("SendIQ can only send get and set IQ stanzas")
 
 // Client is the main structure used to connect as a client on an XMPP
 // server.
@@ -219,6 +222,27 @@ func (c *Client) Send(packet stanza.Packet) error {
 	}
 
 	return c.sendWithWriter(c.transport, data)
+}
+
+// SendIQ sends an IQ set or get stanza to the server. If a result is received
+// the provided handler function will automatically be called.
+//
+// The provided context should have a timeout to prevent the client from waiting
+// forever for an IQ result. For example:
+//
+//   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
+//   client.SendIQ(ctx, iq, func(s Sender, p stanza.Packet) {
+//           // Handle the result here
+//   })
+//
+func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ, handler HandlerFunc) (*IqResultRoute, error) {
+	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
+		return nil, ErrCanOnlySendGetOrSetIq
+	}
+	if err := c.Send(iq); err != nil {
+		return nil, err
+	}
+	return c.router.NewIqResultRoute(ctx, iq.Attrs.Id).HandlerFunc(handler), nil
 }
 
 // SendRaw sends an XMPP stanza as a string to the server.
