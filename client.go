@@ -231,18 +231,16 @@ func (c *Client) Send(packet stanza.Packet) error {
 // forever for an IQ result. For example:
 //
 //   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
-//   client.SendIQ(ctx, iq, func(s Sender, p stanza.Packet) {
-//           // Handle the result here
-//   })
+//   result := <- client.SendIQ(ctx, iq)
 //
-func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ, handler IQResultHandlerFunc) (*IQResultRoute, error) {
+func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
 	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}
 	if err := c.Send(iq); err != nil {
 		return nil, err
 	}
-	return c.router.NewIQResultRoute(ctx, iq.Attrs.Id).HandlerFunc(handler), nil
+	return c.router.NewIQResultRoute(ctx, iq.Attrs.Id), nil
 }
 
 // SendRaw sends an XMPP stanza as a string to the server.
@@ -295,7 +293,10 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) 
 			state.Inbound++
 		}
 
-		c.router.route(c, val)
+		// Do normal route processing in a go-routine so we can immediately
+		// start receiving other stanzas. This also allows route handlers to
+		// send and receive more stanzas.
+		go c.router.route(c, val)
 	}
 }
 
