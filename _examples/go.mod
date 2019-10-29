@@ -1,6 +1,6 @@
 module gosrc.io/xmpp/_examples
 
-go 1.12
+go 1.13
 
 require (
 	github.com/processone/mpg123 v1.0.0

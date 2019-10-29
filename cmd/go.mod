@@ -1,6 +1,6 @@
 module gosrc.io/xmpp/cmd
 
-go 1.12
+go 1.13
 
 require (
 	github.com/bdlm/log v0.1.19
