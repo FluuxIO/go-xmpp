@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
-	"runtime"
 	"testing"
+	"time"
 
 	"gosrc.io/xmpp/stanza"
 )
@@ -16,52 +16,41 @@ import (
 func TestIQResultRoutes(t *testing.T) {
 	t.Parallel()
 	router := NewRouter()
+	conn := NewSenderMock()
 
 	if router.IQResultRoutes == nil {
 		t.Fatal("NewRouter does not initialize isResultRoutes")
 	}
 
-	// Check other IQ does not matcah
-	conn := NewSenderMock()
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "4321"})
-	router.NewIQResultRoute(context.Background(), "1234").HandlerFunc(func(ctx context.Context, s Sender, iq stanza.IQ) {
-		_ = s.SendRaw(successFlag)
-	})
-	if conn.String() == successFlag {
-		t.Fatal("IQ result with wrong ID was matched")
-	}
-
 	// Check if the IQ handler was called
-	conn = NewSenderMock()
-	iq = stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
-	router.route(conn, iq)
-	if conn.String() != successFlag {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
+	res := router.NewIQResultRoute(ctx, "1234")
+	go router.route(conn, iq)
+	select {
+	case <-ctx.Done():
 		t.Fatal("IQ result was not matched")
+	case <-res:
+		// Success
 	}
 
-	// The match must only happen once, so we if receive the same package again it
-	// must not be matched.
-	conn = NewSenderMock()
-	router.route(conn, iq)
-	if conn.String() == successFlag {
-		t.Fatal("IQ result was matched twice")
+	// The match must only happen once, so the id should no longer be in IQResultRoutes
+	if _, ok := router.IQResultRoutes[iq.Attrs.Id]; ok {
+		t.Fatal("IQ ID was not removed from the route map")
 	}
 
-	// After cancelling a route it should no longer match
-	conn = NewSenderMock()
-	ctx, cancel := context.WithCancel(context.Background())
-	iq = stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
-	router.NewIQResultRoute(ctx, "1234").HandlerFunc(func(ctx context.Context, s Sender, iq stanza.IQ) {
-		_ = s.SendRaw(successFlag)
-	}).TimeoutHandlerFunc(func(err error) {
-		conn.SendRaw(cancelledFlag)
-	})
-	cancel()
-	// Yield the processor so the cancellation goroutine is triggered
-	runtime.Gosched()
-	router.route(conn, iq)
-	if conn.String() != cancelledFlag {
-		t.Fatal("IQ result route was matched after cancellation")
+	// Check other IQ does not matcah
+	ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	iq.Attrs.Id = "4321"
+	res = router.NewIQResultRoute(ctx, "1234")
+	go router.route(conn, iq)
+	select {
+	case <-ctx.Done():
+		// Success
+	case <-res:
+		t.Fatal("IQ result with wrong ID was matched")
 	}
 }
 

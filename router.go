@@ -51,8 +51,8 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 			r.IQResultRouteLock.Lock()
 			delete(r.IQResultRoutes, iq.Id)
 			r.IQResultRouteLock.Unlock()
-			close(route.matched)
-			route.handler.HandleIQ(route.context, s, iq)
+			route.result <- iq
+			close(route.result)
 			return
 		}
 	}
@@ -91,29 +91,22 @@ func (r *Router) NewRoute() *Route {
 // NewIQResultRoute register a route that will catch an IQ result stanza with
 // the given Id. The route will only match ones, after which it will automatically
 // be unregistered
-func (r *Router) NewIQResultRoute(ctx context.Context, id string) *IQResultRoute {
-	route := &IQResultRoute{
-		context: ctx,
-		matched: make(chan struct{}),
-	}
+func (r *Router) NewIQResultRoute(ctx context.Context, id string) chan stanza.IQ {
+	route := NewIQResultRoute(ctx)
 	r.IQResultRouteLock.Lock()
 	r.IQResultRoutes[id] = route
 	r.IQResultRouteLock.Unlock()
 
+	// Start a go function to make sure the route is unregistered when the context
+	// is done.
 	go func() {
-		select {
-		case <-route.context.Done():
-			r.IQResultRouteLock.Lock()
-			delete(r.IQResultRoutes, id)
-			r.IQResultRouteLock.Unlock()
-			if route.timeoutHandler != nil {
-				route.timeoutHandler(route.context.Err())
-			}
-		case <-route.matched:
-		}
+		<-route.context.Done()
+		r.IQResultRouteLock.Lock()
+		delete(r.IQResultRoutes, id)
+		r.IQResultRouteLock.Unlock()
 	}()
 
-	return route
+	return route.result
 }
 
 func (r *Router) Match(p stanza.Packet, match *RouteMatch) bool {
@@ -144,28 +137,16 @@ type TimeoutHandlerFunc func(err error)
 
 // IQResultRoute is a temporary route to match IQ result stanzas
 type IQResultRoute struct {
-	context        context.Context
-	matched        chan struct{}
-	handler        IQResultHandler
-	timeoutHandler TimeoutHandlerFunc
+	context context.Context
+	result  chan stanza.IQ
 }
 
-// Handler adds an IQ handler to the route.
-func (r *IQResultRoute) Handler(handler IQResultHandler) *IQResultRoute {
-	r.handler = handler
-	return r
-}
-
-// HandlerFunc updates the route to call a handler function when an IQ result is received.
-func (r *IQResultRoute) HandlerFunc(f IQResultHandlerFunc) *IQResultRoute {
-	return r.Handler(f)
-}
-
-// TimeoutHandlerFunc registers a function that will be called automatically when
-// the IQ result route is cancelled (most likely due to a timeout on the context).
-func (r *IQResultRoute) TimeoutHandlerFunc(f TimeoutHandlerFunc) *IQResultRoute {
-	r.timeoutHandler = f
-	return r
+// NewIQResultRoute creates a new IQResultRoute instance
+func NewIQResultRoute(ctx context.Context) *IQResultRoute {
+	return &IQResultRoute{
+		context: ctx,
+		result:  make(chan stanza.IQ),
+	}
 }
 
 // ============================================================================
