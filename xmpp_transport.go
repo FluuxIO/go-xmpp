@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"bufio"
 	"crypto/tls"
 	"encoding/xml"
 	"errors"
@@ -37,7 +38,7 @@ func (t *XMPPTransport) Connect() (string, error) {
 	}
 
 	t.readWriter = newStreamLogger(t.conn, t.logFile)
-	t.decoder = xml.NewDecoder(t.readWriter)
+	t.decoder = xml.NewDecoder(bufio.NewReaderSize(t.readWriter, maxPacketSize))
 	t.decoder.CharsetReader = t.Config.CharsetReader
 	return t.StartStream()
 }
@@ -90,7 +91,7 @@ func (t *XMPPTransport) StartTLS() error {
 
 	t.conn = tlsConn
 	t.readWriter = newStreamLogger(tlsConn, t.logFile)
-	t.decoder = xml.NewDecoder(t.readWriter)
+	t.decoder = xml.NewDecoder(bufio.NewReaderSize(t.readWriter, maxPacketSize))
 	t.decoder.CharsetReader = t.Config.CharsetReader
 
 	if !t.TLSConfig.InsecureSkipVerify {

@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"bufio"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -57,7 +58,7 @@ func (t *WebsocketTransport) Connect() (string, error) {
 	t.wsConn = wsConn
 	t.startReader()
 
-	t.decoder = xml.NewDecoder(t)
+	t.decoder = xml.NewDecoder(bufio.NewReaderSize(t, maxPacketSize))
 	t.decoder.CharsetReader = t.Config.CharsetReader
 
 	return t.StartStream()
