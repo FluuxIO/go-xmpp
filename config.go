@@ -4,9 +4,9 @@ import (
 	"os"
 )
 
+// Config & TransportConfiguration must not be modified after having been passed to NewClient. Any
+// changes made after connecting are ignored.
 type Config struct {
-	// TransportConfiguration must not be modified after having been passed to NewClient. Any
-	// changes made after connecting are ignored.
 	TransportConfiguration
 
 	Jid            string

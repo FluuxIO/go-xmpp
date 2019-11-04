@@ -19,21 +19,21 @@ func newStreamLogger(conn io.ReadWriter, logFile io.Writer) io.ReadWriter {
 	}
 }
 
-func (sp *streamLogger) Read(p []byte) (n int, err error) {
-	n, err = sp.socket.Read(p)
+func (sl *streamLogger) Read(p []byte) (n int, err error) {
+	n, err = sl.socket.Read(p)
 	if n > 0 {
-		sp.logFile.Write([]byte("RECV:\n")) // Prefix
-		if n, err := sp.logFile.Write(p[:n]); err != nil {
+		sl.logFile.Write([]byte("RECV:\n")) // Prefix
+		if n, err := sl.logFile.Write(p[:n]); err != nil {
 			return n, err
 		}
-		sp.logFile.Write([]byte("\n\n")) // Separator
+		sl.logFile.Write([]byte("\n\n")) // Separator
 	}
 	return
 }
 
-func (sp *streamLogger) Write(p []byte) (n int, err error) {
-	sp.logFile.Write([]byte("SEND:\n")) // Prefix
-	for _, w := range []io.Writer{sp.socket, sp.logFile} {
+func (sl *streamLogger) Write(p []byte) (n int, err error) {
+	sl.logFile.Write([]byte("SEND:\n")) // Prefix
+	for _, w := range []io.Writer{sl.socket, sl.logFile} {
 		n, err = w.Write(p)
 		if err != nil {
 			return
@@ -43,7 +43,7 @@ func (sp *streamLogger) Write(p []byte) (n int, err error) {
 			return
 		}
 	}
-	sp.logFile.Write([]byte("\n\n")) // Separator
+	sl.logFile.Write([]byte("\n\n")) // Separator
 	return len(p), nil
 }
 

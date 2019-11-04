@@ -12,6 +12,7 @@ import (
 var ErrTransportProtocolNotSupported = errors.New("Transport protocol not supported")
 var ErrTLSNotSupported = errors.New("Transport does not support StartTLS")
 
+// TODO: rename to transport config?
 type TransportConfiguration struct {
 	// Address is the XMPP Host and port to connect to. Host is of
 	// the form 'serverhost:port' i.e "localhost:8888"
