@@ -2,6 +2,8 @@ package stanza
 
 import (
 	"encoding/xml"
+
+	"github.com/google/uuid"
 )
 
 /*
@@ -31,8 +33,12 @@ type IQPayload interface {
 }
 
 func NewIQ(a Attrs) IQ {
-	// TODO generate IQ ID if not set
 	// TODO ensure that type is set, as it is required
+	if a.Id == "" {
+		if id, err := uuid.NewRandom(); err == nil {
+			a.Id = id.String()
+		}
+	}
 	return IQ{
 		XMLName: xml.Name{Local: "iq"},
 		Attrs:   a,

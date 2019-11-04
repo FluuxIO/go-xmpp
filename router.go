@@ -1,8 +1,10 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
 	"strings"
+	"sync"
 
 	"gosrc.io/xmpp/stanza"
 )
@@ -25,16 +27,35 @@ TODO: Automatically reply to IQ that do not match any route, to comply to XMPP s
 type Router struct {
 	// Routes to be matched, in order.
 	routes []*Route
+
+	IQResultRoutes    map[string]*IQResultRoute
+	IQResultRouteLock sync.RWMutex
 }
 
 // NewRouter returns a new router instance.
 func NewRouter() *Router {
-	return &Router{}
+	return &Router{
+		IQResultRoutes: make(map[string]*IQResultRoute),
+	}
 }
 
 // route is called by the XMPP client to dispatch stanza received using the set up routes.
 // It is also used by test, but is not supposed to be used directly by users of the library.
 func (r *Router) route(s Sender, p stanza.Packet) {
+	iq, isIq := p.(stanza.IQ)
+	if isIq {
+		r.IQResultRouteLock.RLock()
+		route, ok := r.IQResultRoutes[iq.Id]
+		r.IQResultRouteLock.RUnlock()
+		if ok {
+			r.IQResultRouteLock.Lock()
+			delete(r.IQResultRoutes, iq.Id)
+			r.IQResultRouteLock.Unlock()
+			route.result <- iq
+			close(route.result)
+			return
+		}
+	}
 
 	var match RouteMatch
 	if r.Match(p, &match) {
@@ -42,11 +63,10 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 		match.Handler.HandlePacket(s, p)
 		return
 	}
+
 	// If there is no match and we receive an iq set or get, we need to send a reply
-	if iq, ok := p.(stanza.IQ); ok {
-		if iq.Type == stanza.IQTypeGet || iq.Type == stanza.IQTypeSet {
-			iqNotImplemented(s, iq)
-		}
+	if isIq && (iq.Type == stanza.IQTypeGet || iq.Type == stanza.IQTypeSet) {
+		iqNotImplemented(s, iq)
 	}
 }
 
@@ -66,6 +86,27 @@ func (r *Router) NewRoute() *Route {
 	route := &Route{}
 	r.routes = append(r.routes, route)
 	return route
+}
+
+// NewIQResultRoute register a route that will catch an IQ result stanza with
+// the given Id. The route will only match ones, after which it will automatically
+// be unregistered
+func (r *Router) NewIQResultRoute(ctx context.Context, id string) chan stanza.IQ {
+	route := NewIQResultRoute(ctx)
+	r.IQResultRouteLock.Lock()
+	r.IQResultRoutes[id] = route
+	r.IQResultRouteLock.Unlock()
+
+	// Start a go function to make sure the route is unregistered when the context
+	// is done.
+	go func() {
+		<-route.context.Done()
+		r.IQResultRouteLock.Lock()
+		delete(r.IQResultRoutes, id)
+		r.IQResultRouteLock.Unlock()
+	}()
+
+	return route.result
 }
 
 func (r *Router) Match(p stanza.Packet, match *RouteMatch) bool {
@@ -90,7 +131,43 @@ func (r *Router) HandleFunc(name string, f func(s Sender, p stanza.Packet)) *Rou
 }
 
 // ============================================================================
+
+// TimeoutHandlerFunc is a function type for handling IQ result timeouts.
+type TimeoutHandlerFunc func(err error)
+
+// IQResultRoute is a temporary route to match IQ result stanzas
+type IQResultRoute struct {
+	context context.Context
+	result  chan stanza.IQ
+}
+
+// NewIQResultRoute creates a new IQResultRoute instance
+func NewIQResultRoute(ctx context.Context) *IQResultRoute {
+	return &IQResultRoute{
+		context: ctx,
+		result:  make(chan stanza.IQ),
+	}
+}
+
+// ============================================================================
+// IQ result handler
+
+// IQResultHandler is a utility interface for IQ result handlers
+type IQResultHandler interface {
+	HandleIQ(ctx context.Context, s Sender, iq stanza.IQ)
+}
+
+// IQResultHandlerFunc is an adapter to allow using functions as IQ result handlers.
+type IQResultHandlerFunc func(ctx context.Context, s Sender, iq stanza.IQ)
+
+// HandleIQ is a proxy function to implement IQResultHandler using a function.
+func (f IQResultHandlerFunc) HandleIQ(ctx context.Context, s Sender, iq stanza.IQ) {
+	f(ctx, s, iq)
+}
+
+// ============================================================================
 // Route
+
 type Handler interface {
 	HandlePacket(s Sender, p stanza.Packet)
 }

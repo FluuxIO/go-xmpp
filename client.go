@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -81,6 +82,8 @@ func (em EventManager) streamError(error, desc string) {
 
 // Client
 // ============================================================================
+
+var ErrCanOnlySendGetOrSetIq = errors.New("SendIQ can only send get and set IQ stanzas")
 
 // Client is the main structure used to connect as a client on an XMPP
 // server.
@@ -221,6 +224,25 @@ func (c *Client) Send(packet stanza.Packet) error {
 	return c.sendWithWriter(c.transport, data)
 }
 
+// SendIQ sends an IQ set or get stanza to the server. If a result is received
+// the provided handler function will automatically be called.
+//
+// The provided context should have a timeout to prevent the client from waiting
+// forever for an IQ result. For example:
+//
+//   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
+//   result := <- client.SendIQ(ctx, iq)
+//
+func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
+	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
+		return nil, ErrCanOnlySendGetOrSetIq
+	}
+	if err := c.Send(iq); err != nil {
+		return nil, err
+	}
+	return c.router.NewIQResultRoute(ctx, iq.Attrs.Id), nil
+}
+
 // SendRaw sends an XMPP stanza as a string to the server.
 // It can be invalid XML or XMPP content. In that case, the server will
 // disconnect the client. It is up to the user of this method to
@@ -271,7 +293,10 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) 
 			state.Inbound++
 		}
 
-		c.router.route(c, val)
+		// Do normal route processing in a go-routine so we can immediately
+		// start receiving other stanzas. This also allows route handlers to
+		// send and receive more stanzas.
+		go c.router.route(c, val)
 	}
 }
 

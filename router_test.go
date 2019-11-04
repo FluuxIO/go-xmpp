@@ -2,14 +2,57 @@ package xmpp
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"testing"
+	"time"
 
 	"gosrc.io/xmpp/stanza"
 )
 
 // ============================================================================
 // Test route & matchers
+
+func TestIQResultRoutes(t *testing.T) {
+	t.Parallel()
+	router := NewRouter()
+	conn := NewSenderMock()
+
+	if router.IQResultRoutes == nil {
+		t.Fatal("NewRouter does not initialize isResultRoutes")
+	}
+
+	// Check if the IQ handler was called
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
+	res := router.NewIQResultRoute(ctx, "1234")
+	go router.route(conn, iq)
+	select {
+	case <-ctx.Done():
+		t.Fatal("IQ result was not matched")
+	case <-res:
+		// Success
+	}
+
+	// The match must only happen once, so the id should no longer be in IQResultRoutes
+	if _, ok := router.IQResultRoutes[iq.Attrs.Id]; ok {
+		t.Fatal("IQ ID was not removed from the route map")
+	}
+
+	// Check other IQ does not matcah
+	ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	iq.Attrs.Id = "4321"
+	res = router.NewIQResultRoute(ctx, "1234")
+	go router.route(conn, iq)
+	select {
+	case <-ctx.Done():
+		// Success
+	case <-res:
+		t.Fatal("IQ result with wrong ID was matched")
+	}
+}
 
 func TestNameMatcher(t *testing.T) {
 	router := NewRouter()
@@ -211,7 +254,8 @@ func TestCatchallMatcher(t *testing.T) {
 // ============================================================================
 // SenderMock
 
-var successFlag = "matched"
+const successFlag = "matched"
+const cancelledFlag = "cancelled"
 
 type SenderMock struct {
 	buffer *bytes.Buffer
