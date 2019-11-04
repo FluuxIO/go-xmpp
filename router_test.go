@@ -274,6 +274,15 @@ func (s SenderMock) Send(packet stanza.Packet) error {
 	return nil
 }
 
+func (s SenderMock) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
+	out, err := xml.Marshal(iq)
+	if err != nil {
+		return nil, err
+	}
+	s.buffer.Write(out)
+	return nil, nil
+}
+
 func (s SenderMock) SendRaw(str string) error {
 	s.buffer.WriteString(str)
 	return nil

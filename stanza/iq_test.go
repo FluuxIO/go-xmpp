@@ -42,7 +42,7 @@ func TestGenerateIqId(t *testing.T) {
 	}
 
 	iq = stanza.NewIQ(stanza.Attrs{})
-	if iq.Id != "1" {
+	if iq.Id == "" {
 		t.Error("NewIQ did not generate an Id")
 	}
 
