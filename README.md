@@ -52,7 +52,9 @@ config := xmpp.Config{
   - [XEP-0355: Namespace Delegation](https://xmpp.org/extensions/xep-0355.html)
   - [XEP-0356: Privileged Entity](https://xmpp.org/extensions/xep-0356.html)
 
-## Stanza subpackage
+## Package overview
+
+### Stanza subpackage
 
 XMPP stanzas are basic and extensible XML elements. Stanzas (or sometimes special stanzas called 'nonzas') are used to 
 leverage the XMPP protocol features. During a session, a client (or a component) and a server will be exchanging stanzas
@@ -72,6 +74,14 @@ implement your own extensions directly in your own application.
 
 To learn more about the stanza package, you can read more in the
 [stanza package documentation](https://github.com/FluuxIO/go-xmpp/blob/master/stanza/README.md).
+
+### Router
+
+TODO
+
+### Getting IQ response from server
+
+TODO
 
 ## Examples
 
