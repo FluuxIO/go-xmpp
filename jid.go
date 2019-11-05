@@ -51,11 +51,21 @@ func NewJid(sjid string) (*Jid, error) {
 }
 
 func (j *Jid) Full() string {
-	return j.Node + "@" + j.Domain + "/" + j.Resource
+	if j.Resource == "" {
+		return j.Bare()
+	} else if j.Node == "" {
+		return j.Node + "/" + j.Resource
+	} else {
+		return j.Node + "@" + j.Domain + "/" + j.Resource
+	}
 }
 
 func (j *Jid) Bare() string {
-	return j.Node + "@" + j.Domain
+	if j.Node == "" {
+		return j.Domain
+	} else {
+		return j.Node + "@" + j.Domain
+	}
 }
 
 // ============================================================================
