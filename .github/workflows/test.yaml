@@ -1,0 +1,27 @@
+name: Run tests
+
+on: [push, pull_request]
+  pull_request:
+    paths:
+      - '**.go'
+      - '**/go.*'
+      - .github/workflows/test.yaml
+
+  push:
+    paths:
+      - '**.go'
+      - '**/go.*'
+      - .github/workflows/test.yaml
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+        id: go
+      - uses: actions/checkout@v1
+      - name: Run tests
+        run: go test ./...
