@@ -64,6 +64,7 @@ func (c *Component) Connect() error {
 	var state SMState
 	return c.Resume(state)
 }
+
 func (c *Component) Resume(sm SMState) error {
 	var err error
 	var streamId string
@@ -72,13 +73,13 @@ func (c *Component) Resume(sm SMState) error {
 	}
 	c.transport, err = NewComponentTransport(c.ComponentOptions.TransportConfiguration)
 	if err != nil {
-		c.updateState(StateStreamError)
-		return err
+		c.updateState(StatePermanentError)
+		return NewConnError(err, true)
 	}
 
 	if streamId, err = c.transport.Connect(); err != nil {
-		c.updateState(StateStreamError)
-		return err
+		c.updateState(StatePermanentError)
+		return NewConnError(err, true)
 	}
 	c.updateState(StateConnected)
 
@@ -91,7 +92,7 @@ func (c *Component) Resume(sm SMState) error {
 	// Check server response for authentication
 	val, err := stanza.NextPacket(c.decoder)
 	if err != nil {
-		c.updateState(StateDisconnected)
+		c.updateState(StatePermanentError)
 		return NewConnError(err, true)
 	}
 
@@ -105,7 +106,7 @@ func (c *Component) Resume(sm SMState) error {
 		go c.recv()
 		return nil
 	default:
-		c.updateState(StateStreamError)
+		c.updateState(StatePermanentError)
 		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)
 	}
 }

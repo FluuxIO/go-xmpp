@@ -116,16 +116,27 @@ func (t XMPPTransport) Ping() error {
 }
 
 func (t XMPPTransport) Read(p []byte) (n int, err error) {
+	if t.readWriter == nil {
+		return 0, errors.New("cannot read: not connected, no readwriter")
+	}
 	return t.readWriter.Read(p)
 }
 
 func (t XMPPTransport) Write(p []byte) (n int, err error) {
+	if t.readWriter == nil {
+		return 0, errors.New("cannot write: not connected, no readwriter")
+	}
 	return t.readWriter.Write(p)
 }
 
 func (t XMPPTransport) Close() error {
-	_, _ = t.readWriter.Write([]byte("</stream:stream>"))
-	return t.conn.Close()
+	if t.readWriter != nil {
+		_, _ = t.readWriter.Write([]byte("</stream:stream>"))
+	}
+	if t.conn != nil {
+		return t.conn.Close()
+	}
+	return nil
 }
 
 func (t *XMPPTransport) LogTraffic(logFile io.Writer) {

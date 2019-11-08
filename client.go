@@ -25,6 +25,7 @@ const (
 	StateConnected
 	StateSessionEstablished
 	StateStreamError
+	StatePermanentError
 )
 
 // Event is a structure use to convey event changes related to client state. This

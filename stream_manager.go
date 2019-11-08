@@ -86,9 +86,12 @@ func (sm *StreamManager) Run() error {
 		case StateStreamError:
 			sm.client.Disconnect()
 			// Only try reconnecting if we have not been kicked by another session to avoid connection loop.
+			// TODO: Make this conflict exception a permanent error
 			if e.StreamError != "conflict" {
 				sm.connect()
 			}
+		case StatePermanentError:
+			// Do not attempt to reconnect
 		}
 	}
 	sm.client.SetHandler(handler)
