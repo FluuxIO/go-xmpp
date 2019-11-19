@@ -50,7 +50,6 @@ type Component struct {
 
 	// read / write
 	socketProxy io.ReadWriter // TODO
-	decoder     *xml.Decoder
 }
 
 func NewComponent(opts ComponentOptions, r *Router) (*Component, error) {
@@ -90,7 +89,7 @@ func (c *Component) Resume(sm SMState) error {
 	}
 
 	// Check server response for authentication
-	val, err := stanza.NextPacket(c.decoder)
+	val, err := stanza.NextPacket(c.transport.GetDecoder())
 	if err != nil {
 		c.updateState(StatePermanentError)
 		return NewConnError(err, true)
@@ -125,7 +124,7 @@ func (c *Component) SetHandler(handler EventHandler) {
 // Receiver Go routine receiver
 func (c *Component) recv() (err error) {
 	for {
-		val, err := stanza.NextPacket(c.decoder)
+		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			c.updateState(StateDisconnected)
 			return err
