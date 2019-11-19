@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 )
 
 // Reads and checks the opening XMPP stream element.
@@ -50,9 +49,6 @@ func InitStream(p *xml.Decoder) (sessionID string, err error) {
 // TODO Use an interface to return packets interface xmppDecoder
 // TODO make auth and bind use NextPacket instead of directly NextStart
 func NextPacket(p *xml.Decoder) (Packet, error) {
-	if p == nil {
-		log.Fatal("Decoder is nil ! It should be initialized after a successful connection to the server.")
-	}
 	// Read start element to find out how we want to parse the XMPP packet
 	se, err := NextStart(p)
 	if err != nil {

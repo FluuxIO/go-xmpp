@@ -7,10 +7,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
-	"log"
-
 	"gosrc.io/xmpp/stanza"
+	"io"
 )
 
 type ComponentOptions struct {
@@ -125,9 +123,6 @@ func (c *Component) SetHandler(handler EventHandler) {
 // Receiver Go routine receiver
 func (c *Component) recv() (err error) {
 	for {
-		if c.transport.GetDecoder() == nil {
-			log.Fatal("Decoder is nil ! It should be initialized after a successful connection to the server.")
-		}
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			c.updateState(StateDisconnected)
