@@ -14,6 +14,7 @@ import (
 )
 
 // XMPPTransport implements the XMPP native TCP transport
+// The decoder is expected to be initialized after connecting to a server.
 type XMPPTransport struct {
 	openStatement string
 	Config        TransportConfiguration

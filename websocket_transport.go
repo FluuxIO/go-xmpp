@@ -20,6 +20,7 @@ const pingTimeout = time.Duration(5) * time.Second
 
 var ServerDoesNotSupportXmppOverWebsocket = errors.New("The websocket server does not support the xmpp subprotocol")
 
+// The decoder is expected to be initialized after connecting to a server.
 type WebsocketTransport struct {
 	Config  TransportConfiguration
 	decoder *xml.Decoder
