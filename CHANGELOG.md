@@ -1,5 +1,16 @@
 # Fluux XMPP Changelog
 
+## v0.3.0
+
+### Changes
+
+- Update requirements to go1.13
+- Add a websocket transport
+- Add Client.SendIQ method
+- Add IQ result routes to the Router
+- Fix SIGSEGV in xmpp_component (#126)
+- Add tests for Component and code style fixes
+
 ## v0.2.0
 
 ### Changes
