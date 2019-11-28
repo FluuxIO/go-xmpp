@@ -50,7 +50,7 @@ type SMState struct {
 
 // EventHandler is use to pass events about state of the connection to
 // client implementation.
-type EventHandler func(Event)
+type EventHandler func(Event) error
 
 type EventManager struct {
 	// Store current state
@@ -188,13 +188,16 @@ func (c *Client) Resume(state SMState) error {
 	go keepalive(c.transport, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
-	go c.recv(state, keepaliveQuit)
+	// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
+	// now the returned error is lost in limbo.
+	errChan := make(chan error)
+	go c.recv(state, keepaliveQuit, errChan)
 
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	fmt.Fprintf(c.transport, "<presence/>")
+	_, err = fmt.Fprintf(c.transport, "<presence/>")
 
 	return err
 }
@@ -235,7 +238,7 @@ func (c *Client) Send(packet stanza.Packet) error {
 //   result := <- client.SendIQ(ctx, iq)
 //
 func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
-	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
+	if iq.Attrs.Type != stanza.IQTypeSet && iq.Attrs.Type != stanza.IQTypeGet {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}
 	if err := c.Send(iq); err != nil {
@@ -267,13 +270,14 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 // Go routines
 
 // Loop: Receive data from server
-func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) {
+func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan<- error) {
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
+			errChan <- err
 			close(keepaliveQuit)
 			c.disconnected(state)
-			return err
+			return
 		}
 
 		// Handle stream errors
@@ -282,18 +286,22 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) 
 			c.router.route(c, val)
 			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
-			return errors.New("stream error: " + packet.Error.Local)
+			errChan <- errors.New("stream error: " + packet.Error.Local)
+			return
 		// Process Stream management nonzas
 		case stanza.SMRequest:
 			answer := stanza.SMAnswer{XMLName: xml.Name{
 				Space: stanza.NSStreamManagement,
 				Local: "a",
 			}, H: state.Inbound}
-			c.Send(answer)
+			err = c.Send(answer)
+			if err != nil {
+				errChan <- err
+				return
+			}
 		default:
 			state.Inbound++
 		}
-
 		// Do normal route processing in a go-routine so we can immediately
 		// start receiving other stanzas. This also allows route handlers to
 		// send and receive more stanzas.

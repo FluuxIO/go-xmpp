@@ -106,7 +106,7 @@ func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 
 func sendUserTune(s xmpp.Sender, artist string, title string) {
 	tune := stanza.Tune{Artist: artist, Title: title}
-	iq := stanza.NewIQ(stanza.Attrs{Type: "set", Id: "usertune-1", Lang: "en"})
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, Id: "usertune-1", Lang: "en"})
 	payload := stanza.PubSub{Publish: &stanza.Publish{Node: "http://jabber.org/protocol/tune", Item: stanza.Item{Tune: &tune}}}
 	iq.Payload = &payload
 	_ = s.Send(iq)

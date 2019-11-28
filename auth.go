@@ -60,7 +60,10 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, mech string, user str
 	raw := "\x00" + user + "\x00" + secret
 	enc := make([]byte, base64.StdEncoding.EncodedLen(len(raw)))
 	base64.StdEncoding.Encode(enc, []byte(raw))
-	fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='%s'>%s</auth>", stanza.NSSASL, mech, enc)
+	_, err := fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='%s'>%s</auth>", stanza.NSSASL, mech, enc)
+	if err != nil {
+		return err
+	}
 
 	// Next message should be either success or failure.
 	val, err := stanza.NextPacket(decoder)

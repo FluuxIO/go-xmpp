@@ -146,7 +146,7 @@ func TestTypeMatcher(t *testing.T) {
 
 	// We do not match on other types
 	conn = NewSenderMock()
-	iqVersion := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	iqVersion := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
 	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
@@ -163,27 +163,27 @@ func TestCompositeMatcher(t *testing.T) {
 	router := NewRouter()
 	router.NewRoute().
 		IQNamespaces("jabber:iq:version").
-		StanzaType("get").
+		StanzaType(string(stanza.IQTypeGet)).
 		HandlerFunc(func(s Sender, p stanza.Packet) {
 			_ = s.SendRaw(successFlag)
 		})
 
 	// Data set
-	getVersionIq := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	getVersionIq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
 	getVersionIq.Payload = &stanza.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	setVersionIq := stanza.NewIQ(stanza.Attrs{Type: "set", From: "service.localhost", To: "test@localhost", Id: "1"})
+	setVersionIq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, From: "service.localhost", To: "test@localhost", Id: "1"})
 	setVersionIq.Payload = &stanza.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	GetDiscoIq := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	GetDiscoIq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
 	GetDiscoIq.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "http://jabber.org/protocol/disco#info",
@@ -238,7 +238,7 @@ func TestCatchallMatcher(t *testing.T) {
 	}
 
 	conn = NewSenderMock()
-	iqVersion := stanza.NewIQ(stanza.Attrs{Type: "get", From: "service.localhost", To: "test@localhost", Id: "1"})
+	iqVersion := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
 	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",

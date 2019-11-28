@@ -74,7 +74,7 @@ func (sm *StreamManager) Run() error {
 		return errors.New("missing stream client")
 	}
 
-	handler := func(e Event) {
+	handler := func(e Event) error {
 		switch e.State {
 		case StateConnected:
 			sm.Metrics.setConnectTime()
@@ -82,17 +82,18 @@ func (sm *StreamManager) Run() error {
 			sm.Metrics.setLoginTime()
 		case StateDisconnected:
 			// Reconnect on disconnection
-			sm.resume(e.SMState)
+			return sm.resume(e.SMState)
 		case StateStreamError:
 			sm.client.Disconnect()
 			// Only try reconnecting if we have not been kicked by another session to avoid connection loop.
 			// TODO: Make this conflict exception a permanent error
 			if e.StreamError != "conflict" {
-				sm.connect()
+				return sm.connect()
 			}
 		case StatePermanentError:
 			// Do not attempt to reconnect
 		}
+		return nil
 	}
 	sm.client.SetHandler(handler)
 
