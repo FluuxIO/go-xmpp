@@ -104,15 +104,11 @@ func (c *Component) Resume(sm SMState) error {
 	case stanza.Handshake:
 		// Start the receiver go routine
 		c.updateState(StateSessionEstablished)
+		// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
+		// now the returned error is lost in limbo.
 		errChan := make(chan error)
 		go c.recv(errChan) // Sends to errChan
-		// FIXME : this is not a good way to retrieve errors from the recv method. Return an error channel for Connect() ?
-		select {
-		case err := <-errChan:
-			return err
-		default:
-		}
-		return err
+		return err         // Should be empty at this point
 	default:
 		c.updateState(StatePermanentError)
 		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)

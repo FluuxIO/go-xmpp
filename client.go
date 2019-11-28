@@ -188,16 +188,11 @@ func (c *Client) Resume(state SMState) error {
 	go keepalive(c.transport, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
+	// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
+	// now the returned error is lost in limbo.
 	errChan := make(chan error)
-	// FIXME: This is not a good way to retrieve errors from the recv method. Return an error channel for Connect() instead ?
 	go c.recv(state, keepaliveQuit, errChan)
-	select {
-	case err = <-errChan:
-	default:
-	}
-	if err != nil {
-		return err
-	}
+
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
