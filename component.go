@@ -72,11 +72,13 @@ func (c *Component) Resume(sm SMState) error {
 	c.transport, err = NewComponentTransport(c.ComponentOptions.TransportConfiguration)
 	if err != nil {
 		c.updateState(StatePermanentError)
+
 		return NewConnError(err, true)
 	}
 
 	if streamId, err = c.transport.Connect(); err != nil {
 		c.updateState(StatePermanentError)
+
 		return NewConnError(err, true)
 	}
 	c.updateState(StateConnected)
@@ -84,6 +86,7 @@ func (c *Component) Resume(sm SMState) error {
 	// Authentication
 	if _, err := fmt.Fprintf(c.transport, "<handshake>%s</handshake>", c.handshake(streamId)); err != nil {
 		c.updateState(StateStreamError)
+
 		return NewConnError(errors.New("cannot send handshake "+err.Error()), false)
 	}
 
@@ -101,12 +104,20 @@ func (c *Component) Resume(sm SMState) error {
 	case stanza.Handshake:
 		// Start the receiver go routine
 		c.updateState(StateSessionEstablished)
-		go c.recv()
-		return nil
+		errChan := make(chan error)
+		go c.recv(errChan) // Sends to errChan
+		// FIXME : this is not a good way to retrieve errors from the recv method. Return an error channel for Connect() ?
+		select {
+		case err := <-errChan:
+			return err
+		default:
+		}
+		return err
 	default:
 		c.updateState(StatePermanentError)
 		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)
 	}
+	return err
 }
 
 func (c *Component) Disconnect() {
@@ -121,20 +132,22 @@ func (c *Component) SetHandler(handler EventHandler) {
 }
 
 // Receiver Go routine receiver
-func (c *Component) recv() (err error) {
+func (c *Component) recv(errChan chan<- error) {
+
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			c.updateState(StateDisconnected)
-			return err
+			errChan <- err
+			return
 		}
-
 		// Handle stream errors
 		switch p := val.(type) {
 		case stanza.StreamError:
 			c.router.route(c, val)
 			c.streamError(p.Error.Local, p.Text)
-			return errors.New("stream error: " + p.Error.Local)
+			errChan <- errors.New("stream error: " + p.Error.Local)
+			return
 		}
 		c.router.route(c, val)
 	}
@@ -168,7 +181,7 @@ func (c *Component) Send(packet stanza.Packet) error {
 //   result := <- client.SendIQ(ctx, iq)
 //
 func (c *Component) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
-	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
+	if iq.Attrs.Type != stanza.IQTypeSet && iq.Attrs.Type != stanza.IQTypeGet {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}
 	if err := c.Send(iq); err != nil {

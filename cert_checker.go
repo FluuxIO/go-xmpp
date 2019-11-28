@@ -79,7 +79,10 @@ func (c *ServerCheck) Check() error {
 	}
 
 	if _, ok := f.DoesStartTLS(); ok {
-		fmt.Fprintf(tcpconn, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
+		_, err = fmt.Fprintf(tcpconn, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>")
+		if err != nil {
+			return err
+		}
 
 		var k stanza.TLSProceed
 		if err = decoder.DecodeElement(&k, nil); err != nil {

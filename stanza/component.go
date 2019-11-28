@@ -12,7 +12,7 @@ import (
 type Handshake struct {
 	XMLName xml.Name `xml:"jabber:component:accept handshake"`
 	// TODO Add handshake value with test for proper serialization
-	// Value string     `xml:",innerxml"`
+	Value string `xml:",innerxml"`
 }
 
 func (Handshake) Name() string {

@@ -2,6 +2,7 @@ package stanza
 
 import (
 	"encoding/xml"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ type IQ struct { // Info/Query
 	//    child element, which specifies the semantics of the particular
 	//    request."
 	Payload IQPayload `xml:",omitempty"`
-	Error   Err       `xml:"error,omitempty"`
+	Error   *Err      `xml:"error,omitempty"`
 	// Any is used to decode unknown payload as a generic structure
 	Any *Node `xml:",any"`
 }
@@ -52,7 +53,7 @@ func (iq IQ) MakeError(xerror Err) IQ {
 	iq.Type = "error"
 	iq.From = to
 	iq.To = from
-	iq.Error = xerror
+	iq.Error = &xerror
 
 	return iq
 }
@@ -106,7 +107,7 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				if err != nil {
 					return err
 				}
-				iq.Error = xmppError
+				iq.Error = &xmppError
 				continue
 			}
 			if iqExt := TypeRegistry.GetIQExtension(tt.Name); iqExt != nil {
@@ -131,4 +132,40 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			}
 		}
 	}
+}
+
+// Following RFC-3920 for IQs
+func (iq *IQ) IsValid() bool {
+	// ID is required
+	if len(strings.TrimSpace(iq.Id)) == 0 {
+		return false
+	}
+
+	// Type is required
+	if iq.Type.IsEmpty() {
+		return false
+	}
+
+	// Type get and set must contain one and only one child element that specifies the semantics
+	if iq.Type == IQTypeGet || iq.Type == IQTypeSet {
+		if iq.Payload == nil && iq.Any == nil {
+			return false
+		}
+	}
+
+	// A result must include zero or one child element
+	if iq.Type == IQTypeResult {
+		if iq.Payload != nil && iq.Any != nil {
+			return false
+		}
+	}
+
+	//Error type must contain an "error" child element
+	if iq.Type == IQTypeError {
+		if iq.Error == nil {
+			return false
+		}
+	}
+
+	return true
 }

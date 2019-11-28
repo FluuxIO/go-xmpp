@@ -1,11 +1,9 @@
 package xmpp
 
 import (
+	"strings"
 	"testing"
 )
-
-type params struct {
-}
 
 func TestParseAddr(t *testing.T) {
 	tests := []struct {
@@ -32,4 +30,37 @@ func TestParseAddr(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEnsurePort(t *testing.T) {
+	testAddresses := []string{
+		"1ca3:6c07:ee3a:89ca:e065:9a70:71d:daad",
+		"1ca3:6c07:ee3a:89ca:e065:9a70:71d:daad:5252",
+		"[::1]",
+		"127.0.0.1:5555",
+		"127.0.0.1",
+		"[::1]:5555",
+	}
+
+	for _, oldAddr := range testAddresses {
+		t.Run(oldAddr, func(st *testing.T) {
+			newAddr := ensurePort(oldAddr, 5222)
+
+			if len(newAddr) < len(oldAddr) {
+				st.Errorf("incorrect Result: transformed address is shorter than input : %v (old) > %v (new)", newAddr, oldAddr)
+			}
+			// If IPv6, the new address needs brackets to specify a port, like so : [2001:db8:85a3:0:0:8a2e:370:7334]:5222
+			if strings.Count(newAddr, "[") < strings.Count(oldAddr, "[") ||
+				strings.Count(newAddr, "]") < strings.Count(oldAddr, "]") {
+
+				st.Errorf("incorrect Result. Transformed address seems to not have correct brakets : %v => %v", oldAddr, newAddr)
+			}
+
+			// Check if we messed up the colons, or didn't properly add a port
+			if strings.Count(newAddr, ":") < strings.Count(oldAddr, ":") {
+				st.Errorf("incorrect Result: transformed address doesn't seem to have a port %v (=> %v, no port ?)", oldAddr, newAddr)
+			}
+		})
+	}
+
 }

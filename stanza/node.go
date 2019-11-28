@@ -46,9 +46,18 @@ func (n Node) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start.Name = n.XMLName
 
 	err = e.EncodeToken(start)
-	e.EncodeElement(n.Nodes, xml.StartElement{Name: n.XMLName})
+	if err != nil {
+		return err
+	}
+	err = e.EncodeElement(n.Nodes, xml.StartElement{Name: n.XMLName})
+	if err != nil {
+		return err
+	}
 	if n.Content != "" {
-		e.EncodeToken(xml.CharData(n.Content))
+		err = e.EncodeToken(xml.CharData(n.Content))
+		if err != nil {
+			return err
+		}
 	}
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }

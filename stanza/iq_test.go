@@ -187,3 +187,38 @@ func TestUnknownPayload(t *testing.T) {
 		t.Errorf("could not extract namespace: '%s'", parsedIQ.Any.XMLName.Space)
 	}
 }
+
+func TestIsValid(t *testing.T) {
+	type testCase struct {
+		iq        string
+		shouldErr bool
+	}
+	testIQs := make(map[string]testCase)
+	testIQs["Valid IQ"] = testCase{
+		`<iq type="get" to="service.localhost" id="1" >
+ 			<query xmlns="unknown:ns"/>
+		</iq>`,
+		false,
+	}
+	testIQs["Invalid IQ"] = testCase{
+		`<iq type="get" to="service.localhost">
+ 			<query xmlns="unknown:ns"/>
+		</iq>`,
+		true,
+	}
+
+	for name, tcase := range testIQs {
+		t.Run(name, func(st *testing.T) {
+			parsedIQ := stanza.IQ{}
+			err := xml.Unmarshal([]byte(tcase.iq), &parsedIQ)
+			if err != nil {
+				t.Errorf("Unmarshal error: %#v (%s)", err, tcase.iq)
+				return
+			}
+			if !parsedIQ.IsValid() && !tcase.shouldErr {
+				t.Errorf("failed iq validation for : %s", tcase.iq)
+			}
+		})
+	}
+
+}
