@@ -24,4 +24,4 @@ jobs:
         id: go
       - uses: actions/checkout@v1
       - name: Run tests
-        run: go test ./...
+        run: go test ./... -race
