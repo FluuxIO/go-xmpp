@@ -1,16 +1,16 @@
 name: Run tests
 
-on: [push, pull_request]
+on:
   pull_request:
     paths:
       - '**.go'
-      - '**/go.*'
+      - 'go.*'
       - .github/workflows/test.yaml
 
   push:
     paths:
       - '**.go'
-      - '**/go.*'
+      - 'go.*'
       - .github/workflows/test.yaml
 
 jobs:
