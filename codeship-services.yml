@@ -1,5 +1,0 @@
-build:
-  build:
-    image: fluux/build
-    dockerfile: Dockerfile
-  encrypted_env_file: codeship.env.encrypted
