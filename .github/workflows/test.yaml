@@ -24,4 +24,15 @@ jobs:
         id: go
       - uses: actions/checkout@v1
       - name: Run tests
-        run: go test ./... -race
+        run: |
+          go test ./... -v -race -coverprofile cover.out -covermode=atomic
+      - name: Convert coverage to lcov
+        uses: jandelgado/gcov2lcov-action@v1.0.0
+        with:
+          infile: cover.out
+          outfile: coverage.lcov
+      - name: Coveralls
+        uses: coverallsapp/github-action@v1.0.1
+        with:
+          github-token: ${{ secrets.github_token }}
+          path-to-lcov: coverage.lcov
