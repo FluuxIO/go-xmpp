@@ -11,7 +11,3 @@ for d in $(go list ./... | grep -v vendor); do
         rm profile.out
     fi
 done
-
-if [ -f "./codecov.sh" ]; then
-   ./codecov.sh
-fi
