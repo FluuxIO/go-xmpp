@@ -108,6 +108,9 @@ Setting up the client / Checking the parameters
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
 func NewClient(config Config, r *Router) (c *Client, err error) {
+	if config.KeepaliveInterval == 0 {
+		config.KeepaliveInterval = time.Second * 30
+	}
 	// Parse JID
 	if config.parsedJid, err = NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
@@ -185,7 +188,7 @@ func (c *Client) Resume(state SMState) error {
 
 	// Start the keepalive go routine
 	keepaliveQuit := make(chan struct{})
-	go keepalive(c.transport, keepaliveQuit)
+	go keepalive(c.transport, c.config.KeepaliveInterval, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
 	// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
@@ -312,9 +315,8 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan
 // Loop: send whitespace keepalive to server
 // This is use to keep the connection open, but also to detect connection loss
 // and trigger proper client connection shutdown.
-func keepalive(transport Transport, quit <-chan struct{}) {
-	// TODO: Make keepalive interval configurable
-	ticker := time.NewTicker(30 * time.Second)
+func keepalive(transport Transport, interval time.Duration, quit <-chan struct{}) {
+	ticker := time.NewTicker(interval)
 	for {
 		select {
 		case <-ticker.C:
