@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -14,15 +15,14 @@ import (
 const (
 	// Default port is not standard XMPP port to avoid interfering
 	// with local running XMPP server
-	testXMPPAddress = "localhost:15222"
-
-	defaultTimeout = 2 * time.Second
+	testXMPPAddress  = "localhost:15222"
+	testClientDomain = "localhost"
 )
 
 func TestClient_Connect(t *testing.T) {
 	// Setup Mock server
 	mock := ServerMock{}
-	mock.Start(t, testXMPPAddress, handlerConnectSuccess)
+	mock.Start(t, testXMPPAddress, handlerClientConnectSuccess)
 
 	// Test / Check result
 	config := Config{
@@ -36,7 +36,7 @@ func TestClient_Connect(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router); err != nil {
+	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
@@ -64,7 +64,7 @@ func TestClient_NoInsecure(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router); err != nil {
+	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
@@ -94,7 +94,7 @@ func TestClient_FeaturesTracking(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router); err != nil {
+	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
@@ -109,7 +109,7 @@ func TestClient_FeaturesTracking(t *testing.T) {
 func TestClient_RFC3921Session(t *testing.T) {
 	// Setup Mock server
 	mock := ServerMock{}
-	mock.Start(t, testXMPPAddress, handlerConnectWithSession)
+	mock.Start(t, testXMPPAddress, handlerClientConnectWithSession)
 
 	// Test / Check result
 	config := Config{
@@ -124,7 +124,7 @@ func TestClient_RFC3921Session(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router); err != nil {
+	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
@@ -135,48 +135,254 @@ func TestClient_RFC3921Session(t *testing.T) {
 	mock.Stop()
 }
 
+// Testing sending an IQ to the mock server and reading its response.
+func TestClient_SendIQ(t *testing.T) {
+	done := make(chan struct{})
+	// Handler for Mock server
+	h := func(t *testing.T, c net.Conn) {
+		handlerClientConnectSuccess(t, c)
+		discardPresence(t, c)
+		respondToIQ(t, c)
+		done <- struct{}{}
+	}
+	client, mock := mockClientConnection(t, h, testClientIqPort)
+
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	disco := iqReq.DiscoInfo()
+	iqReq.Payload = disco
+
+	// Handle a possible error
+	errChan := make(chan error)
+	errorHandler := func(err error) {
+		errChan <- err
+	}
+	client.ErrorHandler = errorHandler
+	res, err := client.SendIQ(ctx, iqReq)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	select {
+	case <-res: // If the server responds with an IQ, we pass the test
+	case err := <-errChan: // If the server sends an error, or there is a connection error
+		t.Errorf(err.Error())
+	case <-time.After(defaultChannelTimeout): // If we timeout
+		t.Errorf("Failed to receive response, to sent IQ, from mock server")
+	}
+	select {
+	case <-done:
+		mock.Stop()
+	case <-time.After(defaultChannelTimeout):
+		t.Errorf("The mock server failed to finish its job !")
+	}
+}
+
+func TestClient_SendIQFail(t *testing.T) {
+	done := make(chan struct{})
+	// Handler for Mock server
+	h := func(t *testing.T, c net.Conn) {
+		handlerClientConnectSuccess(t, c)
+		discardPresence(t, c)
+		respondToIQ(t, c)
+		done <- struct{}{}
+	}
+	client, mock := mockClientConnection(t, h, testClientIqFailPort)
+
+	//==================
+	// Create an IQ to send
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	disco := iqReq.DiscoInfo()
+	iqReq.Payload = disco
+	// Removing the id to make the stanza invalid. The IQ constructor makes a random one if none is specified
+	// so we need to overwrite it.
+	iqReq.Id = ""
+
+	// Handle a possible error
+	errChan := make(chan error)
+	errorHandler := func(err error) {
+		errChan <- err
+	}
+	client.ErrorHandler = errorHandler
+	res, _ := client.SendIQ(ctx, iqReq)
+
+	// Test
+	select {
+	case <-res: // If the server responds with an IQ
+		t.Errorf("Server should not respond with an IQ since the request is expected to be invalid !")
+	case <-errChan: // If the server sends an error, the test passes
+	case <-time.After(defaultChannelTimeout): // If we timeout
+		t.Errorf("Failed to receive response, to sent IQ, from mock server")
+	}
+	select {
+	case <-done:
+		mock.Stop()
+	case <-time.After(defaultChannelTimeout):
+		t.Errorf("The mock server failed to finish its job !")
+	}
+}
+
+func TestClient_SendRaw(t *testing.T) {
+	done := make(chan struct{})
+	// Handler for Mock server
+	h := func(t *testing.T, c net.Conn) {
+		handlerClientConnectSuccess(t, c)
+		discardPresence(t, c)
+		respondToIQ(t, c)
+		done <- struct{}{}
+	}
+	type testCase struct {
+		req       string
+		shouldErr bool
+		port      int
+	}
+	testRequests := make(map[string]testCase)
+	// Sending a correct IQ of type get. Not supposed to err
+	testRequests["Correct IQ"] = testCase{
+		req:       `<iq type="get" id="91bd0bba-012f-4d92-bb17-5fc41e6fe545" from="test1@localhost/mremond-mbp" to="testServer" lang="en"><query xmlns="http://jabber.org/protocol/disco#info"></query></iq>`,
+		shouldErr: false,
+		port:      testClientRawPort + 100,
+	}
+	// Sending an IQ with a missing ID. Should err
+	testRequests["IQ with missing ID"] = testCase{
+		req:       `<iq type="get" from="test1@localhost/mremond-mbp" to="testServer" lang="en"><query xmlns="http://jabber.org/protocol/disco#info"></query></iq>`,
+		shouldErr: true,
+		port:      testClientRawPort,
+	}
+
+	// A handler for the client.
+	// In the failing test, the server returns a stream error, which triggers this handler, client side.
+	errChan := make(chan error)
+	errHandler := func(err error) {
+		errChan <- err
+	}
+
+	// Tests for all the IQs
+	for name, tcase := range testRequests {
+		t.Run(name, func(st *testing.T) {
+			//Connecting to a mock server, initialized with given port and handler function
+			c, m := mockClientConnection(t, h, tcase.port)
+			c.ErrorHandler = errHandler
+			// Sending raw xml from test case
+			err := c.SendRaw(tcase.req)
+			if err != nil {
+				t.Errorf("Error sending Raw string")
+			}
+			// Just wait a little so the message has time to arrive
+			select {
+			// We don't use the default "long" timeout here because waiting it out means passing the test.
+			case <-time.After(100 * time.Millisecond):
+			case err = <-errChan:
+				if err == nil && tcase.shouldErr {
+					t.Errorf("Failed to get closing stream err")
+				} else if err != nil && !tcase.shouldErr {
+					t.Errorf("This test is not supposed to err !")
+				}
+			}
+			c.transport.Close()
+			select {
+			case <-done:
+				m.Stop()
+			case <-time.After(defaultChannelTimeout):
+				t.Errorf("The mock server failed to finish its job !")
+			}
+		})
+	}
+}
+
+func TestClient_Disconnect(t *testing.T) {
+	c, m := mockClientConnection(t, handlerClientConnectSuccess, testClientBasePort)
+	err := c.transport.Ping()
+	if err != nil {
+		t.Errorf("Could not ping but not disconnected yet")
+	}
+	c.Disconnect()
+	err = c.transport.Ping()
+	if err == nil {
+		t.Errorf("Did not disconnect properly")
+	}
+	m.Stop()
+}
+
+func TestClient_DisconnectStreamManager(t *testing.T) {
+	// Init mock server
+	// Setup Mock server
+	mock := ServerMock{}
+	mock.Start(t, testXMPPAddress, handlerAbortTLS)
+
+	// Test / Check result
+	config := Config{
+		TransportConfiguration: TransportConfiguration{
+			Address: testXMPPAddress,
+		},
+		Jid:        "test@localhost",
+		Credential: Password("test"),
+	}
+
+	var client *Client
+	var err error
+	router := NewRouter()
+	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+		t.Errorf("cannot create XMPP client: %s", err)
+	}
+
+	sman := NewStreamManager(client, nil)
+	errChan := make(chan error)
+	runSMan := func(errChan chan error) {
+		errChan <- sman.Run()
+	}
+
+	go runSMan(errChan)
+	select {
+	case <-errChan:
+	case <-time.After(defaultChannelTimeout):
+		// When insecure is not allowed:
+		t.Errorf("should fail as insecure connection is not allowed and server does not support TLS")
+	}
+	mock.Stop()
+}
+
 //=============================================================================
 // Basic XMPP Server Mock Handlers.
 
-const serverStreamOpen = "<?xml version='1.0'?><stream:stream to='%s' id='%s' xmlns='%s' xmlns:stream='%s' version='1.0'>"
-
 // Test connection with a basic straightforward workflow
-func handlerConnectSuccess(t *testing.T, c net.Conn) {
+func handlerClientConnectSuccess(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
-	checkOpenStream(t, c, decoder)
+	checkClientOpenStream(t, c, decoder)
 
 	sendStreamFeatures(t, c, decoder) // Send initial features
 	readAuth(t, decoder)
 	fmt.Fprintln(c, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
 
-	checkOpenStream(t, c, decoder) // Reset stream
-	sendBindFeature(t, c, decoder) // Send post auth features
+	checkClientOpenStream(t, c, decoder) // Reset stream
+	sendBindFeature(t, c, decoder)       // Send post auth features
 	bind(t, c, decoder)
 }
 
 // We expect client will abort on TLS
 func handlerAbortTLS(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
-	checkOpenStream(t, c, decoder)
+	checkClientOpenStream(t, c, decoder)
 	sendStreamFeatures(t, c, decoder) // Send initial features
 }
 
 // Test connection with mandatory session (RFC-3921)
-func handlerConnectWithSession(t *testing.T, c net.Conn) {
+func handlerClientConnectWithSession(t *testing.T, c net.Conn) {
 	decoder := xml.NewDecoder(c)
-	checkOpenStream(t, c, decoder)
+	checkClientOpenStream(t, c, decoder)
 
 	sendStreamFeatures(t, c, decoder) // Send initial features
 	readAuth(t, decoder)
 	fmt.Fprintln(c, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
 
-	checkOpenStream(t, c, decoder)    // Reset stream
-	sendRFC3921Feature(t, c, decoder) // Send post auth features
+	checkClientOpenStream(t, c, decoder) // Reset stream
+	sendRFC3921Feature(t, c, decoder)    // Send post auth features
 	bind(t, c, decoder)
 	session(t, c, decoder)
 }
 
-func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
+func checkClientOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 	c.SetDeadline(time.Now().Add(defaultTimeout))
 	defer c.SetDeadline(time.Time{})
 
@@ -202,105 +408,35 @@ func checkOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 	}
 }
 
-func sendStreamFeatures(t *testing.T, c net.Conn, _ *xml.Decoder) {
-	// This is a basic server, supporting only 1 stream feature: SASL Plain Auth
-	features := `<stream:features>
-  <mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl">
-    <mechanism>PLAIN</mechanism>
-  </mechanisms>
-</stream:features>`
-	if _, err := fmt.Fprintln(c, features); err != nil {
-		t.Errorf("cannot send stream feature: %s", err)
+func mockClientConnection(t *testing.T, serverHandler func(*testing.T, net.Conn), port int) (*Client, ServerMock) {
+	mock := ServerMock{}
+	testServerAddress := fmt.Sprintf("%s:%d", testClientDomain, port)
+
+	mock.Start(t, testServerAddress, serverHandler)
+
+	config := Config{
+		TransportConfiguration: TransportConfiguration{
+			Address: testServerAddress,
+		},
+		Jid:        "test@localhost",
+		Credential: Password("test"),
+		Insecure:   true}
+
+	var client *Client
+	var err error
+	router := NewRouter()
+	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+		t.Errorf("connect create XMPP client: %s", err)
 	}
+
+	if err = client.Connect(); err != nil {
+		t.Errorf("XMPP connection failed: %s", err)
+	}
+
+	return client, mock
 }
 
-// TODO return err in case of error reading the auth params
-func readAuth(t *testing.T, decoder *xml.Decoder) string {
-	se, err := stanza.NextStart(decoder)
-	if err != nil {
-		t.Errorf("cannot read auth: %s", err)
-		return ""
-	}
-
-	var nv interface{}
-	nv = &stanza.SASLAuth{}
-	// Decode element into pointer storage
-	if err = decoder.DecodeElement(nv, &se); err != nil {
-		t.Errorf("cannot decode auth: %s", err)
-		return ""
-	}
-
-	switch v := nv.(type) {
-	case *stanza.SASLAuth:
-		return v.Value
-	}
-	return ""
-}
-
-func sendBindFeature(t *testing.T, c net.Conn, _ *xml.Decoder) {
-	// This is a basic server, supporting only 1 stream feature after auth: resource binding
-	features := `<stream:features>
-  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
-</stream:features>`
-	if _, err := fmt.Fprintln(c, features); err != nil {
-		t.Errorf("cannot send stream feature: %s", err)
-	}
-}
-
-func sendRFC3921Feature(t *testing.T, c net.Conn, _ *xml.Decoder) {
-	// This is a basic server, supporting only 2 features after auth: resource & session binding
-	features := `<stream:features>
-  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
-  <session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>
-</stream:features>`
-	if _, err := fmt.Fprintln(c, features); err != nil {
-		t.Errorf("cannot send stream feature: %s", err)
-	}
-}
-
-func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
-	se, err := stanza.NextStart(decoder)
-	if err != nil {
-		t.Errorf("cannot read bind: %s", err)
-		return
-	}
-
-	iq := &stanza.IQ{}
-	// Decode element into pointer storage
-	if err = decoder.DecodeElement(&iq, &se); err != nil {
-		t.Errorf("cannot decode bind iq: %s", err)
-		return
-	}
-
-	// TODO Check all elements
-	switch iq.Payload.(type) {
-	case *stanza.Bind:
-		result := `<iq id='%s' type='result'>
-  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
-  	<jid>%s</jid>
-  </bind>
-</iq>`
-		fmt.Fprintf(c, result, iq.Id, "test@localhost/test") // TODO use real JID
-	}
-}
-
-func session(t *testing.T, c net.Conn, decoder *xml.Decoder) {
-	se, err := stanza.NextStart(decoder)
-	if err != nil {
-		t.Errorf("cannot read session: %s", err)
-		return
-	}
-
-	iq := &stanza.IQ{}
-	// Decode element into pointer storage
-	if err = decoder.DecodeElement(&iq, &se); err != nil {
-		t.Errorf("cannot decode session iq: %s", err)
-		return
-	}
-
-	switch iq.Payload.(type) {
-	case *stanza.StreamSession:
-		result := `<iq id='%s' type='result'/>`
-		fmt.Fprintf(c, result, iq.Id)
-	}
+// This really should not be used as is.
+// It's just meant to be a placeholder when error handling is not needed at this level
+func clientDefaultErrorHandler(err error) {
 }

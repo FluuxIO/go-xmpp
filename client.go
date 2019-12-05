@@ -98,6 +98,8 @@ type Client struct {
 	router *Router
 	// Track and broadcast connection state
 	EventManager
+	// Handle errors from client execution
+	ErrorHandler func(error)
 }
 
 /*
@@ -107,7 +109,7 @@ Setting up the client / Checking the parameters
 // NewClient generates a new XMPP client, based on Config passed as parameters.
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
-func NewClient(config Config, r *Router) (c *Client, err error) {
+func NewClient(config Config, r *Router, errorHandler func(error)) (c *Client, err error) {
 	// Parse JID
 	if config.parsedJid, err = NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
@@ -140,6 +142,7 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	c = new(Client)
 	c.config = config
 	c.router = r
+	c.ErrorHandler = errorHandler
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
@@ -185,13 +188,10 @@ func (c *Client) Resume(state SMState) error {
 
 	// Start the keepalive go routine
 	keepaliveQuit := make(chan struct{})
-	go keepalive(c.transport, keepaliveQuit)
+	go keepalive(c, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
-	// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
-	// now the returned error is lost in limbo.
-	errChan := make(chan error)
-	go c.recv(state, keepaliveQuit, errChan)
+	go c.recv(state, keepaliveQuit)
 
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
@@ -270,11 +270,11 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 // Go routines
 
 // Loop: Receive data from server
-func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan<- error) {
+func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
-			errChan <- err
+			c.ErrorHandler(err)
 			close(keepaliveQuit)
 			c.disconnected(state)
 			return
@@ -286,7 +286,7 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan
 			c.router.route(c, val)
 			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
-			errChan <- errors.New("stream error: " + packet.Error.Local)
+			c.ErrorHandler(errors.New("stream error: " + packet.Error.Local))
 			return
 		// Process Stream management nonzas
 		case stanza.SMRequest:
@@ -296,7 +296,7 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan
 			}, H: state.Inbound}
 			err = c.Send(answer)
 			if err != nil {
-				errChan <- err
+				c.ErrorHandler(err)
 				return
 			}
 		default:
@@ -312,8 +312,9 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan
 // Loop: send whitespace keepalive to server
 // This is use to keep the connection open, but also to detect connection loss
 // and trigger proper client connection shutdown.
-func keepalive(transport Transport, quit <-chan struct{}) {
+func keepalive(c *Client, quit <-chan struct{}) {
 	// TODO: Make keepalive interval configurable
+	transport := c.transport
 	ticker := time.NewTicker(30 * time.Second)
 	for {
 		select {

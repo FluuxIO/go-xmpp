@@ -1,12 +1,42 @@
 package xmpp
 
 import (
+	"encoding/xml"
+	"fmt"
+	"gosrc.io/xmpp/stanza"
 	"net"
 	"testing"
+	"time"
 )
 
 //=============================================================================
 // TCP Server Mock
+const (
+	defaultTimeout       = 2 * time.Second
+	testComponentDomain  = "localhost"
+	defaultServerName    = "testServer"
+	defaultStreamID      = "91bd0bba-012f-4d92-bb17-5fc41e6fe545"
+	defaultComponentName = "Test Component"
+	serverStreamOpen     = "<?xml version='1.0'?><stream:stream to='%s' id='%s' xmlns='%s' xmlns:stream='%s' version='1.0'>"
+
+	// Default port is not standard XMPP port to avoid interfering
+	// with local running XMPP server
+
+	// Component tests
+	testHandshakePort = iota + 15222
+	testDecoderPort
+	testSendIqPort
+	testSendIqFailPort
+	testSendRawPort
+	testDisconnectPort
+	testSManDisconnectPort
+
+	// Client tests
+	testClientBasePort
+	testClientRawPort
+	testClientIqPort
+	testClientIqFailPort
+)
 
 // ClientHandler is passed by the test client to provide custom behaviour to
 // the TCP server mock. This allows customizing the server behaviour to allow
@@ -79,5 +109,182 @@ func (mock *ServerMock) loop() {
 		mock.connections = append(mock.connections, conn)
 		// TODO Create and pass a context to cancel the handler if they are still around = avoid possible leak on complex handlers
 		go mock.handler(mock.t, conn)
+	}
+}
+
+//======================================================================================================================
+// A few functions commonly used for tests. Trying to avoid duplicates in client and component test files.
+//======================================================================================================================
+
+func respondToIQ(t *testing.T, c net.Conn) {
+	// Decoder to parse the request
+	decoder := xml.NewDecoder(c)
+
+	iqReq, err := receiveIq(c, decoder)
+	if err != nil {
+		t.Fatalf("failed to receive IQ : %s", err.Error())
+	}
+
+	if !iqReq.IsValid() {
+		mockIQError(c)
+		return
+	}
+
+	// Crafting response
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: iqReq.To, To: iqReq.From, Id: iqReq.Id, Lang: "en"})
+	disco := iqResp.DiscoInfo()
+	disco.AddFeatures("vcard-temp",
+		`http://jabber.org/protocol/address`)
+
+	disco.AddIdentity("Multicast", "service", "multicast")
+	iqResp.Payload = disco
+
+	// Sending response to the Component
+	mResp, err := xml.Marshal(iqResp)
+	_, err = fmt.Fprintln(c, string(mResp))
+	if err != nil {
+		t.Errorf("Could not send response stanza : %s", err)
+	}
+	return
+}
+
+// When a presence stanza is automatically sent (right now it's the case in the client), we may want to discard it
+// and test further stanzas.
+func discardPresence(t *testing.T, c net.Conn) {
+	decoder := xml.NewDecoder(c)
+	c.SetDeadline(time.Now().Add(defaultTimeout))
+	defer c.SetDeadline(time.Time{})
+	var presenceStz stanza.Presence
+	err := decoder.Decode(&presenceStz)
+	if err != nil {
+		t.Errorf("Expected presence but this happened : %s", err.Error())
+	}
+}
+
+// Reads next request coming from the Component. Expecting it to be an IQ request
+func receiveIq(c net.Conn, decoder *xml.Decoder) (*stanza.IQ, error) {
+	c.SetDeadline(time.Now().Add(defaultTimeout))
+	defer c.SetDeadline(time.Time{})
+	var iqStz stanza.IQ
+	err := decoder.Decode(&iqStz)
+	if err != nil {
+		return nil, err
+	}
+	return &iqStz, nil
+}
+
+// Should be used in server handlers when an IQ sent by a client or component is invalid.
+// This responds as expected from a "real" server, aside from the error message.
+func mockIQError(c net.Conn) {
+	s := stanza.StreamError{
+		XMLName: xml.Name{Local: "stream:error"},
+		Error:   xml.Name{Local: "xml-not-well-formed"},
+		Text:    `XML was not well-formed`,
+	}
+	raw, _ := xml.Marshal(s)
+	fmt.Fprintln(c, string(raw))
+	fmt.Fprintln(c, `</stream:stream>`)
+}
+
+func sendStreamFeatures(t *testing.T, c net.Conn, _ *xml.Decoder) {
+	// This is a basic server, supporting only 1 stream feature: SASL Plain Auth
+	features := `<stream:features>
+  <mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl">
+    <mechanism>PLAIN</mechanism>
+  </mechanisms>
+</stream:features>`
+	if _, err := fmt.Fprintln(c, features); err != nil {
+		t.Errorf("cannot send stream feature: %s", err)
+	}
+}
+
+// TODO return err in case of error reading the auth params
+func readAuth(t *testing.T, decoder *xml.Decoder) string {
+	se, err := stanza.NextStart(decoder)
+	if err != nil {
+		t.Errorf("cannot read auth: %s", err)
+		return ""
+	}
+
+	var nv interface{}
+	nv = &stanza.SASLAuth{}
+	// Decode element into pointer storage
+	if err = decoder.DecodeElement(nv, &se); err != nil {
+		t.Errorf("cannot decode auth: %s", err)
+		return ""
+	}
+
+	switch v := nv.(type) {
+	case *stanza.SASLAuth:
+		return v.Value
+	}
+	return ""
+}
+
+func sendBindFeature(t *testing.T, c net.Conn, _ *xml.Decoder) {
+	// This is a basic server, supporting only 1 stream feature after auth: resource binding
+	features := `<stream:features>
+  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
+</stream:features>`
+	if _, err := fmt.Fprintln(c, features); err != nil {
+		t.Errorf("cannot send stream feature: %s", err)
+	}
+}
+
+func sendRFC3921Feature(t *testing.T, c net.Conn, _ *xml.Decoder) {
+	// This is a basic server, supporting only 2 features after auth: resource & session binding
+	features := `<stream:features>
+  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
+  <session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>
+</stream:features>`
+	if _, err := fmt.Fprintln(c, features); err != nil {
+		t.Errorf("cannot send stream feature: %s", err)
+	}
+}
+
+func bind(t *testing.T, c net.Conn, decoder *xml.Decoder) {
+	se, err := stanza.NextStart(decoder)
+	if err != nil {
+		t.Errorf("cannot read bind: %s", err)
+		return
+	}
+
+	iq := &stanza.IQ{}
+	// Decode element into pointer storage
+	if err = decoder.DecodeElement(&iq, &se); err != nil {
+		t.Errorf("cannot decode bind iq: %s", err)
+		return
+	}
+
+	// TODO Check all elements
+	switch iq.Payload.(type) {
+	case *stanza.Bind:
+		result := `<iq id='%s' type='result'>
+  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
+  	<jid>%s</jid>
+  </bind>
+</iq>`
+		fmt.Fprintf(c, result, iq.Id, "test@localhost/test") // TODO use real JID
+	}
+}
+
+func session(t *testing.T, c net.Conn, decoder *xml.Decoder) {
+	se, err := stanza.NextStart(decoder)
+	if err != nil {
+		t.Errorf("cannot read session: %s", err)
+		return
+	}
+
+	iq := &stanza.IQ{}
+	// Decode element into pointer storage
+	if err = decoder.DecodeElement(&iq, &se); err != nil {
+		t.Errorf("cannot decode session iq: %s", err)
+		return
+	}
+
+	switch iq.Payload.(type) {
+	case *stanza.StreamSession:
+		result := `<iq id='%s' type='result'/>`
+		fmt.Fprintf(c, result, iq.Id)
 	}
 }

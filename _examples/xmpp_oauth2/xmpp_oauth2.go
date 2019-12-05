@@ -28,7 +28,7 @@ func main() {
 	router := xmpp.NewRouter()
 	router.HandleFunc("message", handleMessage)
 
-	client, err := xmpp.NewClient(config, router)
+	client, err := xmpp.NewClient(config, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -37,6 +37,10 @@ func main() {
 	// for you automatically.
 	cm := xmpp.NewStreamManager(client, nil)
 	log.Fatal(cm.Run())
+}
+
+func errorHandler(err error) {
+	fmt.Println(err.Error())
 }
 
 func handleMessage(s xmpp.Sender, p stanza.Packet) {
