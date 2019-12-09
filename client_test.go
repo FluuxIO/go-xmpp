@@ -19,6 +19,24 @@ const (
 	defaultTimeout = 2 * time.Second
 )
 
+func TestEventManager(t *testing.T) {
+	mgr := EventManager{}
+	mgr.updateState(StateConnected)
+	if mgr.CurrentState != StateConnected {
+		t.Fatal("CurrentState not updated by updateState()")
+	}
+
+	mgr.disconnected(SMState{})
+	if mgr.CurrentState != StateDisconnected {
+		t.Fatalf("CurrentState not reset by disconnected()")
+	}
+
+	mgr.streamError(ErrTLSNotSupported.Error(), "")
+	if mgr.CurrentState != StateStreamError {
+		t.Fatalf("CurrentState not set by streamError()")
+	}
+}
+
 func TestClient_Connect(t *testing.T) {
 	// Setup Mock server
 	mock := ServerMock{}
