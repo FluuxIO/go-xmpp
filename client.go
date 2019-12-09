@@ -60,21 +60,21 @@ type EventManager struct {
 	Handler EventHandler
 }
 
-func (em EventManager) updateState(state ConnState) {
+func (em *EventManager) updateState(state ConnState) {
 	em.CurrentState = state
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState})
 	}
 }
 
-func (em EventManager) disconnected(state SMState) {
+func (em *EventManager) disconnected(state SMState) {
 	em.CurrentState = StateDisconnected
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState, SMState: state})
 	}
 }
 
-func (em EventManager) streamError(error, desc string) {
+func (em *EventManager) streamError(error, desc string) {
 	em.CurrentState = StateStreamError
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState, StreamError: error, Description: desc})
