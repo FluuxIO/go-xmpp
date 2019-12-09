@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -200,7 +199,7 @@ func (c *Client) Resume(state SMState) error {
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	_, err = fmt.Fprintf(c.transport, "<presence/>")
+	err = c.sendWithWriter(c.transport, []byte("<presence/>"))
 
 	return err
 }

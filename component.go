@@ -85,7 +85,7 @@ func (c *Component) Resume(sm SMState) error {
 	c.updateState(StateConnected)
 
 	// Authentication
-	if _, err := fmt.Fprintf(c.transport, "<handshake>%s</handshake>", c.handshake(streamId)); err != nil {
+	if err := c.sendWithWriter(c.transport, []byte(fmt.Sprintf("<handshake>%s</handshake>", c.handshake(streamId)))); err != nil {
 		c.updateState(StateStreamError)
 
 		return NewConnError(errors.New("cannot send handshake "+err.Error()), false)
@@ -159,10 +159,16 @@ func (c *Component) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	if _, err := fmt.Fprintf(transport, string(data)); err != nil {
+	if err := c.sendWithWriter(transport, data); err != nil {
 		return errors.New("cannot send packet " + err.Error())
 	}
 	return nil
+}
+
+func (c *Component) sendWithWriter(writer io.Writer, packet []byte) error {
+	var err error
+	_, err = writer.Write(packet)
+	return err
 }
 
 // SendIQ sends an IQ set or get stanza to the server. If a result is received
@@ -195,7 +201,7 @@ func (c *Component) SendRaw(packet string) error {
 	}
 
 	var err error
-	_, err = fmt.Fprintf(transport, packet)
+	err = c.sendWithWriter(transport, []byte(packet))
 	return err
 }
 

@@ -117,21 +117,25 @@ func (mock *ServerMock) loop() {
 //======================================================================================================================
 
 func respondToIQ(t *testing.T, c net.Conn) {
-	// Decoder to parse the request
-	decoder := xml.NewDecoder(c)
-
-	iqReq, err := receiveIq(c, decoder)
+	recvBuf := make([]byte, 1024)
+	var iqR stanza.IQ
+	_, err := c.Read(recvBuf[:]) // recv data
 	if err != nil {
-		t.Fatalf("failed to receive IQ : %s", err.Error())
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			t.Errorf("read timeout: %s", err)
+		} else {
+			t.Errorf("read error: %s", err)
+		}
 	}
+	xml.Unmarshal(recvBuf, &iqR)
 
-	if !iqReq.IsValid() {
+	if !iqR.IsValid() {
 		mockIQError(c)
 		return
 	}
 
 	// Crafting response
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: iqReq.To, To: iqReq.From, Id: iqReq.Id, Lang: "en"})
+	iqResp := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: iqR.To, To: iqR.From, Id: iqR.Id, Lang: "en"})
 	disco := iqResp.DiscoInfo()
 	disco.AddFeatures("vcard-temp",
 		`http://jabber.org/protocol/address`)
