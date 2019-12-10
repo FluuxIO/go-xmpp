@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -60,21 +59,21 @@ type EventManager struct {
 	Handler EventHandler
 }
 
-func (em EventManager) updateState(state ConnState) {
+func (em *EventManager) updateState(state ConnState) {
 	em.CurrentState = state
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState})
 	}
 }
 
-func (em EventManager) disconnected(state SMState) {
+func (em *EventManager) disconnected(state SMState) {
 	em.CurrentState = StateDisconnected
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState, SMState: state})
 	}
 }
 
-func (em EventManager) streamError(error, desc string) {
+func (em *EventManager) streamError(error, desc string) {
 	em.CurrentState = StateStreamError
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState, StreamError: error, Description: desc})
@@ -110,6 +109,9 @@ Setting up the client / Checking the parameters
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
 func NewClient(config Config, r *Router, errorHandler func(error)) (c *Client, err error) {
+	if config.KeepaliveInterval == 0 {
+		config.KeepaliveInterval = time.Second * 30
+	}
 	// Parse JID
 	if config.parsedJid, err = NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
@@ -188,7 +190,7 @@ func (c *Client) Resume(state SMState) error {
 
 	// Start the keepalive go routine
 	keepaliveQuit := make(chan struct{})
-	go keepalive(c, keepaliveQuit)
+	go keepalive(c.transport, c.config.KeepaliveInterval, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
 	go c.recv(state, keepaliveQuit)
@@ -197,7 +199,7 @@ func (c *Client) Resume(state SMState) error {
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	_, err = fmt.Fprintf(c.transport, "<presence/>")
+	err = c.sendWithWriter(c.transport, []byte("<presence/>"))
 
 	return err
 }
@@ -312,10 +314,8 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 // Loop: send whitespace keepalive to server
 // This is use to keep the connection open, but also to detect connection loss
 // and trigger proper client connection shutdown.
-func keepalive(c *Client, quit <-chan struct{}) {
-	// TODO: Make keepalive interval configurable
-	transport := c.transport
-	ticker := time.NewTicker(30 * time.Second)
+func keepalive(transport Transport, interval time.Duration, quit <-chan struct{}) {
+	ticker := time.NewTicker(interval)
 	for {
 		select {
 		case <-ticker.C:
