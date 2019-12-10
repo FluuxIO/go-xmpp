@@ -120,6 +120,7 @@ func respondToIQ(t *testing.T, c net.Conn) {
 	recvBuf := make([]byte, 1024)
 	var iqR stanza.IQ
 	_, err := c.Read(recvBuf[:]) // recv data
+
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			t.Errorf("read timeout: %s", err)
@@ -155,11 +156,22 @@ func respondToIQ(t *testing.T, c net.Conn) {
 // When a presence stanza is automatically sent (right now it's the case in the client), we may want to discard it
 // and test further stanzas.
 func discardPresence(t *testing.T, c net.Conn) {
-	decoder := xml.NewDecoder(c)
 	c.SetDeadline(time.Now().Add(defaultTimeout))
 	defer c.SetDeadline(time.Time{})
 	var presenceStz stanza.Presence
-	err := decoder.Decode(&presenceStz)
+
+	recvBuf := make([]byte, len(InitialPresence))
+	_, err := c.Read(recvBuf[:]) // recv data
+
+	if err != nil {
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			t.Errorf("read timeout: %s", err)
+		} else {
+			t.Errorf("read error: %s", err)
+		}
+	}
+	xml.Unmarshal(recvBuf, &presenceStz)
+
 	if err != nil {
 		t.Errorf("Expected presence but this happened : %s", err.Error())
 	}

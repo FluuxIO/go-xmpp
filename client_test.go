@@ -184,15 +184,15 @@ func TestClient_SendIQ(t *testing.T) {
 	select {
 	case <-res: // If the server responds with an IQ, we pass the test
 	case err := <-errChan: // If the server sends an error, or there is a connection error
-		t.Errorf(err.Error())
+		t.Fatal(err.Error())
 	case <-time.After(defaultChannelTimeout): // If we timeout
-		t.Errorf("Failed to receive response, to sent IQ, from mock server")
+		t.Fatal("Failed to receive response, to sent IQ, from mock server")
 	}
 	select {
 	case <-done:
 		mock.Stop()
 	case <-time.After(defaultChannelTimeout):
-		t.Errorf("The mock server failed to finish its job !")
+		t.Fatal("The mock server failed to finish its job !")
 	}
 }
 

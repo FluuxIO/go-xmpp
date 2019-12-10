@@ -20,6 +20,7 @@ type ConnState = uint8
 // This is a the list of events happening on the connection that the
 // client can be notified about.
 const (
+	InitialPresence             = "<presence/>"
 	StateDisconnected ConnState = iota
 	StateConnected
 	StateSessionEstablished
@@ -199,7 +200,7 @@ func (c *Client) Resume(state SMState) error {
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	err = c.sendWithWriter(c.transport, []byte("<presence/>"))
+	err = c.sendWithWriter(c.transport, []byte(InitialPresence))
 
 	return err
 }
