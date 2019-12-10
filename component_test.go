@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"gosrc.io/xmpp/stanza"
-	"net"
 	"strings"
 	"testing"
 	"time"
@@ -36,7 +35,7 @@ func TestHandshake(t *testing.T) {
 }
 
 // Tests connection process with a handshake exchange
-// Tests multiple session IDs. All connections should generate a unique stream ID
+// Tests multiple session IDs. All serverConnections should generate a unique stream ID
 func TestGenerateHandshakeId(t *testing.T) {
 	// Using this array with a channel to make a queue of values to test
 	// These are stream IDs that will be used to test the connection process, mixing them with the "secret" to generate
@@ -56,11 +55,11 @@ func TestGenerateHandshakeId(t *testing.T) {
 
 	// Performs a Component connection with a handshake. It expects to have an ID sent its way through the "uchan"
 	// channel of this file. Otherwise it will hang for ever.
-	h := func(t *testing.T, c net.Conn) {
-		decoder := xml.NewDecoder(c)
-		checkOpenStreamHandshakeID(t, c, decoder, <-uchan)
-		readHandshakeComponent(t, decoder)
-		fmt.Fprintln(c, "<handshake/>") // That's all the server needs to return (see xep-0114)
+	h := func(t *testing.T, sc *ServerConn) {
+
+		checkOpenStreamHandshakeID(t, sc, <-uchan)
+		readHandshakeComponent(t, sc.decoder)
+		fmt.Fprintln(sc.connection, "<handshake/>") // That's all the server needs to return (see xep-0114)
 		return
 	}
 
@@ -122,8 +121,8 @@ func TestDecoder(t *testing.T) {
 // Tests sending an IQ to the server, and getting the response
 func TestSendIq(t *testing.T) {
 	done := make(chan struct{})
-	h := func(t *testing.T, c net.Conn) {
-		handlerForComponentIQSend(t, c)
+	h := func(t *testing.T, sc *ServerConn) {
+		handlerForComponentIQSend(t, sc)
 		done <- struct{}{}
 	}
 
@@ -164,8 +163,8 @@ func TestSendIq(t *testing.T) {
 // Checking that error handling is done properly client side when an invalid IQ is sent and the server responds in kind.
 func TestSendIqFail(t *testing.T) {
 	done := make(chan struct{})
-	h := func(t *testing.T, c net.Conn) {
-		handlerForComponentIQSend(t, c)
+	h := func(t *testing.T, sc *ServerConn) {
+		handlerForComponentIQSend(t, sc)
 		done <- struct{}{}
 	}
 	//Connecting to a mock server, initialized with given port and handler function
@@ -213,27 +212,30 @@ func TestSendIqFail(t *testing.T) {
 func TestSendRaw(t *testing.T) {
 	done := make(chan struct{})
 	// Handler for the mock server
-	h := func(t *testing.T, c net.Conn) {
+	h := func(t *testing.T, sc *ServerConn) {
 		// Completes the connection by exchanging handshakes
-		handlerForComponentHandshakeDefaultID(t, c)
-		receiveIq(c, xml.NewDecoder(c))
+		handlerForComponentHandshakeDefaultID(t, sc)
+		respondToIQ(t, sc)
 		done <- struct{}{}
 	}
 
 	type testCase struct {
 		req       string
 		shouldErr bool
+		port      int
 	}
 	testRequests := make(map[string]testCase)
 	// Sending a correct IQ of type get. Not supposed to err
 	testRequests["Correct IQ"] = testCase{
 		req:       `<iq type="get" id="91bd0bba-012f-4d92-bb17-5fc41e6fe545" from="test1@localhost/mremond-mbp" to="testServer" lang="en"><query xmlns="http://jabber.org/protocol/disco#info"></query></iq>`,
 		shouldErr: false,
+		port:      testSendRawPort + 100,
 	}
 	// Sending an IQ with a missing ID. Should err
 	testRequests["IQ with missing ID"] = testCase{
 		req:       `<iq type="get" from="test1@localhost/mremond-mbp" to="testServer" lang="en"><query xmlns="http://jabber.org/protocol/disco#info"></query></iq>`,
 		shouldErr: true,
+		port:      testSendRawPort + 200,
 	}
 
 	// A handler for the component.
@@ -247,7 +249,7 @@ func TestSendRaw(t *testing.T) {
 	for name, tcase := range testRequests {
 		t.Run(name, func(st *testing.T) {
 			//Connecting to a mock server, initialized with given port and handler function
-			c, m := mockComponentConnection(t, testSendRawPort, h)
+			c, m := mockComponentConnection(t, tcase.port, h)
 			c.ErrorHandler = errHandler
 			// Sending raw xml from test case
 			err := c.SendRaw(tcase.req)
@@ -328,10 +330,10 @@ func TestStreamManagerDisconnect(t *testing.T) {
 // Init mock server and connection
 // Creating a mock server and connecting a Component to it. Initialized with given port and handler function
 // The Component and mock are both returned
-func mockComponentConnection(t *testing.T, port int, handler func(t *testing.T, c net.Conn)) (*Component, *ServerMock) {
+func mockComponentConnection(t *testing.T, port int, handler func(t *testing.T, sc *ServerConn)) (*Component, *ServerMock) {
 	// Init mock server
 	testComponentAddress := fmt.Sprintf("%s:%d", testComponentDomain, port)
-	mock := ServerMock{}
+	mock := &ServerMock{}
 	mock.Start(t, testComponentAddress, handler)
 
 	//==================================
@@ -345,7 +347,9 @@ func mockComponentConnection(t *testing.T, port int, handler func(t *testing.T, 
 		t.Errorf("%+v", err)
 	}
 
-	return c, &mock
+	// Now that the Component is connected, let's set the xml.Decoder for the server
+
+	return c, mock
 }
 
 func makeBasicComponent(name string, mockServerAddr string, t *testing.T) *Component {
@@ -380,19 +384,19 @@ func componentDefaultErrorHandler(err error) {
 
 // Sends IQ response to Component request.
 // No parsing of the request here. We just check that it's valid, and send the default response.
-func handlerForComponentIQSend(t *testing.T, c net.Conn) {
+func handlerForComponentIQSend(t *testing.T, sc *ServerConn) {
 	// Completes the connection by exchanging handshakes
-	handlerForComponentHandshakeDefaultID(t, c)
-	respondToIQ(t, c)
+	handlerForComponentHandshakeDefaultID(t, sc)
+	respondToIQ(t, sc)
 }
 
 // Used for ID and handshake related tests
-func checkOpenStreamHandshakeID(t *testing.T, c net.Conn, decoder *xml.Decoder, streamID string) {
-	c.SetDeadline(time.Now().Add(defaultTimeout))
-	defer c.SetDeadline(time.Time{})
+func checkOpenStreamHandshakeID(t *testing.T, sc *ServerConn, streamID string) {
+	sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	defer sc.connection.SetDeadline(time.Time{})
 
 	for { // TODO clean up. That for loop is not elegant and I prefer bounded recursion.
-		token, err := decoder.Token()
+		token, err := sc.decoder.Token()
 		if err != nil {
 			t.Errorf("cannot read next token: %s", err)
 		}
@@ -404,7 +408,7 @@ func checkOpenStreamHandshakeID(t *testing.T, c net.Conn, decoder *xml.Decoder, 
 				err = errors.New("xmpp: expected <stream> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
 				return
 			}
-			if _, err := fmt.Fprintf(c, serverStreamOpen, "localhost", streamID, stanza.NSComponent, stanza.NSStream); err != nil {
+			if _, err := fmt.Fprintf(sc.connection, serverStreamOpen, "localhost", streamID, stanza.NSComponent, stanza.NSStream); err != nil {
 				t.Errorf("cannot write server stream open: %s", err)
 			}
 			return
@@ -412,16 +416,15 @@ func checkOpenStreamHandshakeID(t *testing.T, c net.Conn, decoder *xml.Decoder, 
 	}
 }
 
-func checkOpenStreamHandshakeDefaultID(t *testing.T, c net.Conn, decoder *xml.Decoder) {
-	checkOpenStreamHandshakeID(t, c, decoder, defaultStreamID)
+func checkOpenStreamHandshakeDefaultID(t *testing.T, sc *ServerConn) {
+	checkOpenStreamHandshakeID(t, sc, defaultStreamID)
 }
 
 // Performs a Component connection with a handshake. It uses a default ID defined in this file as a constant.
 // This handler is supposed to fail by sending a "message" stanza instead of a <handshake/> stanza to finalize the handshake.
-func handlerComponentFailedHandshakeDefaultID(t *testing.T, c net.Conn) {
-	decoder := xml.NewDecoder(c)
-	checkOpenStreamHandshakeDefaultID(t, c, decoder)
-	readHandshakeComponent(t, decoder)
+func handlerComponentFailedHandshakeDefaultID(t *testing.T, sc *ServerConn) {
+	checkOpenStreamHandshakeDefaultID(t, sc)
+	readHandshakeComponent(t, sc.decoder)
 
 	// Send a message, instead of a "<handshake/>" tag, to fail the handshake process dans disconnect the client.
 	me := stanza.Message{
@@ -429,7 +432,7 @@ func handlerComponentFailedHandshakeDefaultID(t *testing.T, c net.Conn) {
 		Body:  "Fail my handshake.",
 	}
 	s, _ := xml.Marshal(me)
-	fmt.Fprintln(c, string(s))
+	fmt.Fprintln(sc.connection, string(s))
 
 	return
 }
@@ -454,10 +457,9 @@ func readHandshakeComponent(t *testing.T, decoder *xml.Decoder) {
 
 // Performs a Component connection with a handshake. It uses a default ID defined in this file as a constant.
 // Used in the mock server as a Handler
-func handlerForComponentHandshakeDefaultID(t *testing.T, c net.Conn) {
-	decoder := xml.NewDecoder(c)
-	checkOpenStreamHandshakeDefaultID(t, c, decoder)
-	readHandshakeComponent(t, decoder)
-	fmt.Fprintln(c, "<handshake/>") // That's all the server needs to return (see xep-0114)
+func handlerForComponentHandshakeDefaultID(t *testing.T, sc *ServerConn) {
+	checkOpenStreamHandshakeDefaultID(t, sc)
+	readHandshakeComponent(t, sc.decoder)
+	fmt.Fprintln(sc.connection, "<handshake/>") // That's all the server needs to return (see xep-0114)
 	return
 }

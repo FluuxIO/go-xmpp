@@ -119,7 +119,7 @@ func (s *Session) startTlsIfSupported(o Config) {
 		return
 	}
 
-	// If we do not allow cleartext connections, make it explicit that server do not support starttls
+	// If we do not allow cleartext serverConnections, make it explicit that server do not support starttls
 	if !o.Insecure {
 		s.err = errors.New("XMPP server does not advertise support for starttls")
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"net"
 	"testing"
 	"time"
 
@@ -157,10 +156,10 @@ func TestClient_RFC3921Session(t *testing.T) {
 func TestClient_SendIQ(t *testing.T) {
 	done := make(chan struct{})
 	// Handler for Mock server
-	h := func(t *testing.T, c net.Conn) {
-		handlerClientConnectSuccess(t, c)
-		discardPresence(t, c)
-		respondToIQ(t, c)
+	h := func(t *testing.T, sc *ServerConn) {
+		handlerClientConnectSuccess(t, sc)
+		discardPresence(t, sc)
+		respondToIQ(t, sc)
 		done <- struct{}{}
 	}
 	client, mock := mockClientConnection(t, h, testClientIqPort)
@@ -199,10 +198,10 @@ func TestClient_SendIQ(t *testing.T) {
 func TestClient_SendIQFail(t *testing.T) {
 	done := make(chan struct{})
 	// Handler for Mock server
-	h := func(t *testing.T, c net.Conn) {
-		handlerClientConnectSuccess(t, c)
-		discardPresence(t, c)
-		respondToIQ(t, c)
+	h := func(t *testing.T, sc *ServerConn) {
+		handlerClientConnectSuccess(t, sc)
+		discardPresence(t, sc)
+		respondToIQ(t, sc)
 		done <- struct{}{}
 	}
 	client, mock := mockClientConnection(t, h, testClientIqFailPort)
@@ -244,10 +243,10 @@ func TestClient_SendIQFail(t *testing.T) {
 func TestClient_SendRaw(t *testing.T) {
 	done := make(chan struct{})
 	// Handler for Mock server
-	h := func(t *testing.T, c net.Conn) {
-		handlerClientConnectSuccess(t, c)
-		discardPresence(t, c)
-		respondToIQ(t, c)
+	h := func(t *testing.T, sc *ServerConn) {
+		handlerClientConnectSuccess(t, sc)
+		discardPresence(t, sc)
+		respondToIQ(t, sc)
 		done <- struct{}{}
 	}
 	type testCase struct {
@@ -365,48 +364,44 @@ func TestClient_DisconnectStreamManager(t *testing.T) {
 // Basic XMPP Server Mock Handlers.
 
 // Test connection with a basic straightforward workflow
-func handlerClientConnectSuccess(t *testing.T, c net.Conn) {
-	decoder := xml.NewDecoder(c)
-	checkClientOpenStream(t, c, decoder)
+func handlerClientConnectSuccess(t *testing.T, sc *ServerConn) {
+	checkClientOpenStream(t, sc)
+	sendStreamFeatures(t, sc) // Send initial features
+	readAuth(t, sc.decoder)
+	fmt.Fprintln(sc.connection, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
 
-	sendStreamFeatures(t, c, decoder) // Send initial features
-	readAuth(t, decoder)
-	fmt.Fprintln(c, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
-
-	checkClientOpenStream(t, c, decoder) // Reset stream
-	sendBindFeature(t, c, decoder)       // Send post auth features
-	bind(t, c, decoder)
+	checkClientOpenStream(t, sc) // Reset stream
+	sendBindFeature(t, sc)       // Send post auth features
+	bind(t, sc)
 }
 
 // We expect client will abort on TLS
-func handlerAbortTLS(t *testing.T, c net.Conn) {
-	decoder := xml.NewDecoder(c)
-	checkClientOpenStream(t, c, decoder)
-	sendStreamFeatures(t, c, decoder) // Send initial features
+func handlerAbortTLS(t *testing.T, sc *ServerConn) {
+	checkClientOpenStream(t, sc)
+	sendStreamFeatures(t, sc) // Send initial features
 }
 
 // Test connection with mandatory session (RFC-3921)
-func handlerClientConnectWithSession(t *testing.T, c net.Conn) {
-	decoder := xml.NewDecoder(c)
-	checkClientOpenStream(t, c, decoder)
+func handlerClientConnectWithSession(t *testing.T, sc *ServerConn) {
+	checkClientOpenStream(t, sc)
 
-	sendStreamFeatures(t, c, decoder) // Send initial features
-	readAuth(t, decoder)
-	fmt.Fprintln(c, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
+	sendStreamFeatures(t, sc) // Send initial features
+	readAuth(t, sc.decoder)
+	fmt.Fprintln(sc.connection, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
 
-	checkClientOpenStream(t, c, decoder) // Reset stream
-	sendRFC3921Feature(t, c, decoder)    // Send post auth features
-	bind(t, c, decoder)
-	session(t, c, decoder)
+	checkClientOpenStream(t, sc) // Reset stream
+	sendRFC3921Feature(t, sc)    // Send post auth features
+	bind(t, sc)
+	session(t, sc)
 }
 
-func checkClientOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
-	c.SetDeadline(time.Now().Add(defaultTimeout))
-	defer c.SetDeadline(time.Time{})
+func checkClientOpenStream(t *testing.T, sc *ServerConn) {
+	sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	defer sc.connection.SetDeadline(time.Time{})
 
 	for { // TODO clean up. That for loop is not elegant and I prefer bounded recursion.
 		var token xml.Token
-		token, err := decoder.Token()
+		token, err := sc.decoder.Token()
 		if err != nil {
 			t.Errorf("cannot read next token: %s", err)
 		}
@@ -418,7 +413,7 @@ func checkClientOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 				err = errors.New("xmpp: expected <stream> but got <" + elem.Name.Local + "> in " + elem.Name.Space)
 				return
 			}
-			if _, err := fmt.Fprintf(c, serverStreamOpen, "localhost", "streamid1", stanza.NSClient, stanza.NSStream); err != nil {
+			if _, err := fmt.Fprintf(sc.connection, serverStreamOpen, "localhost", "streamid1", stanza.NSClient, stanza.NSStream); err != nil {
 				t.Errorf("cannot write server stream open: %s", err)
 			}
 			return
@@ -426,8 +421,8 @@ func checkClientOpenStream(t *testing.T, c net.Conn, decoder *xml.Decoder) {
 	}
 }
 
-func mockClientConnection(t *testing.T, serverHandler func(*testing.T, net.Conn), port int) (*Client, ServerMock) {
-	mock := ServerMock{}
+func mockClientConnection(t *testing.T, serverHandler func(*testing.T, *ServerConn), port int) (*Client, *ServerMock) {
+	mock := &ServerMock{}
 	testServerAddress := fmt.Sprintf("%s:%d", testClientDomain, port)
 
 	mock.Start(t, testServerAddress, serverHandler)
