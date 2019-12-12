@@ -53,13 +53,16 @@ func main() {
 			handleIQ(s, p, player)
 		})
 
-	client, err := xmpp.NewClient(config, router)
+	client, err := xmpp.NewClient(config, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
 
 	cm := xmpp.NewStreamManager(client, nil)
 	log.Fatal(cm.Run())
+}
+func errorHandler(err error) {
+	fmt.Println(err.Error())
 }
 
 func handleMessage(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {

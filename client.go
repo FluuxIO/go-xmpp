@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -21,6 +20,7 @@ type ConnState = uint8
 // This is a the list of events happening on the connection that the
 // client can be notified about.
 const (
+	InitialPresence             = "<presence/>"
 	StateDisconnected ConnState = iota
 	StateConnected
 	StateSessionEstablished
@@ -98,6 +98,8 @@ type Client struct {
 	router *Router
 	// Track and broadcast connection state
 	EventManager
+	// Handle errors from client execution
+	ErrorHandler func(error)
 }
 
 /*
@@ -107,7 +109,7 @@ Setting up the client / Checking the parameters
 // NewClient generates a new XMPP client, based on Config passed as parameters.
 // If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
 // Default the port to 5222.
-func NewClient(config Config, r *Router) (c *Client, err error) {
+func NewClient(config Config, r *Router, errorHandler func(error)) (c *Client, err error) {
 	if config.KeepaliveInterval == 0 {
 		config.KeepaliveInterval = time.Second * 30
 	}
@@ -143,6 +145,7 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	c = new(Client)
 	c.config = config
 	c.router = r
+	c.ErrorHandler = errorHandler
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
@@ -191,16 +194,13 @@ func (c *Client) Resume(state SMState) error {
 	go keepalive(c.transport, c.config.KeepaliveInterval, keepaliveQuit)
 	// Start the receiver go routine
 	state = c.Session.SMState
-	// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
-	// now the returned error is lost in limbo.
-	errChan := make(chan error)
-	go c.recv(state, keepaliveQuit, errChan)
+	go c.recv(state, keepaliveQuit)
 
 	// We're connected and can now receive and send messages.
 	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
 	// TODO: Do we always want to send initial presence automatically ?
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	_, err = fmt.Fprintf(c.transport, "<presence/>")
+	err = c.sendWithWriter(c.transport, []byte(InitialPresence))
 
 	return err
 }
@@ -273,11 +273,11 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 // Go routines
 
 // Loop: Receive data from server
-func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan<- error) {
+func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
-			errChan <- err
+			c.ErrorHandler(err)
 			close(keepaliveQuit)
 			c.disconnected(state)
 			return
@@ -289,7 +289,7 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan
 			c.router.route(c, val)
 			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
-			errChan <- errors.New("stream error: " + packet.Error.Local)
+			c.ErrorHandler(errors.New("stream error: " + packet.Error.Local))
 			return
 		// Process Stream management nonzas
 		case stanza.SMRequest:
@@ -299,7 +299,7 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}, errChan chan
 			}, H: state.Inbound}
 			err = c.Send(answer)
 			if err != nil {
-				errChan <- err
+				c.ErrorHandler(err)
 				return
 			}
 		default:

@@ -35,7 +35,7 @@ func main() {
 		IQNamespaces("jabber:iq:version").
 		HandlerFunc(handleVersion)
 
-	component, err := xmpp.NewComponent(opts, router)
+	component, err := xmpp.NewComponent(opts, router, handleError)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -45,6 +45,10 @@ func main() {
 	// TODO: Post Connect could be a feature of the router or the client. Move it somewhere else.
 	cm := xmpp.NewStreamManager(component, nil)
 	log.Fatal(cm.Run())
+}
+
+func handleError(err error) {
+	fmt.Println(err.Error())
 }
 
 func handleMessage(_ xmpp.Sender, p stanza.Packet) {

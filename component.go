@@ -48,11 +48,12 @@ type Component struct {
 	transport Transport
 
 	// read / write
-	socketProxy io.ReadWriter // TODO
+	socketProxy  io.ReadWriter // TODO
+	ErrorHandler func(error)
 }
 
-func NewComponent(opts ComponentOptions, r *Router) (*Component, error) {
-	c := Component{ComponentOptions: opts, router: r}
+func NewComponent(opts ComponentOptions, r *Router, errorHandler func(error)) (*Component, error) {
+	c := Component{ComponentOptions: opts, router: r, ErrorHandler: errorHandler}
 	return &c, nil
 }
 
@@ -84,7 +85,7 @@ func (c *Component) Resume(sm SMState) error {
 	c.updateState(StateConnected)
 
 	// Authentication
-	if _, err := fmt.Fprintf(c.transport, "<handshake>%s</handshake>", c.handshake(streamId)); err != nil {
+	if err := c.sendWithWriter(c.transport, []byte(fmt.Sprintf("<handshake>%s</handshake>", c.handshake(streamId)))); err != nil {
 		c.updateState(StateStreamError)
 
 		return NewConnError(errors.New("cannot send handshake "+err.Error()), false)
@@ -104,11 +105,8 @@ func (c *Component) Resume(sm SMState) error {
 	case stanza.Handshake:
 		// Start the receiver go routine
 		c.updateState(StateSessionEstablished)
-		// Leaving this channel here for later. Not used atm. We should return this instead of an error because right
-		// now the returned error is lost in limbo.
-		errChan := make(chan error)
-		go c.recv(errChan) // Sends to errChan
-		return err         // Should be empty at this point
+		go c.recv()
+		return err // Should be empty at this point
 	default:
 		c.updateState(StatePermanentError)
 		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)
@@ -128,13 +126,13 @@ func (c *Component) SetHandler(handler EventHandler) {
 }
 
 // Receiver Go routine receiver
-func (c *Component) recv(errChan chan<- error) {
+func (c *Component) recv() {
 
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			c.updateState(StateDisconnected)
-			errChan <- err
+			c.ErrorHandler(err)
 			return
 		}
 		// Handle stream errors
@@ -142,7 +140,7 @@ func (c *Component) recv(errChan chan<- error) {
 		case stanza.StreamError:
 			c.router.route(c, val)
 			c.streamError(p.Error.Local, p.Text)
-			errChan <- errors.New("stream error: " + p.Error.Local)
+			c.ErrorHandler(errors.New("stream error: " + p.Error.Local))
 			return
 		}
 		c.router.route(c, val)
@@ -161,10 +159,16 @@ func (c *Component) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	if _, err := fmt.Fprintf(transport, string(data)); err != nil {
+	if err := c.sendWithWriter(transport, data); err != nil {
 		return errors.New("cannot send packet " + err.Error())
 	}
 	return nil
+}
+
+func (c *Component) sendWithWriter(writer io.Writer, packet []byte) error {
+	var err error
+	_, err = writer.Write(packet)
+	return err
 }
 
 // SendIQ sends an IQ set or get stanza to the server. If a result is received
@@ -197,7 +201,7 @@ func (c *Component) SendRaw(packet string) error {
 	}
 
 	var err error
-	_, err = fmt.Fprintf(transport, packet)
+	err = c.sendWithWriter(transport, []byte(packet))
 	return err
 }
 
