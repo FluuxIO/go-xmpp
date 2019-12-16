@@ -1,0 +1,12 @@
+# Default config for the client
+Server :
+  - full_address: "localhost:5222"
+  - port: 5222
+Client :
+  - name: "testuser2"
+  - jid: "testuser2@localhost"
+  - pass: "pass123" #Password in a config file yay
+
+Contacts : "testuser1@localhost;testuser3@localhost"
+
+
