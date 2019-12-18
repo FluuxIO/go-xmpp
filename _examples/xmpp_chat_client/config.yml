@@ -9,4 +9,7 @@ Client :
 
 Contacts : "testuser1@localhost;testuser3@localhost"
 
+LogStanzas:
+  - logger_on: "true"
+  - logfile_path: "./logs"
 

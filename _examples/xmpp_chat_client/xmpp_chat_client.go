@@ -2,10 +2,10 @@ package main
 
 /*
 xmpp_chat_client is a demo client that connect on an XMPP server to chat with other members
-Note that this example sends to a very specific user. User logic is not implemented here.
 */
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"github.com/awesome-gocui/gocui"
@@ -14,6 +14,9 @@ import (
 	"gosrc.io/xmpp"
 	"gosrc.io/xmpp/stanza"
 	"log"
+	"os"
+	"path"
+	"strconv"
 	"strings"
 )
 
@@ -24,6 +27,8 @@ const (
 
 	configFileName = "config"
 	configType     = "yaml"
+	logStanzasOn   = "logger_on"
+	logFilePath    = "logfile_path"
 	// Keys in config
 	serverAddressKey = "full_address"
 	clientJid        = "jid"
@@ -34,16 +39,22 @@ const (
 var (
 	CorrespChan = make(chan string, 1)
 	textChan    = make(chan string, 5)
+	rawTextChan = make(chan string, 5)
 	killChan    = make(chan struct{}, 1)
+	errChan     = make(chan error)
+
+	logger *log.Logger
 )
 
 type config struct {
-	Server   map[string]string `mapstructure:"server"`
-	Client   map[string]string `mapstructure:"client"`
-	Contacts string            `string:"contact"`
+	Server     map[string]string `mapstructure:"server"`
+	Client     map[string]string `mapstructure:"client"`
+	Contacts   string            `string:"contact"`
+	LogStanzas map[string]string `mapstructure:"logstanzas"`
 }
 
 func main() {
+
 	// ============================================================
 	// Parse the flag with the config directory path as argument
 	flag.String("c", defaultConfigFilePath, "Provide a path to the directory that contains the configuration"+
@@ -54,6 +65,22 @@ func main() {
 	// ==========================
 	// Read configuration
 	c := readConfig()
+
+	//================================
+	// Setup logger
+	on, err := strconv.ParseBool(c.LogStanzas[logStanzasOn])
+	if err != nil {
+		log.Panicln(err)
+	}
+	if on {
+		f, err := os.OpenFile(path.Join(c.LogStanzas[logFilePath], "logs.txt"), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+		if err != nil {
+			log.Panicln(err)
+		}
+		logger = log.New(f, "", log.Lshortfile|log.Ldate|log.Ltime)
+		logger.SetOutput(f)
+		defer f.Close()
+	}
 
 	// ==========================
 	// Create TUI
@@ -70,7 +97,6 @@ func main() {
 
 	// ==========================
 	// Run TUI
-	errChan := make(chan error)
 	go func() {
 		errChan <- g.MainLoop()
 	}()
@@ -107,6 +133,10 @@ func startClient(g *gocui.Gui, config *config) {
 
 	handlerWithGui := func(_ xmpp.Sender, p stanza.Packet) {
 		msg, ok := p.(stanza.Message)
+		if logger != nil {
+			logger.Println(msg)
+		}
+
 		v, err := g.View(chatLogWindow)
 		if !ok {
 			fmt.Fprintf(v, "%sIgnoring packet: %T\n", infoFormat, p)
@@ -120,8 +150,11 @@ func startClient(g *gocui.Gui, config *config) {
 				_, err := fmt.Fprintf(v, "Error from server : %s : %s \n", msg.Error.Reason, msg.XMLName.Space)
 				return err
 			}
-			_, err := fmt.Fprintf(v, "%s : %s \n", msg.From, msg.Body)
-			return err
+			if len(strings.TrimSpace(msg.Body)) != 0 {
+				_, err := fmt.Fprintf(v, "%s : %s \n", msg.From, msg.Body)
+				return err
+			}
+			return nil
 		})
 	}
 
@@ -140,6 +173,8 @@ func startClient(g *gocui.Gui, config *config) {
 			fmt.Fprintf(v, msg)
 			return err
 		})
+		fmt.Println("Failed to connect to server. Exiting...")
+		errChan <- servConnFail
 		return
 	}
 
@@ -147,22 +182,40 @@ func startClient(g *gocui.Gui, config *config) {
 	// Start working
 	//askForRoster(client, g)
 	updateRosterFromConfig(g, config)
+	// Sending the default contact in a channel. Default value is the first contact in the list from the config.
+	viewState.currentContact = strings.Split(config.Contacts, configContactSep)[0]
+	// Informing user of the default contact
+	clw, _ := g.View(chatLogWindow)
+	fmt.Fprintf(clw, infoFormat+"Now sending messages to "+viewState.currentContact+" in a private conversation\n")
+	CorrespChan <- viewState.currentContact
 	startMessaging(client, config)
 }
 
 func startMessaging(client xmpp.Sender, config *config) {
 	var text string
-	// Update this with a channel. Default value is the first contact in the list from the config.
-	correspondent := strings.Split(config.Contacts, configContactSep)[0]
+	var correspondent string
 	for {
 		select {
 		case <-killChan:
 			return
 		case text = <-textChan:
-			reply := stanza.Message{Attrs: stanza.Attrs{To: correspondent}, Body: text}
+			reply := stanza.Message{Attrs: stanza.Attrs{To: correspondent, From: config.Client[clientJid], Type: stanza.MessageTypeChat}, Body: text}
+			if logger != nil {
+				raw, _ := xml.Marshal(reply)
+				logger.Println(string(raw))
+			}
 			err := client.Send(reply)
 			if err != nil {
 				fmt.Printf("There was a problem sending the message : %v", reply)
+				return
+			}
+		case text = <-rawTextChan:
+			if logger != nil {
+				logger.Println(text)
+			}
+			err := client.SendRaw(text)
+			if err != nil {
+				fmt.Printf("There was a problem sending the message : %v", text)
 				return
 			}
 		case crrsp := <-CorrespChan:
@@ -172,6 +225,7 @@ func startMessaging(client xmpp.Sender, config *config) {
 	}
 }
 
+// Only reads and parses the configuration
 func readConfig() *config {
 	viper.SetConfigName(configFileName) // name of config file (without extension)
 	viper.BindPFlags(pflag.CommandLine)
@@ -184,11 +238,26 @@ func readConfig() *config {
 			log.Panicln(err)
 		}
 	}
+
 	viper.SetConfigType(configType)
 	var config config
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		panic(fmt.Errorf("Unable to decode Config: %s \n", err))
+	}
+
+	// Check if we have contacts to message
+	if len(strings.TrimSpace(config.Contacts)) == 0 {
+		log.Panicln("You appear to have no contacts to message !")
+	}
+	// Check logging
+	config.LogStanzas[logFilePath] = path.Clean(config.LogStanzas[logFilePath])
+	on, err := strconv.ParseBool(config.LogStanzas[logStanzasOn])
+	if err != nil {
+		log.Panicln(err)
+	}
+	if d, e := isDirectory(config.LogStanzas[logFilePath]); (e != nil || !d) && on {
+		log.Panicln("The log file path could not be found or is not a directory.")
 	}
 
 	return &config
@@ -203,45 +272,19 @@ func errorHandler(err error) {
 // Read the client roster from the config. This does not check with the server that the roster is correct.
 // If user tries to send a message to someone not registered with the server, the server will return an error.
 func updateRosterFromConfig(g *gocui.Gui, config *config) {
-	g.Update(func(g *gocui.Gui) error {
-		menu, _ := g.View(menuWindow)
-		for _, contact := range strings.Split(config.Contacts, configContactSep) {
-			fmt.Fprintln(menu, contact)
-		}
-		return nil
-	})
+	viewState.contacts = append(strings.Split(config.Contacts, configContactSep), backFromContacts)
 }
 
 // Updates the menu panel of the view with the current user's roster.
 // Need to add support for Roster IQ stanzas to make this work.
 func askForRoster(client *xmpp.Client, g *gocui.Gui) {
-	//ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	//iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: currentUserJid, To: "localhost", Lang: "en"})
-	//disco := iqReq.DiscoInfo()
-	//iqReq.Payload = disco
-	//
-	//// Handle a possible error
-	//errChan := make(chan error)
-	//errorHandler := func(err error) {
-	//	errChan <- err
-	//}
-	//client.ErrorHandler = errorHandler
-	//res, err := client.SendIQ(ctx, iqReq)
-	//if err != nil {
-	//	t.Errorf(err.Error())
-	//}
-	//
-	//select {
-	//case <-res:
-	//}
+	// Not implemented yet !
+}
 
-	//roster := []string{"testuser1", "testuser2", "testuser3@localhost"}
-	//
-	//g.Update(func(g *gocui.Gui) error {
-	//	menu, _ := g.View(menuWindow)
-	//	for _, contact := range roster {
-	//		fmt.Fprintln(menu, contact)
-	//	}
-	//	return nil
-	//})
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return fileInfo.IsDir(), err
 }
