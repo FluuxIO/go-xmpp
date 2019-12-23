@@ -6,6 +6,7 @@ xmpp_chat_client is a demo client that connect on an XMPP server to chat with ot
 
 import (
 	"encoding/xml"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/awesome-gocui/gocui"
@@ -40,10 +41,11 @@ var (
 	CorrespChan = make(chan string, 1)
 	textChan    = make(chan string, 5)
 	rawTextChan = make(chan string, 5)
-	killChan    = make(chan struct{}, 1)
+	killChan    = make(chan error, 1)
 	errChan     = make(chan error)
 
-	logger *log.Logger
+	logger        *log.Logger
+	disconnectErr = errors.New("disconnecting client")
 )
 
 type config struct {
@@ -160,7 +162,7 @@ func startClient(g *gocui.Gui, config *config) {
 
 	router.HandleFunc("message", handlerWithGui)
 	if client, err = xmpp.NewClient(clientCfg, router, errorHandler); err != nil {
-		panic(fmt.Sprintf("Could not create a new client ! %s", err))
+		log.Panicln(fmt.Sprintf("Could not create a new client ! %s", err))
 
 	}
 
@@ -196,7 +198,13 @@ func startMessaging(client xmpp.Sender, config *config) {
 	var correspondent string
 	for {
 		select {
-		case <-killChan:
+		case err := <-killChan:
+			if err == disconnectErr {
+				sc := client.(xmpp.StreamClient)
+				sc.Disconnect()
+			} else {
+				logger.Println(err)
+			}
 			return
 		case text = <-textChan:
 			reply := stanza.Message{Attrs: stanza.Attrs{To: correspondent, From: config.Client[clientJid], Type: stanza.MessageTypeChat}, Body: text}
@@ -265,8 +273,7 @@ func readConfig() *config {
 
 // If an error occurs, this is used to kill the client
 func errorHandler(err error) {
-	fmt.Printf("%v", err)
-	killChan <- struct{}{}
+	killChan <- err
 }
 
 // Read the client roster from the config. This does not check with the server that the roster is correct.

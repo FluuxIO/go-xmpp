@@ -111,7 +111,6 @@ func (c *Component) Resume(sm SMState) error {
 		c.updateState(StatePermanentError)
 		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)
 	}
-	return err
 }
 
 func (c *Component) Disconnect() {

@@ -12,3 +12,5 @@ type Stream struct {
 	Id      string   `xml:"id,attr"`
 	Version string   `xml:"version,attr"`
 }
+
+const StreamClose = "</stream:stream>"

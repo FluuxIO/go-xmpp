@@ -50,7 +50,7 @@ func TestDiscoInfo_Builder(t *testing.T) {
 // Implements XEP-0030 example 17
 // https://xmpp.org/extensions/xep-0030.html#example-17
 func TestDiscoItems_Builder(t *testing.T) {
-	iq := stanza.NewIQ(stanza.Attrs{Type: "result", From: "catalog.shakespeare.lit",
+	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: "catalog.shakespeare.lit",
 		To: "romeo@montague.net/orchard", Id: "items-2"})
 	iq.DiscoItems().
 		AddItem("catalog.shakespeare.lit", "books", "Books by and about Shakespeare").
