@@ -9,7 +9,7 @@ import (
 )
 
 const (
-// Windows
+	// Windows
 	chatLogWindow      = "clw" // Where (received and sent) messages are logged
 	chatInputWindow    = "iw"  // Where messages are written
 	rawInputWindow     = "rw"  // Where raw stanzas are written
@@ -71,7 +71,11 @@ func layout(g *gocui.Gui) error {
 		}
 		v.Title = "Contacts"
 		v.Wrap = true
-		v.Autoscroll = true
+		// If we set this to true, the contacts list will "fit" in the window but if the number
+		// of contacts exceeds the maximum height, some contacts will be hidden...
+		// If set to false, we can scroll up and down the contact list... infinitely. Meaning lower lines
+		// will be unlimited and empty... Didn't find a way to quickfix yet.
+		v.Autoscroll = false
 	}
 
 	if v, err := g.SetView(menuWindow, 0, 0, maxX/5-1, 5*maxY/6-2, 0); err != nil {
@@ -215,7 +219,7 @@ func getLine(g *gocui.Gui, v *gocui.View) error {
 			if len(cv.ViewBufferLines()) == 0 {
 				printContactsToWindow(g, viewState.contacts)
 			}
-   } else if l == disconnect {
+		} else if l == disconnect {
 			maxX, maxY := g.Size()
 			msg := "You disconnected from the server. Press enter to quit."
 			if v, err := g.SetView(disconnectMsg, maxX/2-30, maxY/2, maxX/2-29+len(msg), maxY/2+2, 0); err != nil {
@@ -226,11 +230,12 @@ func getLine(g *gocui.Gui, v *gocui.View) error {
 				if _, err := g.SetCurrentView(disconnectMsg); err != nil {
 					return err
 				}
-		  }
+			}
 			killChan <- disconnectErr
 		} else if l == askServerForRoster {
 			chlw, _ := g.View(chatLogWindow)
-			fmt.Fprintln(chlw, infoFormat+" Not yet implemented !")
+			fmt.Fprintln(chlw, infoFormat+"Asking server for contacts list...")
+			rosterChan <- struct{}{}
 		} else if l == rawMode {
 			mw, _ := g.View(menuWindow)
 			viewState.input = rawInputWindow
