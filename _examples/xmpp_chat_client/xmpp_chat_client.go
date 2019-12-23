@@ -5,6 +5,7 @@ xmpp_chat_client is a demo client that connect on an XMPP server to chat with ot
 */
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"flag"
@@ -19,6 +20,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -43,6 +45,7 @@ var (
 	rawTextChan = make(chan string, 5)
 	killChan    = make(chan error, 1)
 	errChan     = make(chan error)
+	rosterChan  = make(chan struct{})
 
 	logger        *log.Logger
 	disconnectErr = errors.New("disconnecting client")
@@ -182,7 +185,6 @@ func startClient(g *gocui.Gui, config *config) {
 
 	// ==========================
 	// Start working
-	//askForRoster(client, g)
 	updateRosterFromConfig(g, config)
 	// Sending the default contact in a channel. Default value is the first contact in the list from the config.
 	viewState.currentContact = strings.Split(config.Contacts, configContactSep)[0]
@@ -190,10 +192,10 @@ func startClient(g *gocui.Gui, config *config) {
 	clw, _ := g.View(chatLogWindow)
 	fmt.Fprintf(clw, infoFormat+"Now sending messages to "+viewState.currentContact+" in a private conversation\n")
 	CorrespChan <- viewState.currentContact
-	startMessaging(client, config)
+	startMessaging(client, config, g)
 }
 
-func startMessaging(client xmpp.Sender, config *config) {
+func startMessaging(client xmpp.Sender, config *config, g *gocui.Gui) {
 	var text string
 	var correspondent string
 	for {
@@ -228,6 +230,8 @@ func startMessaging(client xmpp.Sender, config *config) {
 			}
 		case crrsp := <-CorrespChan:
 			correspondent = crrsp
+		case <-rosterChan:
+			askForRoster(client, g, config)
 		}
 
 	}
@@ -282,10 +286,43 @@ func updateRosterFromConfig(g *gocui.Gui, config *config) {
 	viewState.contacts = append(strings.Split(config.Contacts, configContactSep), backFromContacts)
 }
 
-// Updates the menu panel of the view with the current user's roster.
-// Need to add support for Roster IQ stanzas to make this work.
-func askForRoster(client *xmpp.Client, g *gocui.Gui) {
-	// Not implemented yet !
+// Updates the menu panel of the view with the current user's roster, by asking the server.
+func askForRoster(client xmpp.Sender, g *gocui.Gui, config *config) {
+	// Craft a roster request
+	req := stanza.NewIQ(stanza.Attrs{From: config.Client[clientJid], Type: stanza.IQTypeGet})
+	req.RosterItems()
+	if logger != nil {
+		m, _ := xml.Marshal(req)
+		logger.Println(string(m))
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+
+	// Send the roster request to the server
+	c, err := client.SendIQ(ctx, req)
+	if err != nil {
+		logger.Panicln(err)
+	}
+
+	// Sending a IQ has a channel spawned to process the response once we receive it.
+	// In order not to block the client, we spawn a goroutine to update the TUI once the server has responded.
+	go func() {
+		serverResp := <-c
+		if logger != nil {
+			m, _ := xml.Marshal(serverResp)
+			logger.Println(string(m))
+		}
+		// Update contacts with the response from the server
+		chlw, _ := g.View(chatLogWindow)
+		if rosterItems, ok := serverResp.Payload.(*stanza.RosterItems); ok {
+			viewState.contacts = []string{}
+			for _, item := range rosterItems.Items {
+				viewState.contacts = append(viewState.contacts, item.Jid)
+			}
+			fmt.Fprintln(chlw, infoFormat+"Contacts list updated !")
+			return
+		}
+		fmt.Fprintln(chlw, infoFormat+"Failed to update contact list !")
+	}()
 }
 
 func isDirectory(path string) (bool, error) {
