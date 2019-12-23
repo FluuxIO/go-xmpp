@@ -206,7 +206,12 @@ func (c *Client) Resume(state SMState) error {
 }
 
 func (c *Client) Disconnect() {
-	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
+	// TODO : Wait for server response for clean disconnect
+	presence := stanza.NewPresence(stanza.Attrs{From: c.config.Jid})
+	presence.Type = stanza.PresenceTypeUnavailable
+	c.Send(presence)
+	c.SendRaw(stanza.StreamClose)
+
 	if c.transport != nil {
 		_ = c.transport.Close()
 	}

@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	// Windows
+// Windows
 	chatLogWindow      = "clw" // Where (received and sent) messages are logged
 	chatInputWindow    = "iw"  // Where messages are written
 	rawInputWindow     = "rw"  // Where raw stanzas are written
 	contactsListWindow = "cl"  // Where the contacts list is shown, and contacts are selectable
 	menuWindow         = "mw"  // Where the menu is shown
+	disconnectMsg      = "msg"
 
 	// Menu options
 	disconnect         = "Disconnect"
@@ -188,6 +189,11 @@ func setKeyBindings(g *gocui.Gui) {
 		log.Panicln(err)
 	}
 
+	// ==========================
+	// Disconnect message
+	if err := g.SetKeybinding(disconnectMsg, gocui.KeyEnter, gocui.ModNone, delMsg); err != nil {
+		log.Panicln(err)
+	}
 }
 
 // General
@@ -209,7 +215,20 @@ func getLine(g *gocui.Gui, v *gocui.View) error {
 			if len(cv.ViewBufferLines()) == 0 {
 				printContactsToWindow(g, viewState.contacts)
 			}
-		} else if l == disconnect || l == askServerForRoster {
+   } else if l == disconnect {
+			maxX, maxY := g.Size()
+			msg := "You disconnected from the server. Press enter to quit."
+			if v, err := g.SetView(disconnectMsg, maxX/2-30, maxY/2, maxX/2-29+len(msg), maxY/2+2, 0); err != nil {
+				if !gocui.IsUnknownView(err) {
+					return err
+				}
+				fmt.Fprintln(v, msg)
+				if _, err := g.SetCurrentView(disconnectMsg); err != nil {
+					return err
+				}
+		  }
+			killChan <- disconnectErr
+		} else if l == askServerForRoster {
 			chlw, _ := g.View(chatLogWindow)
 			fmt.Fprintln(chlw, infoFormat+" Not yet implemented !")
 		} else if l == rawMode {
@@ -324,5 +343,13 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 			}
 		}
 	}
+	return nil
+}
+
+func delMsg(g *gocui.Gui, v *gocui.View) error {
+	if err := g.DeleteView(disconnectMsg); err != nil {
+		return err
+	}
+	errChan <- gocui.ErrQuit // Quit the program
 	return nil
 }

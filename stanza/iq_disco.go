@@ -8,6 +8,7 @@ import (
 // Disco Info
 
 const (
+	// NSDiscoInfo defines the namespace for disco IQ stanzas
 	NSDiscoInfo = "http://jabber.org/protocol/disco#info"
 )
 
@@ -21,6 +22,7 @@ type DiscoInfo struct {
 	Features []Feature  `xml:"feature"`
 }
 
+// Namespace lets DiscoInfo implement the IQPayload interface
 func (d *DiscoInfo) Namespace() string {
 	return d.XMLName.Space
 }
@@ -112,7 +114,7 @@ func (d *DiscoItems) Namespace() string {
 // DiscoItems builds a default DiscoItems payload
 func (iq *IQ) DiscoItems() *DiscoItems {
 	d := DiscoItems{
-		XMLName: xml.Name{Space: "http://jabber.org/protocol/disco#items", Local: "query"},
+		XMLName: xml.Name{Space: NSDiscoItems, Local: "query"},
 	}
 	iq.Payload = &d
 	return &d
