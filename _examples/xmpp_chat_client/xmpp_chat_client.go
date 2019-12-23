@@ -318,6 +318,7 @@ func askForRoster(client xmpp.Sender, g *gocui.Gui, config *config) {
 			for _, item := range rosterItems.Items {
 				viewState.contacts = append(viewState.contacts, item.Jid)
 			}
+			viewState.contacts = append(viewState.contacts, backFromContacts)
 			fmt.Fprintln(chlw, infoFormat+"Contacts list updated !")
 			return
 		}
