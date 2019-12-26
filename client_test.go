@@ -170,7 +170,7 @@ func TestClient_SendIQ(t *testing.T) {
 	}
 	client, mock := mockClientConnection(t, h, testClientIqPort)
 
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
@@ -189,16 +189,20 @@ func TestClient_SendIQ(t *testing.T) {
 	select {
 	case <-res: // If the server responds with an IQ, we pass the test
 	case err := <-errChan: // If the server sends an error, or there is a connection error
+		cancel()
 		t.Fatal(err.Error())
 	case <-time.After(defaultChannelTimeout): // If we timeout
+		cancel()
 		t.Fatal("Failed to receive response, to sent IQ, from mock server")
 	}
 	select {
 	case <-done:
 		mock.Stop()
 	case <-time.After(defaultChannelTimeout):
+		cancel()
 		t.Fatal("The mock server failed to finish its job !")
 	}
+	cancel()
 }
 
 func TestClient_SendIQFail(t *testing.T) {
@@ -214,7 +218,7 @@ func TestClient_SendIQFail(t *testing.T) {
 
 	//==================
 	// Create an IQ to send
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
@@ -242,8 +246,10 @@ func TestClient_SendIQFail(t *testing.T) {
 	case <-done:
 		mock.Stop()
 	case <-time.After(defaultChannelTimeout):
+		cancel()
 		t.Errorf("The mock server failed to finish its job !")
 	}
+	cancel()
 }
 
 func TestClient_SendRaw(t *testing.T) {

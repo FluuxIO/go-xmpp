@@ -5,11 +5,12 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"gosrc.io/xmpp/stanza"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"gosrc.io/xmpp/stanza"
 )
 
 // Tests are ran in parallel, so each test creating a server must use a different port so we do not get any
@@ -129,7 +130,7 @@ func TestSendIq(t *testing.T) {
 	//Connecting to a mock server, initialized with given port and handler function
 	c, m := mockComponentConnection(t, testSendIqPort, h)
 
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
@@ -158,6 +159,7 @@ func TestSendIq(t *testing.T) {
 	case <-time.After(defaultChannelTimeout):
 		t.Errorf("The mock server failed to finish its job !")
 	}
+	cancel()
 }
 
 // Checking that error handling is done properly client side when an invalid IQ is sent and the server responds in kind.
@@ -170,7 +172,7 @@ func TestSendIqFail(t *testing.T) {
 	//Connecting to a mock server, initialized with given port and handler function
 	c, m := mockComponentConnection(t, testSendIqFailPort, h)
 
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
 
 	// Removing the id to make the stanza invalid. The IQ constructor makes a random one if none is specified
@@ -204,6 +206,7 @@ func TestSendIqFail(t *testing.T) {
 	case <-time.After(defaultChannelTimeout):
 		t.Errorf("The mock server failed to finish its job !")
 	}
+	cancel()
 }
 
 // Tests sending raw xml to the mock server.
