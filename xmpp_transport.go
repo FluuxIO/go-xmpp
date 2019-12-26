@@ -24,6 +24,7 @@ type XMPPTransport struct {
 	readWriter    io.ReadWriter
 	logFile       io.Writer
 	isSecure      bool
+	closeChan     chan stanza.StreamClosePacket
 }
 
 var componentStreamOpen = fmt.Sprintf("<?xml version='1.0'?><stream:stream to='%%s' xmlns='%s' xmlns:stream='%s'>", stanza.NSComponent, stanza.NSStream)
@@ -38,13 +39,14 @@ func (t *XMPPTransport) Connect() (string, error) {
 		return "", NewConnError(err, true)
 	}
 
+	t.closeChan = make(chan stanza.StreamClosePacket)
 	t.readWriter = newStreamLogger(t.conn, t.logFile)
 	t.decoder = xml.NewDecoder(bufio.NewReaderSize(t.readWriter, maxPacketSize))
 	t.decoder.CharsetReader = t.Config.CharsetReader
 	return t.StartStream()
 }
 
-func (t XMPPTransport) StartStream() (string, error) {
+func (t *XMPPTransport) StartStream() (string, error) {
 	if _, err := fmt.Fprintf(t, t.openStatement, t.Config.Domain); err != nil {
 		t.Close()
 		return "", NewConnError(err, true)
@@ -58,19 +60,19 @@ func (t XMPPTransport) StartStream() (string, error) {
 	return sessionID, nil
 }
 
-func (t XMPPTransport) DoesStartTLS() bool {
+func (t *XMPPTransport) DoesStartTLS() bool {
 	return true
 }
 
-func (t XMPPTransport) GetDomain() string {
+func (t *XMPPTransport) GetDomain() string {
 	return t.Config.Domain
 }
 
-func (t XMPPTransport) GetDecoder() *xml.Decoder {
+func (t *XMPPTransport) GetDecoder() *xml.Decoder {
 	return t.decoder
 }
 
-func (t XMPPTransport) IsSecure() bool {
+func (t *XMPPTransport) IsSecure() bool {
 	return t.isSecure
 }
 
@@ -105,7 +107,7 @@ func (t *XMPPTransport) StartTLS() error {
 	return nil
 }
 
-func (t XMPPTransport) Ping() error {
+func (t *XMPPTransport) Ping() error {
 	n, err := t.conn.Write([]byte("\n"))
 	if err != nil {
 		return err
@@ -116,24 +118,31 @@ func (t XMPPTransport) Ping() error {
 	return nil
 }
 
-func (t XMPPTransport) Read(p []byte) (n int, err error) {
+func (t *XMPPTransport) Read(p []byte) (n int, err error) {
 	if t.readWriter == nil {
 		return 0, errors.New("cannot read: not connected, no readwriter")
 	}
 	return t.readWriter.Read(p)
 }
 
-func (t XMPPTransport) Write(p []byte) (n int, err error) {
+func (t *XMPPTransport) Write(p []byte) (n int, err error) {
 	if t.readWriter == nil {
 		return 0, errors.New("cannot write: not connected, no readwriter")
 	}
 	return t.readWriter.Write(p)
 }
 
-func (t XMPPTransport) Close() error {
+func (t *XMPPTransport) Close() error {
 	if t.readWriter != nil {
-		_, _ = t.readWriter.Write([]byte("</stream:stream>"))
+		_, _ = t.readWriter.Write([]byte(stanza.StreamClose))
 	}
+
+	// Try to wait for the stream close tag from the server. After a timeout, disconnect anyway.
+	select {
+	case <-t.closeChan:
+	case <-time.After(time.Duration(t.Config.ConnectTimeout) * time.Second):
+	}
+
 	if t.conn != nil {
 		return t.conn.Close()
 	}
@@ -142,4 +151,8 @@ func (t XMPPTransport) Close() error {
 
 func (t *XMPPTransport) LogTraffic(logFile io.Writer) {
 	t.logFile = logFile
+}
+
+func (t *XMPPTransport) ReceivedStreamClose() {
+	t.closeChan <- stanza.StreamClosePacket{}
 }

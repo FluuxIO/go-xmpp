@@ -63,7 +63,7 @@ func main() {
 	// ============================================================
 	// Parse the flag with the config directory path as argument
 	flag.String("c", defaultConfigFilePath, "Provide a path to the directory that contains the configuration"+
-		" file you want to use. Config file should be named \"config\" and be of YAML format..")
+		" file you want to use. Config file should be named \"config\" and be in YAML format..")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
@@ -139,7 +139,8 @@ func startClient(g *gocui.Gui, config *config) {
 	handlerWithGui := func(_ xmpp.Sender, p stanza.Packet) {
 		msg, ok := p.(stanza.Message)
 		if logger != nil {
-			logger.Println(msg)
+			m, _ := xml.Marshal(msg)
+			logger.Println(string(m))
 		}
 
 		v, err := g.View(chatLogWindow)
@@ -209,7 +210,7 @@ func startMessaging(client xmpp.Sender, config *config, g *gocui.Gui) {
 			}
 			return
 		case text = <-textChan:
-			reply := stanza.Message{Attrs: stanza.Attrs{To: correspondent, From: config.Client[clientJid], Type: stanza.MessageTypeChat}, Body: text}
+			reply := stanza.Message{Attrs: stanza.Attrs{To: correspondent, Type: stanza.MessageTypeChat}, Body: text}
 			if logger != nil {
 				raw, _ := xml.Marshal(reply)
 				logger.Println(string(raw))
@@ -284,6 +285,8 @@ func errorHandler(err error) {
 // If user tries to send a message to someone not registered with the server, the server will return an error.
 func updateRosterFromConfig(g *gocui.Gui, config *config) {
 	viewState.contacts = append(strings.Split(config.Contacts, configContactSep), backFromContacts)
+	// Put a "go back" button at the end of the list
+	viewState.contacts = append(viewState.contacts, backFromContacts)
 }
 
 // Updates the menu panel of the view with the current user's roster, by asking the server.
@@ -318,6 +321,7 @@ func askForRoster(client xmpp.Sender, g *gocui.Gui, config *config) {
 			for _, item := range rosterItems.Items {
 				viewState.contacts = append(viewState.contacts, item.Jid)
 			}
+			// Put a "go back" button at the end of the list
 			viewState.contacts = append(viewState.contacts, backFromContacts)
 			fmt.Fprintln(chlw, infoFormat+"Contacts list updated !")
 			return

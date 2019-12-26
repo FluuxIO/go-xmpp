@@ -50,11 +50,20 @@ func InitStream(p *xml.Decoder) (sessionID string, err error) {
 // TODO make auth and bind use NextPacket instead of directly NextStart
 func NextPacket(p *xml.Decoder) (Packet, error) {
 	// Read start element to find out how we want to parse the XMPP packet
-	se, err := NextStart(p)
+	t, err := NextXmppToken(p)
 	if err != nil {
 		return nil, err
 	}
 
+	if ee, ok := t.(xml.EndElement); ok {
+		return decodeStream(p, ee)
+	}
+
+	// If not an end element, then must be a start
+	se, ok := t.(xml.StartElement)
+	if !ok {
+		return nil, errors.New("unknown token ")
+	}
 	// Decode one of the top level XMPP namespace
 	switch se.Name.Space {
 	case NSStream:
@@ -73,7 +82,29 @@ func NextPacket(p *xml.Decoder) (Packet, error) {
 	}
 }
 
-// Scan XML token stream to find next StartElement.
+// NextXmppToken scans XML token stream to find next StartElement or stream EndElement.
+// We need the EndElement scan, because we must register stream close tags
+func NextXmppToken(p *xml.Decoder) (xml.Token, error) {
+	for {
+		t, err := p.Token()
+		if err == io.EOF {
+			return xml.StartElement{}, errors.New("connection closed")
+		}
+		if err != nil {
+			return xml.StartElement{}, fmt.Errorf("NextStart %s", err)
+		}
+		switch t := t.(type) {
+		case xml.StartElement:
+			return t, nil
+		case xml.EndElement:
+			if t.Name.Space == NSStream && t.Name.Local == "stream" {
+				return t, nil
+			}
+		}
+	}
+}
+
+// NextStart scans XML token stream to find next StartElement.
 func NextStart(p *xml.Decoder) (xml.StartElement, error) {
 	for {
 		t, err := p.Token()
@@ -97,16 +128,29 @@ TODO: From all the decoder, we can return a pointer to the actual concrete type,
 */
 
 // decodeStream will fully decode a stream packet
-func decodeStream(p *xml.Decoder, se xml.StartElement) (Packet, error) {
-	switch se.Name.Local {
-	case "error":
-		return streamError.decode(p, se)
-	case "features":
-		return streamFeatures.decode(p, se)
-	default:
-		return nil, errors.New("unexpected XMPP packet " +
-			se.Name.Space + " <" + se.Name.Local + "/>")
+func decodeStream(p *xml.Decoder, t xml.Token) (Packet, error) {
+	if se, ok := t.(xml.StartElement); ok {
+		switch se.Name.Local {
+		case "error":
+			return streamError.decode(p, se)
+		case "features":
+			return streamFeatures.decode(p, se)
+		default:
+			return nil, errors.New("unexpected XMPP packet " +
+				se.Name.Space + " <" + se.Name.Local + "/>")
+		}
 	}
+
+	if ee, ok := t.(xml.EndElement); ok {
+		if ee.Name.Local == "stream" {
+			return streamClose.decode(ee), nil
+		}
+		return nil, errors.New("unexpected XMPP packet " +
+			ee.Name.Space + " <" + ee.Name.Local + "/>")
+	}
+
+	// Should not happen
+	return nil, errors.New("unexpected XML token ")
 }
 
 // decodeSASL decodes a packet related to SASL authentication.
