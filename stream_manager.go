@@ -29,7 +29,7 @@ type StreamClient interface {
 	Send(packet stanza.Packet) error
 	SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error)
 	SendRaw(packet string) error
-	Disconnect()
+	Disconnect() error
 	SetHandler(handler EventHandler)
 }
 

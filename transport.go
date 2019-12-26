@@ -40,6 +40,9 @@ type Transport interface {
 	Read(p []byte) (n int, err error)
 	Write(p []byte) (n int, err error)
 	Close() error
+	// ReceivedStreamClose signals to the transport that a </stream:stream> has been received and that the tcp connection
+	// should be closed.
+	ReceivedStreamClose()
 }
 
 // NewClientTransport creates a new Transport instance for clients.
