@@ -113,11 +113,13 @@ func (c *Component) Resume(sm SMState) error {
 	}
 }
 
-func (c *Component) Disconnect() {
+func (c *Component) Disconnect() error {
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	if c.transport != nil {
-		_ = c.transport.Close()
+		return c.transport.Close()
 	}
+	// No transport so no connection.
+	return nil
 }
 
 func (c *Component) SetHandler(handler EventHandler) {
@@ -126,7 +128,6 @@ func (c *Component) SetHandler(handler EventHandler) {
 
 // Receiver Go routine receiver
 func (c *Component) recv() {
-
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
@@ -140,6 +141,11 @@ func (c *Component) recv() {
 			c.router.route(c, val)
 			c.streamError(p.Error.Local, p.Text)
 			c.ErrorHandler(errors.New("stream error: " + p.Error.Local))
+			// We don't return here, because we want to wait for the stream close tag from the server, or timeout.
+			c.Disconnect()
+		case stanza.StreamClosePacket:
+			// TCP messages should arrive in order, so we can expect to get nothing more after this occurs
+			c.transport.ReceivedStreamClose()
 			return
 		}
 		c.router.route(c, val)

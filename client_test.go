@@ -67,7 +67,10 @@ func TestClient_Connect(t *testing.T) {
 func TestClient_NoInsecure(t *testing.T) {
 	// Setup Mock server
 	mock := ServerMock{}
-	mock.Start(t, testXMPPAddress, handlerAbortTLS)
+	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
+		handlerAbortTLS(t, sc)
+		closeConn(t, sc)
+	})
 
 	// Test / Check result
 	config := Config{
@@ -97,7 +100,10 @@ func TestClient_NoInsecure(t *testing.T) {
 func TestClient_FeaturesTracking(t *testing.T) {
 	// Setup Mock server
 	mock := ServerMock{}
-	mock.Start(t, testXMPPAddress, handlerAbortTLS)
+	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
+		handlerAbortTLS(t, sc)
+		closeConn(t, sc)
+	})
 
 	// Test / Check result
 	config := Config{
@@ -247,6 +253,7 @@ func TestClient_SendRaw(t *testing.T) {
 		handlerClientConnectSuccess(t, sc)
 		discardPresence(t, sc)
 		respondToIQ(t, sc)
+		closeConn(t, sc)
 		done <- struct{}{}
 	}
 	type testCase struct {
@@ -290,6 +297,7 @@ func TestClient_SendRaw(t *testing.T) {
 			select {
 			// We don't use the default "long" timeout here because waiting it out means passing the test.
 			case <-time.After(100 * time.Millisecond):
+				c.Disconnect()
 			case err = <-errChan:
 				if err == nil && tcase.shouldErr {
 					t.Errorf("Failed to get closing stream err")
@@ -297,7 +305,6 @@ func TestClient_SendRaw(t *testing.T) {
 					t.Errorf("This test is not supposed to err !")
 				}
 			}
-			c.transport.Close()
 			select {
 			case <-done:
 				m.Stop()
@@ -309,7 +316,10 @@ func TestClient_SendRaw(t *testing.T) {
 }
 
 func TestClient_Disconnect(t *testing.T) {
-	c, m := mockClientConnection(t, handlerClientConnectSuccess, testClientBasePort)
+	c, m := mockClientConnection(t, func(t *testing.T, sc *ServerConn) {
+		handlerClientConnectSuccess(t, sc)
+		closeConn(t, sc)
+	}, testClientBasePort)
 	err := c.transport.Ping()
 	if err != nil {
 		t.Errorf("Could not ping but not disconnected yet")
@@ -326,7 +336,10 @@ func TestClient_DisconnectStreamManager(t *testing.T) {
 	// Init mock server
 	// Setup Mock server
 	mock := ServerMock{}
-	mock.Start(t, testXMPPAddress, handlerAbortTLS)
+	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
+		handlerAbortTLS(t, sc)
+		closeConn(t, sc)
+	})
 
 	// Test / Check result
 	config := Config{
@@ -373,6 +386,23 @@ func handlerClientConnectSuccess(t *testing.T, sc *ServerConn) {
 	checkClientOpenStream(t, sc) // Reset stream
 	sendBindFeature(t, sc)       // Send post auth features
 	bind(t, sc)
+}
+
+// closeConn closes the connection on request from the client
+func closeConn(t *testing.T, sc *ServerConn) {
+	for {
+		cls, err := stanza.NextPacket(sc.decoder)
+		if err != nil {
+			t.Errorf("cannot read from socket: %s", err)
+			return
+		}
+		switch cls.(type) {
+		case stanza.StreamClosePacket:
+			fmt.Fprintf(sc.connection, stanza.StreamClose)
+			return
+		}
+	}
+
 }
 
 // We expect client will abort on TLS

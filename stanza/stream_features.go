@@ -165,3 +165,21 @@ func (streamErrorDecoder) decode(p *xml.Decoder, se xml.StartElement) (StreamErr
 	err := p.DecodeElement(&packet, &se)
 	return packet, err
 }
+
+// ============================================================================
+// StreamClose "Packet"
+
+// This is just a closing tag and hold no information
+type StreamClosePacket struct{}
+
+func (StreamClosePacket) Name() string {
+	return "stream:stream"
+}
+
+type streamCloseDecoder struct{}
+
+var streamClose streamCloseDecoder
+
+func (streamCloseDecoder) decode(_ xml.EndElement) StreamClosePacket {
+	return StreamClosePacket{}
+}

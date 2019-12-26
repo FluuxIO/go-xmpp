@@ -154,7 +154,8 @@ func NewClient(config Config, r *Router, errorHandler func(error)) (c *Client, e
 	if config.TransportConfiguration.Domain == "" {
 		config.TransportConfiguration.Domain = config.parsedJid.Domain
 	}
-	c.transport = NewClientTransport(config.TransportConfiguration)
+	c.config.TransportConfiguration.ConnectTimeout = c.config.ConnectTimeout
+	c.transport = NewClientTransport(c.config.TransportConfiguration)
 
 	if config.StreamLogger != nil {
 		c.transport.LogTraffic(config.StreamLogger)
@@ -183,7 +184,24 @@ func (c *Client) Resume(state SMState) error {
 
 	// Client is ok, we now open XMPP session
 	if c.Session, err = NewSession(c.transport, c.config, state); err != nil {
-		c.transport.Close()
+		// Try to get the stream close tag from the server.
+		go func() {
+			for {
+				val, err := stanza.NextPacket(c.transport.GetDecoder())
+				if err != nil {
+					c.ErrorHandler(err)
+					c.disconnected(state)
+					return
+				}
+				switch val.(type) {
+				case stanza.StreamClosePacket:
+					// TCP messages should arrive in order, so we can expect to get nothing more after this occurs
+					c.transport.ReceivedStreamClose()
+					return
+				}
+			}
+		}()
+		c.Disconnect()
 		return err
 	}
 	c.Session.StreamId = streamId
@@ -205,15 +223,12 @@ func (c *Client) Resume(state SMState) error {
 	return err
 }
 
-func (c *Client) Disconnect() {
-	// TODO : Wait for server response for clean disconnect
-	presence := stanza.NewPresence(stanza.Attrs{From: c.config.Jid})
-	presence.Type = stanza.PresenceTypeUnavailable
-	c.Send(presence)
-	c.SendRaw(stanza.StreamClose)
+func (c *Client) Disconnect() error {
 	if c.transport != nil {
-		_ = c.transport.Close()
+		return c.transport.Close()
 	}
+	// No transport so no connection.
+	return nil
 }
 
 func (c *Client) SetHandler(handler EventHandler) {
@@ -294,7 +309,8 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
 			c.ErrorHandler(errors.New("stream error: " + packet.Error.Local))
-			return
+			// We don't return here, because we want to wait for the stream close tag from the server, or timeout.
+			c.Disconnect()
 		// Process Stream management nonzas
 		case stanza.SMRequest:
 			answer := stanza.SMAnswer{XMLName: xml.Name{
@@ -306,6 +322,10 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 				c.ErrorHandler(err)
 				return
 			}
+		case stanza.StreamClosePacket:
+			// TCP messages should arrive in order, so we can expect to get nothing more after this occurs
+			c.transport.ReceivedStreamClose()
+			return
 		default:
 			state.Inbound++
 		}

@@ -18,7 +18,7 @@ const maxPacketSize = 32768
 
 const pingTimeout = time.Duration(5) * time.Second
 
-var ServerDoesNotSupportXmppOverWebsocket = errors.New("The websocket server does not support the xmpp subprotocol")
+var ServerDoesNotSupportXmppOverWebsocket = errors.New("the websocket server does not support the xmpp subprotocol")
 
 // The decoder is expected to be initialized after connecting to a server.
 type WebsocketTransport struct {
@@ -47,6 +47,7 @@ func (t *WebsocketTransport) Connect() (string, error) {
 	wsConn, response, err := websocket.Dial(ctx, t.Config.Address, &websocket.DialOptions{
 		Subprotocols: []string{"xmpp"},
 	})
+
 	if err != nil {
 		return "", NewConnError(err, true)
 	}
@@ -176,4 +177,9 @@ func (t *WebsocketTransport) cleanup(code websocket.StatusCode) error {
 		t.closeCtx = nil
 	}
 	return err
+}
+
+// ReceivedStreamClose is not used for websockets for now
+func (t *WebsocketTransport) ReceivedStreamClose() {
+	return
 }

@@ -17,6 +17,13 @@ const (
 	menuWindow         = "mw"  // Where the menu is shown
 	disconnectMsg      = "msg"
 
+	// Windows titles
+	chatLogWindowTitle      = "Chat log"
+	menuWindowTitle         = "Menu"
+	chatInputWindowTitle    = "Write a message :"
+	rawInputWindowTitle     = "Write or paste a raw stanza. Press \"Ctrl+E\" to send :"
+	contactsListWindowTitle = "Contacts"
+
 	// Menu options
 	disconnect         = "Disconnect"
 	askServerForRoster = "Ask server for roster"
@@ -60,7 +67,7 @@ func layout(g *gocui.Gui) error {
 		if !gocui.IsUnknownView(err) {
 			return err
 		}
-		v.Title = "Chat log"
+		v.Title = chatLogWindowTitle
 		v.Wrap = true
 		v.Autoscroll = true
 	}
@@ -69,7 +76,7 @@ func layout(g *gocui.Gui) error {
 		if !gocui.IsUnknownView(err) {
 			return err
 		}
-		v.Title = "Contacts"
+		v.Title = contactsListWindowTitle
 		v.Wrap = true
 		// If we set this to true, the contacts list will "fit" in the window but if the number
 		// of contacts exceeds the maximum height, some contacts will be hidden...
@@ -82,7 +89,7 @@ func layout(g *gocui.Gui) error {
 		if !gocui.IsUnknownView(err) {
 			return err
 		}
-		v.Title = "Menu"
+		v.Title = menuWindowTitle
 		v.Wrap = true
 		v.Autoscroll = true
 		fmt.Fprint(v, strings.Join(menuOptions, "\n"))
@@ -95,7 +102,7 @@ func layout(g *gocui.Gui) error {
 		if !gocui.IsUnknownView(err) {
 			return err
 		}
-		v.Title = "Write or paste a raw stanza. Press \"Ctrl+E\" to send :"
+		v.Title = rawInputWindowTitle
 		v.Editable = true
 		v.Wrap = true
 	}
@@ -104,7 +111,7 @@ func layout(g *gocui.Gui) error {
 		if !gocui.IsUnknownView(err) {
 			return err
 		}
-		v.Title = "Write a message :"
+		v.Title = chatInputWindowTitle
 		v.Editable = true
 		v.Wrap = true
 
