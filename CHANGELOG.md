@@ -1,5 +1,19 @@
 # Fluux XMPP Changelog
 
+## v0.4.0
+
+### Changes
+
+- Added support for XEP-0060 (PubSub)  
+(no support for 6.5.4 Returning Some Items yet as it needs XEP-0059, Result Sets)
+- Added support for XEP-0050 (Commands)
+- Added support for XEP-0004 (Forms)
+- Updated the client example with a TUI
+- Make keepalive interval configurable #134
+- Fix updating of EventManager.CurrentState #136
+- Added callbacks for error management in Component and Client. Users must now provide a callback function when using NewClient/Component.
+- Moved JID from xmpp package to stanza package
+
 ## v0.3.0
 
 ### Changes
