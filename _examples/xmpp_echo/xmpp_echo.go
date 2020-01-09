@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"gosrc.io/xmpp"
 	"gosrc.io/xmpp/stanza"
