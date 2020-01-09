@@ -49,7 +49,7 @@ func main() {
 			handleMessage(s, p, player)
 		})
 	router.NewRoute().
-		Packet("message").
+		Packet("iq").
 		HandlerFunc(func(s xmpp.Sender, p stanza.Packet) {
 			handleIQ(s, p, player)
 		})
@@ -139,7 +139,7 @@ func playSCURL(p *mpg123.Player, rawURL string) {
 	// TODO: Maybe we need to check the track itself to get the stream URL from reply ?
 	url := soundcloud.FormatStreamURL(songID)
 
-	_ = p.Play(url)
+	_ = p.Play(strings.ReplaceAll(url, "YOUR_SOUNDCLOUD_CLIENTID", scClientID))
 }
 
 // TODO
