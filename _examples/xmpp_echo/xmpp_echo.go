@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"gosrc.io/xmpp"
 	"gosrc.io/xmpp/stanza"
@@ -28,7 +29,7 @@ func main() {
 	router := xmpp.NewRouter()
 	router.HandleFunc("message", handleMessage)
 
-	client, err := xmpp.NewClient(config, router)
+	client, err := xmpp.NewClient(config, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -49,4 +50,8 @@ func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", msg.Body, msg.From)
 	reply := stanza.Message{Attrs: stanza.Attrs{To: msg.From}, Body: msg.Body}
 	_ = s.Send(reply)
+}
+
+func errorHandler(err error) {
+	fmt.Println(err.Error())
 }

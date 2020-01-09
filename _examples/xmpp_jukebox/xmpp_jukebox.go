@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"log"
@@ -19,7 +20,7 @@ import (
 const scClientID = "dde6a0075614ac4f3bea423863076b22"
 
 func main() {
-	jid := flag.String("jid", "", "jukebok XMPP JID, resource is optional")
+	jid := flag.String("jid", "", "jukebok XMPP Jid, resource is optional")
 	password := flag.String("password", "", "XMPP account password")
 	address := flag.String("address", "", "If needed, XMPP server DNSName or IP and optional port (ie myserver:5222)")
 	flag.Parse()
@@ -108,11 +109,28 @@ func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 }
 
 func sendUserTune(s xmpp.Sender, artist string, title string) {
-	tune := stanza.Tune{Artist: artist, Title: title}
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, Id: "usertune-1", Lang: "en"})
-	payload := stanza.PubSub{Publish: &stanza.Publish{Node: "http://jabber.org/protocol/tune", Item: stanza.Item{Tune: &tune}}}
-	iq.Payload = &payload
-	_ = s.Send(iq)
+	rq, err := stanza.NewPublishItemRq("localhost",
+		"http://jabber.org/protocol/tune",
+		"",
+		stanza.Item{
+			XMLName: xml.Name{Space: "http://jabber.org/protocol/tune", Local: "tune"},
+			Any: &stanza.Node{
+				Nodes: []stanza.Node{
+					{
+						XMLName: xml.Name{Local: "artist"},
+						Content: artist,
+					},
+					{
+						XMLName: xml.Name{Local: "title"},
+						Content: title,
+					},
+				},
+			},
+		})
+	if err != nil {
+		fmt.Printf("failed to build the publish request : %s", err.Error())
+	}
+	_ = s.Send(rq)
 }
 
 func playSCURL(p *mpg123.Player, rawURL string) {

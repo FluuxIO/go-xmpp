@@ -67,7 +67,7 @@ func TestParsingDelegationIQ(t *testing.T) {
 				return
 			}
 			if forwardedIQ.Payload != nil {
-				if pubsub, ok := forwardedIQ.Payload.(*PubSub); ok {
+				if pubsub, ok := forwardedIQ.Payload.(*PubSubGeneric); ok {
 					node = pubsub.Publish.Node
 				}
 			}

@@ -280,7 +280,7 @@ func bind(t *testing.T, sc *ServerConn) {
   	<jid>%s</jid>
   </bind>
 </iq>`
-		fmt.Fprintf(sc.connection, result, iq.Id, "test@localhost/test") // TODO use real JID
+		fmt.Fprintf(sc.connection, result, iq.Id, "test@localhost/test") // TODO use real Jid
 	}
 }
 

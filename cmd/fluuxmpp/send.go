@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"gosrc.io/xmpp/stanza"
 	"os"
 	"strings"
 	"sync"
@@ -48,7 +49,7 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 	wg.Add(1)
 
 	// FIXME: Remove global variables
-	var mucsToLeave []*xmpp.Jid
+	var mucsToLeave []*stanza.Jid
 
 	cm := xmpp.NewStreamManager(client, func(c xmpp.Sender) {
 		defer wg.Done()
@@ -57,7 +58,7 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 
 		if isMUCRecipient {
 			for _, muc := range receiver {
-				jid, err := xmpp.NewJid(muc)
+				jid, err := stanza.NewJid(muc)
 				if err != nil {
 					log.WithField("muc", muc).Errorf("skipping invalid muc jid: %w", err)
 					continue

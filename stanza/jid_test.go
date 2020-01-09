@@ -1,4 +1,4 @@
-package xmpp
+package stanza
 
 import (
 	"testing"

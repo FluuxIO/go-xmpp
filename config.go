@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"gosrc.io/xmpp/stanza"
 	"os"
 	"time"
 )
@@ -11,7 +12,7 @@ type Config struct {
 	TransportConfiguration
 
 	Jid               string
-	parsedJid         *Jid // For easier manipulation
+	parsedJid         *stanza.Jid // For easier manipulation
 	Credential        Credential
 	StreamLogger      *os.File      // Used for debugging
 	Lang              string        // TODO: should default to 'en'

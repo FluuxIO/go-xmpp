@@ -2,11 +2,16 @@ package stanza_test
 
 import (
 	"encoding/xml"
+	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"gosrc.io/xmpp/stanza"
 )
+
+var reLeadcloseWhtsp = regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
+var reInsideWhtsp = regexp.MustCompile(`[\s\p{Zs}]`)
 
 // ============================================================================
 // Marshaller / unmarshaller test
@@ -62,4 +67,15 @@ func xmlOpts() cmp.Options {
 		}, alwaysEqual),
 	}
 	return opts
+}
+
+func delSpaces(s string) string {
+	return reInsideWhtsp.ReplaceAllString(reLeadcloseWhtsp.ReplaceAllString(s, ""), "")
+}
+
+func compareMarshal(expected, data string) error {
+	if delSpaces(expected) != delSpaces(data) {
+		return errors.New("failed to verify unmarshal->marshal. Expected :" + expected + "\ngot: " + data)
+	}
+	return nil
 }
