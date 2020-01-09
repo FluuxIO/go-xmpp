@@ -129,6 +129,7 @@ func sendUserTune(s xmpp.Sender, artist string, title string) {
 		})
 	if err != nil {
 		fmt.Printf("failed to build the publish request : %s", err.Error())
+		return
 	}
 	_ = s.Send(rq)
 }
