@@ -7,7 +7,7 @@ import (
 	"gosrc.io/xmpp/stanza"
 )
 
-func joinMUC(c xmpp.Sender, toJID *xmpp.Jid) error {
+func joinMUC(c xmpp.Sender, toJID *stanza.Jid) error {
 	return c.Send(stanza.Presence{Attrs: stanza.Attrs{To: toJID.Full()},
 		Extensions: []stanza.PresExtension{
 			stanza.MucPresence{
@@ -16,7 +16,7 @@ func joinMUC(c xmpp.Sender, toJID *xmpp.Jid) error {
 	})
 }
 
-func leaveMUCs(c xmpp.Sender, mucsToLeave []*xmpp.Jid) {
+func leaveMUCs(c xmpp.Sender, mucsToLeave []*stanza.Jid) {
 	for _, muc := range mucsToLeave {
 		if err := c.Send(stanza.Presence{Attrs: stanza.Attrs{
 			To:   muc.Full(),

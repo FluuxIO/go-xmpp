@@ -136,7 +136,11 @@ func writeInput(g *gocui.Gui, v *gocui.View) error {
 	input := strings.Join(v.ViewBufferLines(), "\n")
 
 	fmt.Fprintln(chatLogWindow, "Me : ", input)
-	textChan <- input
+	if viewState.input == rawInputWindow {
+		rawTextChan <- input
+	} else {
+		textChan <- input
+	}
 
 	v.Clear()
 	v.EditDeleteToStartOfLine()

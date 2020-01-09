@@ -73,11 +73,11 @@ func TestDiscoItems_Builder(t *testing.T) {
 		{xml.Name{}, "catalog.shakespeare.lit", "clothing", "Wear your literary taste with pride"},
 		{xml.Name{}, "catalog.shakespeare.lit", "music", "Music from the time of Shakespeare"}}
 	if len(pp.Items) != len(items) {
-		t.Errorf("Items length mismatch: %#v", pp.Items)
+		t.Errorf("List length mismatch: %#v", pp.Items)
 	} else {
 		for i, item := range pp.Items {
 			if item.JID != items[i].JID {
-				t.Errorf("JID Mismatch (expected: %s): %s", items[i].JID, item.JID)
+				t.Errorf("Jid Mismatch (expected: %s): %s", items[i].JID, item.JID)
 			}
 			if item.Node != items[i].Node {
 				t.Errorf("Node Mismatch (expected: %s): %s", items[i].JID, item.JID)

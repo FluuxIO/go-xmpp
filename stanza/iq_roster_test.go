@@ -69,11 +69,11 @@ func TestRosterBuilder(t *testing.T) {
 		},
 	}
 	if len(pp.Items) != len(items) {
-		t.Errorf("Items length mismatch: %#v", pp.Items)
+		t.Errorf("List length mismatch: %#v", pp.Items)
 	} else {
 		for i, item := range pp.Items {
 			if item.Jid != items[i].Jid {
-				t.Errorf("JID Mismatch (expected: %s): %s", items[i].Jid, item.Jid)
+				t.Errorf("Jid Mismatch (expected: %s): %s", items[i].Jid, item.Jid)
 			}
 			if !reflect.DeepEqual(item.Groups, items[i].Groups) {
 				t.Errorf("Node Mismatch (expected: %s): %s", items[i].Jid, item.Jid)

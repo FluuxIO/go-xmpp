@@ -171,7 +171,7 @@ func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 		return
 	}
 
-	pubsub, ok := forwardedIQ.Payload.(*stanza.PubSub)
+	pubsub, ok := forwardedIQ.Payload.(*stanza.PubSubGeneric)
 	if !ok {
 		// We only support pubsub delegation
 		return
@@ -180,7 +180,7 @@ func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 	if pubsub.Publish.XMLName.Local == "publish" {
 		// Prepare pubsub IQ reply
 		iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: forwardedIQ.To, To: forwardedIQ.From, Id: forwardedIQ.Id})
-		payload := stanza.PubSub{
+		payload := stanza.PubSubGeneric{
 			XMLName: xml.Name{
 				Space: "http://jabber.org/protocol/pubsub",
 				Local: "pubsub",

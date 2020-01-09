@@ -107,14 +107,14 @@ Setting up the client / Checking the parameters
 */
 
 // NewClient generates a new XMPP client, based on Config passed as parameters.
-// If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
+// If host is not specified, the DNS SRV should be used to find the host from the domainpart of the Jid.
 // Default the port to 5222.
 func NewClient(config Config, r *Router, errorHandler func(error)) (c *Client, err error) {
 	if config.KeepaliveInterval == 0 {
 		config.KeepaliveInterval = time.Second * 30
 	}
-	// Parse JID
-	if config.parsedJid, err = NewJid(config.Jid); err != nil {
+	// Parse Jid
+	if config.parsedJid, err = stanza.NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
 		return nil, NewConnError(err, true)
 	}
@@ -142,6 +142,11 @@ func NewClient(config Config, r *Router, errorHandler func(error)) (c *Client, e
 			}
 		}
 	}
+	if config.Domain == "" {
+		// Fallback to jid domain
+		config.Domain = config.parsedJid.Domain
+	}
+
 	c = new(Client)
 	c.config = config
 	c.router = r

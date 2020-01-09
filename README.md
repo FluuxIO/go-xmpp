@@ -52,6 +52,13 @@ config := xmpp.Config{
   - [XEP-0355: Namespace Delegation](https://xmpp.org/extensions/xep-0355.html)
   - [XEP-0356: Privileged Entity](https://xmpp.org/extensions/xep-0356.html)
 
+### Extensions 
+  - [XEP-0060: Publish-Subscribe](https://xmpp.org/extensions/xep-0060.html)  
+    Note : "6.5.4 Returning Some Items" requires support for [XEP-0059: Result Set Management](https://xmpp.org/extensions/xep-0059.html), 
+    and is therefore not supported yet. 
+  - [XEP-0004: Data Forms](https://xmpp.org/extensions/xep-0004.html)
+  - [XEP-0050: Ad-Hoc Commands](https://xmpp.org/extensions/xep-0050.html)
+
 ## Package overview
 
 ### Stanza subpackage
@@ -108,15 +115,16 @@ func main() {
 			Address: "localhost:5222",
 		},
 		Jid:          "test@localhost",
-	    Credential:   xmpp.Password("Test"),
+		Credential:   xmpp.Password("test"),
 		StreamLogger: os.Stdout,
 		Insecure:     true,
+		// TLSConfig: tls.Config{InsecureSkipVerify: true},
 	}
 
 	router := xmpp.NewRouter()
 	router.HandleFunc("message", handleMessage)
 
-	client, err := xmpp.NewClient(config, router)
+	client, err := xmpp.NewClient(config, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -138,6 +146,11 @@ func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	reply := stanza.Message{Attrs: stanza.Attrs{To: msg.From}, Body: msg.Body}
 	_ = s.Send(reply)
 }
+
+func errorHandler(err error) {
+	fmt.Println(err.Error())
+}
+
 ```
 
 ## Reference documentation
