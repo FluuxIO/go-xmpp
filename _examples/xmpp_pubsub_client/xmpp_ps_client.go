@@ -178,5 +178,47 @@ func main() {
 	purgeRq, _ := stanza.NewPurgeAllItems(serviceName, nodeName)
 	client.SendIQ(ctx, purgeRq)
 
+	// =============================
+	// Configure the node :
+	confRq, _ := stanza.NewConfigureNode(serviceName, nodeName)
+	confReqCh, err := client.SendIQ(ctx, confRq)
+	select {
+	case confForm := <-confReqCh:
+		fields, err := confForm.GetFormFields()
+		if err != nil {
+			log.Fatal("No config fields found !")
+		}
+
+		// These are some common fields expected to be present. Change processing to your liking
+		if fields["pubsub#max_payload_size"] != nil {
+			fields["pubsub#max_payload_size"].ValuesList[0] = "100000"
+		}
+
+		if fields["pubsub#notification_type"] != nil {
+			fields["pubsub#notification_type"].ValuesList[0] = "headline"
+		}
+
+		submitConf, err := stanza.NewFormSubmissionOwner(serviceName,
+			nodeName,
+			[]*stanza.Field{
+				fields["pubsub#max_payload_size"],
+				fields["pubsub#notification_type"],
+			})
+
+		c, _ := client.SendIQ(ctx, submitConf)
+		select {
+		case <-c:
+			fmt.Println("node configuration was successful")
+		case <-time.After(300 * time.Millisecond):
+			cancel()
+			log.Fatal("No iq response was received in time")
+
+		}
+
+	case <-time.After(300 * time.Millisecond):
+		cancel()
+		log.Fatal("No iq response was received in time")
+	}
+
 	cancel()
 }

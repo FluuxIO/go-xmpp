@@ -198,7 +198,7 @@ func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (IQ, error
 
 	form := &Form{
 		Type:   FormTypeSubmit,
-		Fields: []Field{{Var: "pubsub#node", ValuesList: []string{nodeId}}},
+		Fields: []*Field{{Var: "pubsub#node", ValuesList: []string{nodeId}}},
 	}
 	data, err := xml.Marshal(form)
 	if err != nil {
@@ -262,25 +262,44 @@ func NewAffiliationListRequest(serviceId, nodeID string) (IQ, error) {
 	return iq, nil
 }
 
+// NewFormSubmission builds a form submission pubsub IQ, in the Owner namespace
+// This is typically used to respond to a form issued by the server when configuring a node.
+// See 8.2.4 Form Submission
+func NewFormSubmissionOwner(serviceId, nodeName string, fields []*Field) (IQ, error) {
+	if serviceId == "" || nodeName == "" {
+		return IQ{}, errors.New("serviceId and nodeName must be filled for this request to be valid")
+	}
+
+	submitConf := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	submitConf.Payload = &PubSubOwner{
+		OwnerUseCase: &ConfigureOwner{
+			Node: nodeName,
+			Form: NewForm(fields,
+				FormTypeSubmit)},
+	}
+
+	return submitConf, nil
+}
+
 // GetFormFields gets the fields from a form in a IQ stanza of type result, as a map.
 // Key is the "var" attribute of the field, and field is the value.
 // The user can then select and modify the fields they want to alter, and submit a new form to the service using the
 // NewFormSubmission function to build the IQ.
 // TODO : remove restriction on IQ type ?
-func (iq *IQ) GetFormFields() (map[string]Field, error) {
+func (iq *IQ) GetFormFields() (map[string]*Field, error) {
 	if iq.Type != IQTypeResult {
 		return nil, errors.New("this IQ is not a result type IQ. Cannot extract the form from it")
 	}
 	switch payload := iq.Payload.(type) {
 	// We support IOT Control IQ
 	case *PubSubGeneric:
-		fieldMap := make(map[string]Field)
+		fieldMap := make(map[string]*Field)
 		for _, elt := range payload.Configure.Form.Fields {
 			fieldMap[elt.Var] = elt
 		}
 		return fieldMap, nil
 	case *PubSubOwner:
-		fieldMap := make(map[string]Field)
+		fieldMap := make(map[string]*Field)
 		co, ok := payload.OwnerUseCase.(*ConfigureOwner)
 		if !ok {
 			return nil, errors.New("this IQ does not contain a PubSub payload with a configure tag for the owner namespace")
@@ -291,7 +310,7 @@ func (iq *IQ) GetFormFields() (map[string]Field, error) {
 		return fieldMap, nil
 	default:
 		if iq.Any != nil {
-			fieldMap := make(map[string]Field)
+			fieldMap := make(map[string]*Field)
 			if iq.Any.XMLName.Local != "command" {
 				return nil, errors.New("this IQ does not contain a form")
 			}
@@ -307,7 +326,7 @@ func (iq *IQ) GetFormFields() (map[string]Field, error) {
 							}
 							err = xml.Unmarshal(data, &f)
 							if err == nil {
-								fieldMap[f.Var] = f
+								fieldMap[f.Var] = &f
 							}
 						}
 					}

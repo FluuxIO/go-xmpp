@@ -357,7 +357,7 @@ func TestNewApproveSubRequest(t *testing.T) {
 
 	apprForm := &stanza.Form{
 		Type: stanza.FormTypeSubmit,
-		Fields: []stanza.Field{
+		Fields: []*stanza.Field{
 			{Var: "FORM_TYPE", Type: stanza.FieldTypeHidden, ValuesList: []string{"http://jabber.org/protocol/pubsub#subscribe_authorization"}},
 			{Var: "pubsub#subid", ValuesList: []string{"123-abc"}},
 			{Var: "pubsub#node", ValuesList: []string{"princely_musings"}},
@@ -381,7 +381,7 @@ func TestNewApproveSubRequest(t *testing.T) {
 
 	for _, f := range frm.Fields {
 		if f.Var == "pubsub#allow" {
-			allowField = &f
+			allowField = f
 		}
 	}
 	if allowField == nil || allowField.ValuesList[0] != "true" {
