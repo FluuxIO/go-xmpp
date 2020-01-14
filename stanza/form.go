@@ -17,7 +17,7 @@ type Form struct {
 	XMLName      xml.Name  `xml:"jabber:x:data x"`
 	Instructions []string  `xml:"instructions"`
 	Title        string    `xml:"title,omitempty"`
-	Fields       []Field   `xml:"field,omitempty"`
+	Fields       []*Field  `xml:"field,omitempty"`
 	Reported     *FormItem `xml:"reported"`
 	Items        []FormItem
 	Type         string `xml:"type,attr"`
@@ -38,7 +38,7 @@ type Field struct {
 	Label       string   `xml:"label,attr,omitempty"`
 }
 
-func NewForm(fields []Field, formType string) *Form {
+func NewForm(fields []*Field, formType string) *Form {
 	return &Form{
 		Type:   formType,
 		Fields: fields,

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var submitFormExample = stanza.NewForm([]stanza.Field{
+var submitFormExample = stanza.NewForm([]*stanza.Field{
 	{Var: "FORM_TYPE", Type: stanza.FieldTypeHidden, ValuesList: []string{"http://jabber.org/protocol/pubsub#node_config"}},
 	{Var: "pubsub#title", ValuesList: []string{"Princely Musings (Atom)"}},
 	{Var: "pubsub#deliver_notifications", ValuesList: []string{"1"}},
@@ -741,7 +741,7 @@ func TestNewCreateAndConfigNode(t *testing.T) {
 		"princely_musings",
 		&stanza.Form{
 			Type: stanza.FormTypeSubmit,
-			Fields: []stanza.Field{
+			Fields: []*stanza.Field{
 				{Var: "FORM_TYPE", Type: stanza.FieldTypeHidden, ValuesList: []string{"http://jabber.org/protocol/pubsub#node_config"}},
 				{Var: "pubsub#notify_retract", ValuesList: []string{"0"}},
 				{Var: "pubsub#notify_sub", ValuesList: []string{"0"}},

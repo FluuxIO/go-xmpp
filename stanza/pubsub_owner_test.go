@@ -357,7 +357,7 @@ func TestNewApproveSubRequest(t *testing.T) {
 
 	apprForm := &stanza.Form{
 		Type: stanza.FormTypeSubmit,
-		Fields: []stanza.Field{
+		Fields: []*stanza.Field{
 			{Var: "FORM_TYPE", Type: stanza.FieldTypeHidden, ValuesList: []string{"http://jabber.org/protocol/pubsub#subscribe_authorization"}},
 			{Var: "pubsub#subid", ValuesList: []string{"123-abc"}},
 			{Var: "pubsub#node", ValuesList: []string{"princely_musings"}},
@@ -381,7 +381,7 @@ func TestNewApproveSubRequest(t *testing.T) {
 
 	for _, f := range frm.Fields {
 		if f.Var == "pubsub#allow" {
-			allowField = &f
+			allowField = f
 		}
 	}
 	if allowField == nil || allowField.ValuesList[0] != "true" {
@@ -814,6 +814,58 @@ func TestGetFormFieldsCmd(t *testing.T) {
 		t.Fatalf("could not correctly parse fields. Expected 2, found : %v", len(fields))
 	}
 
+}
+
+func TestNewFormSubmissionOwner(t *testing.T) {
+	expectedReq := "<iq type=\"set\" id=\"config2\" to=\"pubsub.shakespeare.lit\">" +
+		"<pubsub xmlns=\"http://jabber.org/protocol/pubsub#owner\"> <configure node=\"princely_musings\"> " +
+		"<x xmlns=\"jabber:x:data\" type=\"submit\" > <field var=\"FORM_TYPE\" type=\"hidden\"> " +
+		"<value>http://jabber.org/protocol/pubsub#node_config</value> </field> <field var=\"pubsub#item_expire\"> " +
+		"<value>604800</value> </field> <field var=\"pubsub#access_model\"> <value>roster</value> </field> " +
+		"<field var=\"pubsub#roster_groups_allowed\"> <value>friends</value> <value>servants</value> " +
+		"<value>courtiers</value> </field> </x> </configure> </pubsub> </iq>"
+
+	subR, err := stanza.NewFormSubmissionOwner("pubsub.shakespeare.lit",
+		"princely_musings",
+		[]*stanza.Field{
+			{Var: "FORM_TYPE", Type: stanza.FieldTypeHidden, ValuesList: []string{"http://jabber.org/protocol/pubsub#node_config"}},
+			{Var: "pubsub#item_expire", ValuesList: []string{"604800"}},
+			{Var: "pubsub#access_model", ValuesList: []string{"roster"}},
+			{Var: "pubsub#roster_groups_allowed", ValuesList: []string{"friends", "servants", "courtiers"}},
+		})
+	subR.Id = "config2"
+	if err != nil {
+		t.Fatalf("Could not create request : %s", err)
+	}
+
+	if _, e := checkMarshalling(t, subR); e != nil {
+		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
+	}
+
+	pubsub, ok := subR.Payload.(*stanza.PubSubOwner)
+	if !ok {
+		t.Fatalf("payload is not a pubsub in namespace owner !")
+	}
+
+	conf, ok := pubsub.OwnerUseCase.(*stanza.ConfigureOwner)
+	if !ok {
+		t.Fatalf("pubsub does not contain a configure node !")
+	}
+
+	if conf.Form == nil {
+		t.Fatalf("the form is absent from the configuration submission !")
+	}
+	if len(conf.Form.Fields) != 4 {
+		t.Fatalf("expected 4 fields, found %d", len(conf.Form.Fields))
+	}
+	if len(conf.Form.Fields[3].ValuesList) != 3 {
+		t.Fatalf("expected 3 values in fourth field, found %d", len(conf.Form.Fields[3].ValuesList))
+	}
+
+	data, err := xml.Marshal(subR)
+	if err := compareMarshal(expectedReq, string(data)); err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func getPubSubOwnerPayload(response string) (*stanza.PubSubOwner, error) {

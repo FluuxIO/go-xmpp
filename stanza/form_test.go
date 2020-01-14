@@ -57,7 +57,7 @@ func TestMarshalFormSubmit(t *testing.T) {
 			Node: serviceNode,
 			Form: &Form{
 				Type: FormTypeSubmit,
-				Fields: []Field{
+				Fields: []*Field{
 					{Var: "FORM_TYPE", Type: FieldTypeHidden, ValuesList: []string{"http://jabber.org/protocol/pubsub#node_config"}},
 					{Var: "pubsub#title", ValuesList: []string{"Princely Musings (Atom)"}},
 					{Var: "pubsub#deliver_notifications", ValuesList: []string{"1"}},
