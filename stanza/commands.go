@@ -23,7 +23,7 @@ const (
 type Command struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/commands command"`
 
-	CommandElement CommandElement `xml:",any"`
+	CommandElement CommandElement
 
 	BadAction       *struct{} `xml:"bad-action,omitempty"`
 	BadLocale       *struct{} `xml:"bad-locale,omitempty"`
@@ -38,10 +38,17 @@ type Command struct {
 	SessionId string `xml:"sessionid,attr,omitempty"`
 	Status    string `xml:"status,attr,omitempty"`
 	Lang      string `xml:"lang,attr,omitempty"`
+
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (c *Command) Namespace() string {
 	return c.XMLName.Space
+}
+
+func (c *Command) GetSet() *ResultSet {
+	return c.ResultSet
 }
 
 type CommandElement interface {
@@ -68,6 +75,7 @@ type Note struct {
 func (n *Note) Ref() string {
 	return "note"
 }
+func (f *Form) Ref() string { return "form" }
 
 func (n *Node) Ref() string {
 	return "node"
@@ -117,6 +125,10 @@ func (c *Command) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				nt := Note{}
 				d.DecodeElement(&nt, &tt)
 				c.CommandElement = &nt
+			case "x":
+				f := Form{}
+				d.DecodeElement(&f, &tt)
+				c.CommandElement = &f
 			default:
 				n := Node{}
 				e := d.DecodeElement(&n, &tt)
@@ -133,4 +145,8 @@ func (c *Command) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			}
 		}
 	}
+}
+
+func init() {
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: "http://jabber.org/protocol/commands", Local: "command"}, Command{})
 }

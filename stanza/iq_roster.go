@@ -35,11 +35,16 @@ const (
 // Roster struct represents Roster IQs
 type Roster struct {
 	XMLName xml.Name `xml:"jabber:iq:roster query"`
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 // Namespace defines the namespace for the RosterIQ
 func (r *Roster) Namespace() string {
 	return r.XMLName.Space
+}
+func (r *Roster) GetSet() *ResultSet {
+	return r.ResultSet
 }
 
 // ---------------
@@ -64,11 +69,17 @@ func (iq *IQ) RosterIQ() *Roster {
 type RosterItems struct {
 	XMLName xml.Name     `xml:"jabber:iq:roster query"`
 	Items   []RosterItem `xml:"item"`
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 // Namespace lets RosterItems implement the IQPayload interface
 func (r *RosterItems) Namespace() string {
 	return r.XMLName.Space
+}
+
+func (r *RosterItems) GetSet() *ResultSet {
+	return r.ResultSet
 }
 
 // RosterItem represents an item in the roster iq

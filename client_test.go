@@ -171,7 +171,11 @@ func TestClient_SendIQ(t *testing.T) {
 	client, mock := mockClientConnection(t, h, testClientIqPort)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	iqReq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	if err != nil {
+		t.Fatalf("failed to create the IQ request: %v", err)
+	}
+
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
 
@@ -219,7 +223,10 @@ func TestClient_SendIQFail(t *testing.T) {
 	//==================
 	// Create an IQ to send
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	iqReq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	if err != nil {
+		t.Fatalf("failed to create IQ request: %v", err)
+	}
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
 	// Removing the id to make the stanza invalid. The IQ constructor makes a random one if none is specified
@@ -387,7 +394,7 @@ func handlerClientConnectSuccess(t *testing.T, sc *ServerConn) {
 	checkClientOpenStream(t, sc)
 	sendStreamFeatures(t, sc) // Send initial features
 	readAuth(t, sc.decoder)
-	fmt.Fprintln(sc.connection, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
+	sc.connection.Write([]byte("<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>"))
 
 	checkClientOpenStream(t, sc) // Reset stream
 	sendBindFeature(t, sc)       // Send post auth features

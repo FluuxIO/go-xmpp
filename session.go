@@ -97,7 +97,7 @@ func (s *Session) startTlsIfSupported(o Config) {
 
 	if !s.transport.DoesStartTLS() {
 		if !o.Insecure {
-			s.err = errors.New("Transport does not support starttls")
+			s.err = errors.New("transport does not support starttls")
 		}
 		return
 	}

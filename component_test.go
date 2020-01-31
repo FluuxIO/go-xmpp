@@ -93,7 +93,7 @@ func TestGenerateHandshakeId(t *testing.T) {
 
 	// Try connecting, and storing the resulting streamID in a map.
 	m := make(map[string]bool)
-	for _, _ = range uuidsArray {
+	for range uuidsArray {
 		streamId, _ := c.transport.Connect()
 		m[c.handshake(streamId)] = true
 	}
@@ -131,7 +131,10 @@ func TestSendIq(t *testing.T) {
 	c, m := mockComponentConnection(t, testSendIqPort, h)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	iqReq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	if err != nil {
+		t.Fatalf("failed to create IQ request: %v", err)
+	}
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
 
@@ -173,7 +176,10 @@ func TestSendIqFail(t *testing.T) {
 	c, m := mockComponentConnection(t, testSendIqFailPort, h)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	iqReq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "test1@localhost/mremond-mbp", To: defaultServerName, Id: defaultStreamID, Lang: "en"})
+	if err != nil {
+		t.Fatalf("failed to create IQ request: %v", err)
+	}
 
 	// Removing the id to make the stanza invalid. The IQ constructor makes a random one if none is specified
 	// so we need to overwrite it.

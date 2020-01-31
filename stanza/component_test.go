@@ -61,7 +61,7 @@ func TestParsingDelegationIQ(t *testing.T) {
 	if iq.Payload != nil {
 		if delegation, ok := iq.Payload.(*Delegation); ok {
 			packet := delegation.Forwarded.Stanza
-			forwardedIQ, ok := packet.(IQ)
+			forwardedIQ, ok := packet.(*IQ)
 			if !ok {
 				t.Errorf("Could not extract packet IQ")
 				return

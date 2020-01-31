@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"gosrc.io/xmpp"
 	"gosrc.io/xmpp/stanza"
@@ -16,6 +17,8 @@ const (
 	nodeName      = "lel_node"
 	serviceName   = "pubsub.localhost"
 )
+
+var invalidResp = errors.New("invalid response")
 
 func main() {
 
@@ -52,7 +55,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	createNode(ctx, cancel, client)
 
-	// =============================
+	// ================================================================================
 	// Configure the node. This can also be done in a single message with the creation
 	configureNode(ctx, cancel, client)
 
@@ -68,10 +71,17 @@ func main() {
 	// Let's purge the node :
 	purgeRq, _ := stanza.NewPurgeAllItems(serviceName, nodeName)
 	purgeCh, err := client.SendIQ(ctx, purgeRq)
+	if err != nil {
+		log.Fatalf("could not send purge request: %v", err)
+	}
 	select {
 	case purgeResp := <-purgeCh:
-		if purgeResp.Error != nil {
+
+		if purgeResp.Type == stanza.IQTypeError {
 			cancel()
+			if vld, err := purgeResp.IsValid(); !vld {
+				log.Fatalf(invalidResp.Error()+" %v"+" reason: %v", purgeResp, err)
+			}
 			log.Fatalf("error while purging node : %s", purgeResp.Error.Text)
 		}
 		log.Println("node successfully purged")
@@ -97,7 +107,10 @@ func createNode(ctx context.Context, cancel context.CancelFunc, client *xmpp.Cli
 			select {
 			case respCr := <-createCh:
 				// Got response from server
-				if respCr.Error != nil {
+				if respCr.Type == stanza.IQTypeError {
+					if vld, err := respCr.IsValid(); !vld {
+						log.Fatalf(invalidResp.Error()+" %+v"+" reason: %s", respCr, err)
+					}
 					if respCr.Error.Reason != "conflict" {
 						log.Fatalf("%+v", respCr.Error.Text)
 					}
@@ -148,8 +161,11 @@ func configureNode(ctx context.Context, cancel context.CancelFunc, client *xmpp.
 		c, _ := client.SendIQ(ctx, submitConf)
 		select {
 		case confResp := <-c:
-			if confResp.Error != nil {
+			if confResp.Type == stanza.IQTypeError {
 				cancel()
+				if vld, err := confResp.IsValid(); !vld {
+					log.Fatalf(invalidResp.Error()+" %v"+" reason: %v", confResp, err)
+				}
 				log.Fatalf("node configuration failed : %s", confResp.Error.Text)
 			}
 			log.Println("node configuration was successful")

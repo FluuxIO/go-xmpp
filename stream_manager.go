@@ -27,7 +27,7 @@ type StreamClient interface {
 	Connect() error
 	Resume(state SMState) error
 	Send(packet stanza.Packet) error
-	SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error)
+	SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error)
 	SendRaw(packet string) error
 	Disconnect() error
 	SetHandler(handler EventHandler)
@@ -37,7 +37,7 @@ type StreamClient interface {
 // It is mostly use in callback to pass a limited subset of the stream client interface
 type Sender interface {
 	Send(packet stanza.Packet) error
-	SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error)
+	SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error)
 	SendRaw(packet string) error
 }
 

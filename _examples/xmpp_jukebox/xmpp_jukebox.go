@@ -81,7 +81,7 @@ func handleMessage(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 }
 
 func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return
 	}
@@ -100,7 +100,7 @@ func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 		setResponse := new(stanza.ControlSetResponse)
 		// FIXME: Broken
 		reply := stanza.IQ{Attrs: stanza.Attrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
-		_ = s.Send(reply)
+		_ = s.Send(&reply)
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(s, "Radiohead", "Spectre")
 	default:

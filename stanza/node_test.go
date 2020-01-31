@@ -8,7 +8,10 @@ import (
 func TestNode_Marshal(t *testing.T) {
 	jsonData := []byte("{\"key\":\"value\"}")
 
-	iqResp := NewIQ(Attrs{Type: "result", From: "admin@localhost", To: "test@localhost", Id: "1"})
+	iqResp, err := NewIQ(Attrs{Type: "result", From: "admin@localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	iqResp.Any = &Node{
 		XMLName: xml.Name{Space: "myNS", Local: "space"},
 		Content: string(jsonData),

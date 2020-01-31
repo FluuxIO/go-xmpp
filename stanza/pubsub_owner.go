@@ -9,10 +9,16 @@ import (
 type PubSubOwner struct {
 	XMLName      xml.Name `xml:"http://jabber.org/protocol/pubsub#owner pubsub"`
 	OwnerUseCase OwnerUseCase
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (pso *PubSubOwner) Namespace() string {
 	return pso.XMLName.Space
+}
+
+func (pso *PubSubOwner) GetSet() *ResultSet {
+	return pso.ResultSet
 }
 
 type OwnerUseCase interface {
@@ -112,8 +118,11 @@ const (
 // NewConfigureNode creates a request to configure a node on the given service.
 // A form will be returned by the service, to which the user must respond using for instance the NewFormSubmission function.
 // See 8.2 Configure a Node
-func NewConfigureNode(serviceId, nodeName string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewConfigureNode(serviceId, nodeName string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &ConfigureOwner{Node: nodeName},
 	}
@@ -122,11 +131,14 @@ func NewConfigureNode(serviceId, nodeName string) (IQ, error) {
 
 // NewDelNode creates a request to delete node "nodeID" from the "serviceId" service
 // See 8.4 Delete a Node
-func NewDelNode(serviceId, nodeID string) (IQ, error) {
+func NewDelNode(serviceId, nodeID string) (*IQ, error) {
 	if strings.TrimSpace(nodeID) == "" {
-		return IQ{}, errors.New("cannot delete a node without a target node ID")
+		return nil, errors.New("cannot delete a node without a target node ID")
 	}
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &DeleteOwner{Node: nodeID},
 	}
@@ -135,8 +147,11 @@ func NewDelNode(serviceId, nodeID string) (IQ, error) {
 
 // NewPurgeAllItems creates a new purge request for the "nodeId" node, at "serviceId" service
 // See 8.5 Purge All Node Items
-func NewPurgeAllItems(serviceId, nodeId string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+func NewPurgeAllItems(serviceId, nodeId string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &PurgeOwner{Node: nodeId},
 	}
@@ -145,8 +160,11 @@ func NewPurgeAllItems(serviceId, nodeId string) (IQ, error) {
 
 // NewRequestDefaultConfig build a request to ask the service for the default config of its nodes
 // See 8.3 Request Default Node Configuration Options
-func NewRequestDefaultConfig(serviceId string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewRequestDefaultConfig(serviceId string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &DefaultOwner{},
 	}
@@ -177,8 +195,11 @@ func NewApproveSubRequest(serviceId, reqID string, apprForm *Form) (Message, err
 // NewGetPendingSubRequests creates a new request for all pending subscriptions to all their nodes at a service
 // This feature MUST be implemented using the Ad-Hoc Commands (XEP-0050) protocol
 // 8.7 Process Pending Subscription Requests
-func NewGetPendingSubRequests(serviceId string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+func NewGetPendingSubRequests(serviceId string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &Command{
 		//  the command name ('node' attribute of the command element) MUST have a value of "http://jabber.org/protocol/pubsub#get-pending"
 		Node:   "http://jabber.org/protocol/pubsub#get-pending",
@@ -191,9 +212,9 @@ func NewGetPendingSubRequests(serviceId string) (IQ, error) {
 // Upon receiving the data form for managing subscription requests, the owner then MAY request pending subscription
 // approval requests for a given node.
 // See 8.7.4 Per-Node Request
-func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (IQ, error) {
+func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (*IQ, error) {
 	if sessionId == "" {
-		return IQ{}, errors.New("the sessionId must be maintained for the command")
+		return nil, errors.New("the sessionId must be maintained for the command")
 	}
 
 	form := &Form{
@@ -202,12 +223,15 @@ func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (IQ, error
 	}
 	data, err := xml.Marshal(form)
 	if err != nil {
-		return IQ{}, err
+		return nil, err
 	}
 	var n Node
 	xml.Unmarshal(data, &n)
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &Command{
 		//  the command name ('node' attribute of the command element) MUST have a value of "http://jabber.org/protocol/pubsub#get-pending"
 		Node:           "http://jabber.org/protocol/pubsub#get-pending",
@@ -221,16 +245,22 @@ func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (IQ, error
 // NewSubListRequest creates a request to list subscriptions of the client, for all nodes at the service.
 // It's a Get type IQ
 // 8.8.1 Retrieve Subscriptions
-func NewSubListRqPl(serviceId, nodeID string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewSubListRqPl(serviceId, nodeID string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &SubscriptionsOwner{Node: nodeID},
 	}
 	return iq, nil
 }
 
-func NewSubsForEntitiesRequest(serviceId, nodeID string, subs []SubscriptionOwner) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+func NewSubsForEntitiesRequest(serviceId, nodeID string, subs []SubscriptionOwner) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &SubscriptionsOwner{Node: nodeID, Subscriptions: subs},
 	}
@@ -239,8 +269,11 @@ func NewSubsForEntitiesRequest(serviceId, nodeID string, subs []SubscriptionOwne
 
 // NewModifAffiliationRequest creates a request to either modify one or more affiliations, or delete one or more affiliations
 // 8.9.2 Modify Affiliation & 8.9.2.4 Multiple Simultaneous Modifications & 8.9.3 Delete an Entity (just set the status to "none")
-func NewModifAffiliationRequest(serviceId, nodeID string, newAffils []AffiliationOwner) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+func NewModifAffiliationRequest(serviceId, nodeID string, newAffils []AffiliationOwner) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &AffiliationsOwner{
 			Node:         nodeID,
@@ -252,8 +285,11 @@ func NewModifAffiliationRequest(serviceId, nodeID string, newAffils []Affiliatio
 
 // NewAffiliationListRequest creates a request to list all affiliated entities
 // See 8.9.1 Retrieve List List
-func NewAffiliationListRequest(serviceId, nodeID string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewAffiliationListRequest(serviceId, nodeID string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubOwner{
 		OwnerUseCase: &AffiliationsOwner{
 			Node: nodeID,
@@ -265,12 +301,15 @@ func NewAffiliationListRequest(serviceId, nodeID string) (IQ, error) {
 // NewFormSubmission builds a form submission pubsub IQ, in the Owner namespace
 // This is typically used to respond to a form issued by the server when configuring a node.
 // See 8.2.4 Form Submission
-func NewFormSubmissionOwner(serviceId, nodeName string, fields []*Field) (IQ, error) {
+func NewFormSubmissionOwner(serviceId, nodeName string, fields []*Field) (*IQ, error) {
 	if serviceId == "" || nodeName == "" {
-		return IQ{}, errors.New("serviceId and nodeName must be filled for this request to be valid")
+		return nil, errors.New("serviceId and nodeName must be filled for this request to be valid")
 	}
 
-	submitConf := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	submitConf, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	submitConf.Payload = &PubSubOwner{
 		OwnerUseCase: &ConfigureOwner{
 			Node: nodeName,
@@ -305,6 +344,17 @@ func (iq *IQ) GetFormFields() (map[string]*Field, error) {
 			return nil, errors.New("this IQ does not contain a PubSub payload with a configure tag for the owner namespace")
 		}
 		for _, elt := range co.Form.Fields {
+			fieldMap[elt.Var] = elt
+		}
+		return fieldMap, nil
+
+	case *Command:
+		fieldMap := make(map[string]*Field)
+		co, ok := payload.CommandElement.(*Form)
+		if !ok {
+			return nil, errors.New("this IQ does not contain a command payload with a form")
+		}
+		for _, elt := range co.Fields {
 			fieldMap[elt.Var] = elt
 		}
 		return fieldMap, nil

@@ -9,9 +9,10 @@ Connect to an XMPP server using XEP 114 protocol, perform a discovery query on t
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
-	xmpp "gosrc.io/xmpp"
+	"gosrc.io/xmpp"
 	"gosrc.io/xmpp/stanza"
 )
 
@@ -53,10 +54,13 @@ func main() {
 	}
 
 	// make a disco iq
-	iqReq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet,
+	iqReq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet,
 		From: domain,
 		To:   "localhost",
 		Id:   "my-iq1"})
+	if err != nil {
+		log.Fatalf("failed to create IQ: %v", err)
+	}
 	disco := iqReq.DiscoInfo()
 	iqReq.Payload = disco
 

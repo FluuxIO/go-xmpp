@@ -2,6 +2,7 @@ package stanza
 
 import (
 	"encoding/xml"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -31,22 +32,28 @@ type IQ struct { // Info/Query
 
 type IQPayload interface {
 	Namespace() string
+	GetSet() *ResultSet
 }
 
-func NewIQ(a Attrs) IQ {
-	// TODO ensure that type is set, as it is required
+func NewIQ(a Attrs) (*IQ, error) {
 	if a.Id == "" {
 		if id, err := uuid.NewRandom(); err == nil {
 			a.Id = id.String()
 		}
 	}
-	return IQ{
+
+	iq := IQ{
 		XMLName: xml.Name{Local: "iq"},
 		Attrs:   a,
 	}
+
+	if iq.Type.IsEmpty() {
+		return nil, IqTypeUnset
+	}
+	return &iq, nil
 }
 
-func (iq IQ) MakeError(xerror Err) IQ {
+func (iq *IQ) MakeError(xerror Err) *IQ {
 	from := iq.From
 	to := iq.To
 
@@ -58,18 +65,23 @@ func (iq IQ) MakeError(xerror Err) IQ {
 	return iq
 }
 
-func (IQ) Name() string {
+func (*IQ) Name() string {
 	return "iq"
+}
+
+// NoOp to implement BiDirIteratorElt
+func (*IQ) NoOp() {
+
 }
 
 type iqDecoder struct{}
 
 var iq iqDecoder
 
-func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (IQ, error) {
+func (iqDecoder) decode(p *xml.Decoder, se xml.StartElement) (*IQ, error) {
 	var packet IQ
 	err := p.DecodeElement(&packet, &se)
-	return packet, err
+	return &packet, err
 }
 
 // UnmarshalXML implements custom parsing for IQs
@@ -134,38 +146,47 @@ func (iq *IQ) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 }
 
+var (
+	IqTypeUnset  = errors.New("iq type is not set but is mandatory")
+	IqIDUnset    = errors.New("iq stanza ID is not set but is mandatory")
+	IqSGetNoPl   = errors.New("iq is of type get or set but has no payload")
+	IqResNoPl    = errors.New("iq is of type result but has no payload")
+	IqErrNoErrPl = errors.New("iq is of type error but has no error payload")
+)
+
+// IsValid checks if the IQ is valid. If not, return an error with the reason as a message
 // Following RFC-3920 for IQs
-func (iq *IQ) IsValid() bool {
+func (iq *IQ) IsValid() (bool, error) {
 	// ID is required
 	if len(strings.TrimSpace(iq.Id)) == 0 {
-		return false
+		return false, IqIDUnset
 	}
 
 	// Type is required
 	if iq.Type.IsEmpty() {
-		return false
+		return false, IqTypeUnset
 	}
 
 	// Type get and set must contain one and only one child element that specifies the semantics
 	if iq.Type == IQTypeGet || iq.Type == IQTypeSet {
 		if iq.Payload == nil && iq.Any == nil {
-			return false
+			return false, IqSGetNoPl
 		}
 	}
 
 	// A result must include zero or one child element
 	if iq.Type == IQTypeResult {
 		if iq.Payload != nil && iq.Any != nil {
-			return false
+			return false, IqResNoPl
 		}
 	}
 
 	//Error type must contain an "error" child element
 	if iq.Type == IQTypeError {
 		if iq.Error == nil {
-			return false
+			return false, IqErrNoErrPl
 		}
 	}
 
-	return true
+	return true, nil
 }

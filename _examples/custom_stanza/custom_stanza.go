@@ -9,7 +9,10 @@ import (
 )
 
 func main() {
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "service.localhost", Id: "custom-pl-1"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "service.localhost", Id: "custom-pl-1"})
+	if err != nil {
+		log.Fatalf("failed to create IQ: %v", err)
+	}
 	payload := CustomPayload{XMLName: xml.Name{Space: "my:custom:payload", Local: "query"}, Node: "test"}
 	iq.Payload = payload
 
@@ -45,5 +48,5 @@ func (c CustomPayload) Namespace() string {
 }
 
 func init() {
-	stanza.TypeRegistry.MapExtension(stanza.PKTIQ, xml.Name{"my:custom:payload", "query"}, CustomPayload{})
+	stanza.TypeRegistry.MapExtension(stanza.PKTIQ, xml.Name{Space: "my:custom:payload", Local: "query"}, CustomPayload{})
 }

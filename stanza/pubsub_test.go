@@ -40,6 +40,9 @@ func TestNewSubRequest(t *testing.T) {
 		Node: "princely_musings", Jid: "francisco@denmark.lit",
 	}
 	subR, err := stanza.NewSubRq("pubsub.shakespeare.lit", subInfo)
+	if err != nil {
+		t.Fatalf("failed to create a sub request: %v", err)
+	}
 	subR.Id = "sub1"
 	if err != nil {
 		t.Fatalf("Could not create a sub request : %s", err)
@@ -96,6 +99,9 @@ func TestNewUnSubRequest(t *testing.T) {
 		Node: "princely_musings", Jid: "francisco@denmark.lit",
 	}
 	subR, err := stanza.NewUnsubRq("pubsub.shakespeare.lit", subInfo)
+	if err != nil {
+		t.Fatalf("failed to create an unsub request: %v", err)
+	}
 	subR.Id = "unsub1"
 	if err != nil {
 		t.Fatalf("Could not create a sub request : %s", err)
@@ -157,6 +163,9 @@ func TestNewSubOptsRq(t *testing.T) {
 		Node: "princely_musings", Jid: "francisco@denmark.lit",
 	}
 	subR, err := stanza.NewSubOptsRq("pubsub.shakespeare.lit", subInfo)
+	if err != nil {
+		t.Fatalf("failed to create a sub options request: %v", err)
+	}
 	subR.Id = "options1"
 	if err != nil {
 		t.Fatalf("Could not create a sub request : %s", err)
@@ -264,6 +273,9 @@ func TestNewFormSubmission(t *testing.T) {
 	}
 
 	subR, err := stanza.NewFormSubmission("pubsub.shakespeare.lit", subInfo, submitFormExample)
+	if err != nil {
+		t.Fatalf("failed to create a form submission request: %v", err)
+	}
 	subR.Id = "options2"
 	if err != nil {
 		t.Fatalf("Could not create a sub request : %s", err)
@@ -313,6 +325,9 @@ func TestNewSubAndConfig(t *testing.T) {
 	}
 
 	subR, err := stanza.NewSubAndConfig("pubsub.shakespeare.lit", subInfo, submitFormExample)
+	if err != nil {
+		t.Fatalf("failed to create a sub and config request: %v", err)
+	}
 	subR.Id = "sub1"
 	if err != nil {
 		t.Fatalf("Could not create a sub request : %s", err)
@@ -482,6 +497,9 @@ func TestNewSpecificItemRequest(t *testing.T) {
 		"<item id=\"ae890ac52d0df67ed7cfdf51b644e901\"></item> </items> </pubsub> </iq>"
 
 	subR, err := stanza.NewSpecificItemRequest("pubsub.shakespeare.lit", "princely_musings", "ae890ac52d0df67ed7cfdf51b644e901")
+	if err != nil {
+		t.Fatalf("failed to create a specific item request: %v", err)
+	}
 	subR.Id = "items3"
 	if err != nil {
 		t.Fatalf("Could not create an items request : %s", err)
@@ -638,6 +656,9 @@ func TestNewDelItemFromNode(t *testing.T) {
 		"<item id=\"ae890ac52d0df67ed7cfdf51b644e901\"></item> </retract> </pubsub> </iq>"
 
 	subR, err := stanza.NewDelItemFromNode("pubsub.shakespeare.lit", "princely_musings", "ae890ac52d0df67ed7cfdf51b644e901", nil)
+	if err != nil {
+		t.Fatalf("failed to create a delete item from node request: %v", err)
+	}
 	subR.Id = "retract1"
 	if err != nil {
 		t.Fatalf("Could not create a del item request : %s", err)
@@ -677,6 +698,9 @@ func TestNewCreateNode(t *testing.T) {
 		"<pubsub xmlns=\"http://jabber.org/protocol/pubsub\"> <create node=\"princely_musings\"></create> </pubsub> </iq>"
 
 	subR, err := stanza.NewCreateNode("pubsub.shakespeare.lit", "princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create a create node request: %v", err)
+	}
 	subR.Id = "create1"
 	if err != nil {
 		t.Fatalf("Could not create a create node request : %s", err)
@@ -748,6 +772,10 @@ func TestNewCreateAndConfigNode(t *testing.T) {
 				{Var: "pubsub#max_payload_size", ValuesList: []string{"1028"}},
 			},
 		})
+
+	if err != nil {
+		t.Fatalf("failed to create a create and config node request: %v", err)
+	}
 	subR.Id = "create1"
 	if err != nil {
 		t.Fatalf("Could not create a create node request : %s", err)
@@ -796,6 +824,9 @@ func TestNewRetrieveAllSubsRequest(t *testing.T) {
 		"<pubsub xmlns=\"http://jabber.org/protocol/pubsub\"> <subscriptions></subscriptions> </pubsub> </iq>"
 
 	subR, err := stanza.NewRetrieveAllSubsRequest("pubsub.shakespeare.lit")
+	if err != nil {
+		t.Fatalf("failed to create a get all subs request: %v", err)
+	}
 	subR.Id = "subscriptions1"
 	if err != nil {
 		t.Fatalf("Could not create a create node request : %s", err)
@@ -856,6 +887,9 @@ func TestNewRetrieveAllAffilsRequest(t *testing.T) {
 		"<pubsub xmlns=\"http://jabber.org/protocol/pubsub\"> <affiliations></affiliations> </pubsub> </iq>"
 
 	subR, err := stanza.NewRetrieveAllAffilsRequest("pubsub.shakespeare.lit")
+	if err != nil {
+		t.Fatalf("failed to create a get all affiliations request: %v", err)
+	}
 	subR.Id = "affil1"
 	if err != nil {
 		t.Fatalf("Could not create retreive all affiliations request : %s", err)
@@ -914,7 +948,7 @@ func getPubSubGenericPayload(response string) (*stanza.PubSubGeneric, error) {
 
 	pubsub, ok := respIQ.Payload.(*stanza.PubSubGeneric)
 	if !ok {
-		errors.New("this iq payload is not a pubsub")
+		return nil, errors.New("this iq payload is not a pubsub")
 	}
 
 	return pubsub, nil

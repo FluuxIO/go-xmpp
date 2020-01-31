@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-var ErrTransportProtocolNotSupported = errors.New("Transport protocol not supported")
-var ErrTLSNotSupported = errors.New("Transport does not support StartTLS")
+var ErrTransportProtocolNotSupported = errors.New("transport protocol not supported")
+var ErrTLSNotSupported = errors.New("transport does not support StartTLS")
 
 // TODO: rename to transport config?
 type TransportConfiguration struct {
@@ -67,7 +67,7 @@ func NewClientTransport(config TransportConfiguration) Transport {
 // will be returned.
 func NewComponentTransport(config TransportConfiguration) (Transport, error) {
 	if strings.HasPrefix(config.Address, "ws:") || strings.HasPrefix(config.Address, "wss:") {
-		return nil, fmt.Errorf("Components only support XMPP transport: %w", ErrTransportProtocolNotSupported)
+		return nil, fmt.Errorf("components only support XMPP transport: %w", ErrTransportProtocolNotSupported)
 	}
 
 	config.Address = ensurePort(config.Address, 5222)

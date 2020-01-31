@@ -16,7 +16,7 @@ var reInsideWhtsp = regexp.MustCompile(`[\s\p{Zs}]`)
 // ============================================================================
 // Marshaller / unmarshaller test
 
-func checkMarshalling(t *testing.T, iq stanza.IQ) (*stanza.IQ, error) {
+func checkMarshalling(t *testing.T, iq *stanza.IQ) (*stanza.IQ, error) {
 	// Marshall
 	data, err := xml.Marshal(iq)
 	if err != nil {

@@ -144,5 +144,5 @@ func (h History) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) 
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTPresence, xml.Name{"http://jabber.org/protocol/muc", "x"}, MucPresence{})
+	TypeRegistry.MapExtension(PKTPresence, xml.Name{Space: "http://jabber.org/protocol/muc", Local: "x"}, MucPresence{})
 }
