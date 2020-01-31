@@ -119,26 +119,27 @@ func (c *Command) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 			case "affiliations":
 				a := Actions{}
-				d.DecodeElement(&a, &tt)
+				err = d.DecodeElement(&a, &tt)
 				c.CommandElement = &a
 			case "configure":
 				nt := Note{}
-				d.DecodeElement(&nt, &tt)
+				err = d.DecodeElement(&nt, &tt)
 				c.CommandElement = &nt
 			case "x":
 				f := Form{}
-				d.DecodeElement(&f, &tt)
+				err = d.DecodeElement(&f, &tt)
 				c.CommandElement = &f
 			default:
 				n := Node{}
-				e := d.DecodeElement(&n, &tt)
-				_ = e
+				err = d.DecodeElement(&n, &tt)
 				c.CommandElement = &n
 				if err != nil {
 					return err
 				}
 			}
-
+			if err != nil {
+				return err
+			}
 		case xml.EndElement:
 			if tt == start.End() {
 				return nil

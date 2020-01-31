@@ -159,12 +159,15 @@ func respondToIQ(t *testing.T, sc *ServerConn) {
 // When a presence stanza is automatically sent (right now it's the case in the client), we may want to discard it
 // and test further stanzas.
 func discardPresence(t *testing.T, sc *ServerConn) {
-	sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	err := sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	if err != nil {
+		t.Fatalf("failed to set deadline: %v", err)
+	}
 	defer sc.connection.SetDeadline(time.Time{})
 	var presenceStz stanza.Presence
 
 	recvBuf := make([]byte, len(InitialPresence))
-	_, err := sc.connection.Read(recvBuf[:]) // recv data
+	_, err = sc.connection.Read(recvBuf[:]) // recv data
 
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
@@ -173,7 +176,7 @@ func discardPresence(t *testing.T, sc *ServerConn) {
 			t.Errorf("read error: %s", err)
 		}
 	}
-	xml.Unmarshal(recvBuf, &presenceStz)
+	err = xml.Unmarshal(recvBuf, &presenceStz)
 
 	if err != nil {
 		t.Errorf("Expected presence but this happened : %s", err.Error())
@@ -182,10 +185,13 @@ func discardPresence(t *testing.T, sc *ServerConn) {
 
 // Reads next request coming from the Component. Expecting it to be an IQ request
 func receiveIq(sc *ServerConn) (*stanza.IQ, error) {
-	sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	err := sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	if err != nil {
+		return nil, err
+	}
 	defer sc.connection.SetDeadline(time.Time{})
 	var iqStz stanza.IQ
-	err := sc.decoder.Decode(&iqStz)
+	err = sc.decoder.Decode(&iqStz)
 	if err != nil {
 		return nil, err
 	}
