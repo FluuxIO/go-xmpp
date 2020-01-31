@@ -226,7 +226,10 @@ func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (*IQ, erro
 		return nil, err
 	}
 	var n Node
-	xml.Unmarshal(data, &n)
+	err = xml.Unmarshal(data, &n)
+	if err != nil {
+		return nil, err
+	}
 
 	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
 	if err != nil {
@@ -406,33 +409,35 @@ func (pso *PubSubOwner) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 
 			case "affiliations":
 				aff := AffiliationsOwner{}
-				d.DecodeElement(&aff, &tt)
+				err = d.DecodeElement(&aff, &tt)
 				pso.OwnerUseCase = &aff
 			case "configure":
 				co := ConfigureOwner{}
-				d.DecodeElement(&co, &tt)
+				err = d.DecodeElement(&co, &tt)
 				pso.OwnerUseCase = &co
 			case "default":
 				def := DefaultOwner{}
-				d.DecodeElement(&def, &tt)
+				err = d.DecodeElement(&def, &tt)
 				pso.OwnerUseCase = &def
 			case "delete":
 				del := DeleteOwner{}
-				d.DecodeElement(&del, &tt)
+				err = d.DecodeElement(&del, &tt)
 				pso.OwnerUseCase = &del
 			case "purge":
 				pu := PurgeOwner{}
-				d.DecodeElement(&pu, &tt)
+				err = d.DecodeElement(&pu, &tt)
 				pso.OwnerUseCase = &pu
 			case "subscriptions":
 				subs := SubscriptionsOwner{}
-				d.DecodeElement(&subs, &tt)
+				err = d.DecodeElement(&subs, &tt)
 				pso.OwnerUseCase = &subs
 				if err != nil {
 					return err
 				}
 			}
-
+			if err != nil {
+				return err
+			}
 		case xml.EndElement:
 			if tt == start.End() {
 				return nil

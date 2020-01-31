@@ -47,6 +47,9 @@ func (c CustomPayload) Namespace() string {
 	return c.XMLName.Space
 }
 
+func (c CustomPayload) GetSet() *stanza.ResultSet {
+	return nil
+}
 func init() {
 	stanza.TypeRegistry.MapExtension(stanza.PKTIQ, xml.Name{Space: "my:custom:payload", Local: "query"}, CustomPayload{})
 }

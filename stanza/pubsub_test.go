@@ -44,9 +44,6 @@ func TestNewSubRequest(t *testing.T) {
 		t.Fatalf("failed to create a sub request: %v", err)
 	}
 	subR.Id = "sub1"
-	if err != nil {
-		t.Fatalf("Could not create a sub request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
@@ -103,9 +100,6 @@ func TestNewUnSubRequest(t *testing.T) {
 		t.Fatalf("failed to create an unsub request: %v", err)
 	}
 	subR.Id = "unsub1"
-	if err != nil {
-		t.Fatalf("Could not create a sub request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
@@ -167,9 +161,6 @@ func TestNewSubOptsRq(t *testing.T) {
 		t.Fatalf("failed to create a sub options request: %v", err)
 	}
 	subR.Id = "options1"
-	if err != nil {
-		t.Fatalf("Could not create a sub request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
@@ -277,9 +268,6 @@ func TestNewFormSubmission(t *testing.T) {
 		t.Fatalf("failed to create a form submission request: %v", err)
 	}
 	subR.Id = "options2"
-	if err != nil {
-		t.Fatalf("Could not create a sub request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
@@ -329,9 +317,6 @@ func TestNewSubAndConfig(t *testing.T) {
 		t.Fatalf("failed to create a sub and config request: %v", err)
 	}
 	subR.Id = "sub1"
-	if err != nil {
-		t.Fatalf("Could not create a sub request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
@@ -501,9 +486,6 @@ func TestNewSpecificItemRequest(t *testing.T) {
 		t.Fatalf("failed to create a specific item request: %v", err)
 	}
 	subR.Id = "items3"
-	if err != nil {
-		t.Fatalf("Could not create an items request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated sub request : %s", e)
@@ -660,9 +642,6 @@ func TestNewDelItemFromNode(t *testing.T) {
 		t.Fatalf("failed to create a delete item from node request: %v", err)
 	}
 	subR.Id = "retract1"
-	if err != nil {
-		t.Fatalf("Could not create a del item request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated del item request : %s", e)
@@ -702,9 +681,6 @@ func TestNewCreateNode(t *testing.T) {
 		t.Fatalf("failed to create a create node request: %v", err)
 	}
 	subR.Id = "create1"
-	if err != nil {
-		t.Fatalf("Could not create a create node request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated del item request : %s", e)
@@ -777,9 +753,6 @@ func TestNewCreateAndConfigNode(t *testing.T) {
 		t.Fatalf("failed to create a create and config node request: %v", err)
 	}
 	subR.Id = "create1"
-	if err != nil {
-		t.Fatalf("Could not create a create node request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated del item request : %s", e)
@@ -828,9 +801,6 @@ func TestNewRetrieveAllSubsRequest(t *testing.T) {
 		t.Fatalf("failed to create a get all subs request: %v", err)
 	}
 	subR.Id = "subscriptions1"
-	if err != nil {
-		t.Fatalf("Could not create a create node request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated del item request : %s", e)
@@ -891,9 +861,6 @@ func TestNewRetrieveAllAffilsRequest(t *testing.T) {
 		t.Fatalf("failed to create a get all affiliations request: %v", err)
 	}
 	subR.Id = "affil1"
-	if err != nil {
-		t.Fatalf("Could not create retreive all affiliations request : %s", err)
-	}
 
 	if _, e := checkMarshalling(t, subR); e != nil {
 		t.Fatalf("Failed to check marshalling for generated retreive all affiliations request : %s", e)

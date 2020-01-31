@@ -411,7 +411,7 @@ func closeConn(t *testing.T, sc *ServerConn) {
 		}
 		switch cls.(type) {
 		case stanza.StreamClosePacket:
-			fmt.Fprintf(sc.connection, stanza.StreamClose)
+			sc.connection.Write([]byte(stanza.StreamClose))
 			return
 		}
 	}
@@ -430,7 +430,7 @@ func handlerClientConnectWithSession(t *testing.T, sc *ServerConn) {
 
 	sendStreamFeatures(t, sc) // Send initial features
 	readAuth(t, sc.decoder)
-	fmt.Fprintln(sc.connection, "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>")
+	sc.connection.Write([]byte("<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>"))
 
 	checkClientOpenStream(t, sc) // Reset stream
 	sendRFC3921Feature(t, sc)    // Send post auth features
@@ -439,7 +439,10 @@ func handlerClientConnectWithSession(t *testing.T, sc *ServerConn) {
 }
 
 func checkClientOpenStream(t *testing.T, sc *ServerConn) {
-	sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	err := sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	if err != nil {
+		t.Fatalf("failed to set deadline: %v", err)
+	}
 	defer sc.connection.SetDeadline(time.Time{})
 
 	for { // TODO clean up. That for loop is not elegant and I prefer bounded recursion.

@@ -60,7 +60,7 @@ func TestGenerateHandshakeId(t *testing.T) {
 
 		checkOpenStreamHandshakeID(t, sc, <-uchan)
 		readHandshakeComponent(t, sc.decoder)
-		fmt.Fprintln(sc.connection, "<handshake/>") // That's all the server needs to return (see xep-0114)
+		sc.connection.Write([]byte("<handshake/>")) // That's all the server needs to return (see xep-0114)
 		return
 	}
 
@@ -401,7 +401,10 @@ func handlerForComponentIQSend(t *testing.T, sc *ServerConn) {
 
 // Used for ID and handshake related tests
 func checkOpenStreamHandshakeID(t *testing.T, sc *ServerConn, streamID string) {
-	sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	err := sc.connection.SetDeadline(time.Now().Add(defaultTimeout))
+	if err != nil {
+		t.Fatalf("failed to set deadline: %v", err)
+	}
 	defer sc.connection.SetDeadline(time.Time{})
 
 	for { // TODO clean up. That for loop is not elegant and I prefer bounded recursion.
@@ -441,7 +444,10 @@ func handlerComponentFailedHandshakeDefaultID(t *testing.T, sc *ServerConn) {
 		Body:  "Fail my handshake.",
 	}
 	s, _ := xml.Marshal(me)
-	fmt.Fprintln(sc.connection, string(s))
+	_, err := sc.connection.Write(s)
+	if err != nil {
+		t.Fatalf("could not write message: %v", err)
+	}
 
 	return
 }
@@ -469,6 +475,6 @@ func readHandshakeComponent(t *testing.T, decoder *xml.Decoder) {
 func handlerForComponentHandshakeDefaultID(t *testing.T, sc *ServerConn) {
 	checkOpenStreamHandshakeDefaultID(t, sc)
 	readHandshakeComponent(t, sc.decoder)
-	fmt.Fprintln(sc.connection, "<handshake/>") // That's all the server needs to return (see xep-0114)
+	sc.connection.Write([]byte("<handshake/>")) // That's all the server needs to return (see xep-0114)
 	return
 }
