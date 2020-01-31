@@ -7,7 +7,10 @@ import (
 )
 
 func TestRosterBuilder(t *testing.T) {
-	iq := NewIQ(Attrs{Type: IQTypeResult, From: "romeo@montague.net/orchard"})
+	iq, err := NewIQ(Attrs{Type: IQTypeResult, From: "romeo@montague.net/orchard"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	var noGroup []string
 
 	iq.RosterItems().AddItem("xl8ceawrfu8zdneomw1h6h28d@crypho.com",
@@ -91,7 +94,7 @@ func TestRosterBuilder(t *testing.T) {
 	}
 }
 
-func checkMarshalling(t *testing.T, iq IQ) (*IQ, error) {
+func checkMarshalling(t *testing.T, iq *IQ) (*IQ, error) {
 	// Marshall
 	data, err := xml.Marshal(iq)
 	if err != nil {

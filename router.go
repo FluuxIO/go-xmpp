@@ -42,7 +42,7 @@ func NewRouter() *Router {
 // route is called by the XMPP client to dispatch stanza received using the set up routes.
 // It is also used by test, but is not supposed to be used directly by users of the library.
 func (r *Router) route(s Sender, p stanza.Packet) {
-	iq, isIq := p.(stanza.IQ)
+	iq, isIq := p.(*stanza.IQ)
 	if isIq {
 		r.IQResultRouteLock.RLock()
 		route, ok := r.IQResultRoutes[iq.Id]
@@ -51,7 +51,7 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 			r.IQResultRouteLock.Lock()
 			delete(r.IQResultRoutes, iq.Id)
 			r.IQResultRouteLock.Unlock()
-			route.result <- iq
+			route.result <- *iq
 			close(route.result)
 			return
 		}
@@ -70,7 +70,7 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 	}
 }
 
-func iqNotImplemented(s Sender, iq stanza.IQ) {
+func iqNotImplemented(s Sender, iq *stanza.IQ) {
 	err := stanza.Err{
 		XMLName: xml.Name{Local: "error"},
 		Code:    501,
@@ -232,7 +232,7 @@ func (n nameMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
 	switch p.(type) {
 	case stanza.Message:
 		name = "message"
-	case stanza.IQ:
+	case *stanza.IQ:
 		name = "iq"
 	case stanza.Presence:
 		name = "presence"
@@ -259,7 +259,7 @@ type nsTypeMatcher []string
 func (m nsTypeMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
 	var stanzaType stanza.StanzaType
 	switch packet := p.(type) {
-	case stanza.IQ:
+	case *stanza.IQ:
 		stanzaType = packet.Type
 	case stanza.Presence:
 		stanzaType = packet.Type
@@ -291,7 +291,7 @@ func (r *Route) StanzaType(types ...string) *Route {
 type nsIQMatcher []string
 
 func (m nsIQMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return false
 	}

@@ -25,7 +25,10 @@ func TestIQResultRoutes(t *testing.T) {
 	// Check if the IQ handler was called
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 	defer cancel()
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, Id: "1234"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	res := router.NewIQResultRoute(ctx, "1234")
 	go router.route(conn, iq)
 	select {
@@ -71,7 +74,10 @@ func TestNameMatcher(t *testing.T) {
 
 	// Check that an IQ packet is not matched
 	conn = NewSenderMock()
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	iq.Payload = &stanza.DiscoInfo{}
 	router.route(conn, iq)
 	if conn.String() == successFlag {
@@ -89,7 +95,10 @@ func TestIQNSMatcher(t *testing.T) {
 
 	// Check that an IQ with proper namespace does match
 	conn := NewSenderMock()
-	iqDisco := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	iqDisco, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create iqDisco: %v", err)
+	}
 	// TODO: Add a function to generate payload with proper namespace initialisation
 	iqDisco.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
@@ -103,7 +112,10 @@ func TestIQNSMatcher(t *testing.T) {
 
 	// Check that another namespace is not matched
 	conn = NewSenderMock()
-	iqVersion := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	iqVersion, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, To: "localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create iqVersion: %v", err)
+	}
 	// TODO: Add a function to generate payload with proper namespace initialisation
 	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
@@ -146,7 +158,10 @@ func TestTypeMatcher(t *testing.T) {
 
 	// We do not match on other types
 	conn = NewSenderMock()
-	iqVersion := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	iqVersion, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create iqVersion: %v", err)
+	}
 	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
@@ -169,22 +184,31 @@ func TestCompositeMatcher(t *testing.T) {
 		})
 
 	// Data set
-	getVersionIq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	getVersionIq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create getVersionIq: %v", err)
+	}
 	getVersionIq.Payload = &stanza.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	setVersionIq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	setVersionIq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create setVersionIq: %v", err)
+	}
 	setVersionIq.Payload = &stanza.Version{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
 			Local: "query",
 		}}
 
-	GetDiscoIq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
-	GetDiscoIq.Payload = &stanza.DiscoInfo{
+	getDiscoIq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create getDiscoIq: %v", err)
+	}
+	getDiscoIq.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "http://jabber.org/protocol/disco#info",
 			Local: "query",
@@ -200,7 +224,7 @@ func TestCompositeMatcher(t *testing.T) {
 	}{
 		{name: "match get version iq", input: getVersionIq, want: true},
 		{name: "ignore set version iq", input: setVersionIq, want: false},
-		{name: "ignore get discoinfo iq", input: GetDiscoIq, want: false},
+		{name: "ignore get discoinfo iq", input: getDiscoIq, want: false},
 		{name: "ignore message", input: message, want: false},
 	}
 
@@ -238,7 +262,10 @@ func TestCatchallMatcher(t *testing.T) {
 	}
 
 	conn = NewSenderMock()
-	iqVersion := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	iqVersion, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "service.localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create iqVersion: %v", err)
+	}
 	iqVersion.Payload = &stanza.DiscoInfo{
 		XMLName: xml.Name{
 			Space: "jabber:iq:version",
@@ -274,7 +301,7 @@ func (s SenderMock) Send(packet stanza.Packet) error {
 	return nil
 }
 
-func (s SenderMock) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
+func (s SenderMock) SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error) {
 	out, err := xml.Marshal(iq)
 	if err != nil {
 		return nil, err

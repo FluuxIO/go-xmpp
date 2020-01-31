@@ -69,10 +69,16 @@ type Bind struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 	Resource string   `xml:"resource,omitempty"`
 	Jid      string   `xml:"jid,omitempty"`
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (b *Bind) Namespace() string {
 	return b.XMLName.Space
+}
+
+func (b *Bind) GetSet() *ResultSet {
+	return b.ResultSet
 }
 
 // ============================================================================
@@ -89,10 +95,16 @@ func (b *Bind) Namespace() string {
 type StreamSession struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-session session"`
 	Optional bool     // If element does exist, it mean we are not required to open session
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (s *StreamSession) Namespace() string {
 	return s.XMLName.Space
+}
+
+func (s *StreamSession) GetSet() *ResultSet {
+	return s.ResultSet
 }
 
 func (s *StreamSession) IsOptional() bool {

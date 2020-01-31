@@ -28,7 +28,10 @@ func TestSessionFeatures(t *testing.T) {
 
 // Check that the Session tag can be used in IQ decoding
 func TestSessionIQ(t *testing.T) {
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, Id: "session"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, Id: "session"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	iq.Payload = &stanza.StreamSession{XMLName: xml.Name{Local: "session"}, Optional: true}
 
 	data, err := xml.Marshal(iq)

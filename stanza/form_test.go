@@ -51,7 +51,10 @@ const (
 )
 
 func TestMarshalFormSubmit(t *testing.T) {
-	formIQ := NewIQ(Attrs{From: clientJid, To: serviceJid, Id: iqId, Type: IQTypeSet})
+	formIQ, err := NewIQ(Attrs{From: clientJid, To: serviceJid, Id: iqId, Type: IQTypeSet})
+	if err != nil {
+		t.Fatalf("failed to create formIQ: %v", err)
+	}
 	formIQ.Payload = &PubSubOwner{
 		OwnerUseCase: &ConfigureOwner{
 			Node: serviceNode,

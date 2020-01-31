@@ -130,13 +130,16 @@ func respondToIQ(t *testing.T, sc *ServerConn) {
 		t.Fatalf("failed to receive IQ : %s", err.Error())
 	}
 
-	if !iqReq.IsValid() {
+	if vld, _ := iqReq.IsValid(); !vld {
 		mockIQError(sc.connection)
 		return
 	}
 
 	// Crafting response
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: iqReq.To, To: iqReq.From, Id: iqReq.Id, Lang: "en"})
+	iqResp, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: iqReq.To, To: iqReq.From, Id: iqReq.Id, Lang: "en"})
+	if err != nil {
+		t.Fatalf("failed to create iqResp: %v", err)
+	}
 	disco := iqResp.DiscoInfo()
 	disco.AddFeatures("vcard-temp",
 		`http://jabber.org/protocol/address`)

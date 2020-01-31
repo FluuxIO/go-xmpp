@@ -210,5 +210,4 @@ func (pse *PubSubEvent) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 		}
 
 	}
-	return nil
 }

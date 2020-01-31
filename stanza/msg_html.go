@@ -18,5 +18,5 @@ type HTMLBody struct {
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{"http://jabber.org/protocol/xhtml-im", "html"}, HTML{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: "http://jabber.org/protocol/xhtml-im", Local: "html"}, HTML{})
 }

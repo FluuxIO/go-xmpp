@@ -186,7 +186,7 @@ func startClient(g *gocui.Gui, config *config) {
 
 	// ==========================
 	// Start working
-	updateRosterFromConfig(g, config)
+	updateRosterFromConfig(config)
 	// Sending the default contact in a channel. Default value is the first contact in the list from the config.
 	viewState.currentContact = strings.Split(config.Contacts, configContactSep)[0]
 	// Informing user of the default contact
@@ -283,7 +283,7 @@ func errorHandler(err error) {
 
 // Read the client roster from the config. This does not check with the server that the roster is correct.
 // If user tries to send a message to someone not registered with the server, the server will return an error.
-func updateRosterFromConfig(g *gocui.Gui, config *config) {
+func updateRosterFromConfig(config *config) {
 	viewState.contacts = append(strings.Split(config.Contacts, configContactSep), backFromContacts)
 	// Put a "go back" button at the end of the list
 	viewState.contacts = append(viewState.contacts, backFromContacts)

@@ -37,9 +37,9 @@ type StatePaused struct {
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatStateNotifications, "active"}, StateActive{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatStateNotifications, "composing"}, StateComposing{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatStateNotifications, "gone"}, StateGone{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatStateNotifications, "inactive"}, StateInactive{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatStateNotifications, "paused"}, StatePaused{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatStateNotifications, Local: "active"}, StateActive{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatStateNotifications, Local: "composing"}, StateComposing{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatStateNotifications, Local: "gone"}, StateGone{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatStateNotifications, Local: "inactive"}, StateInactive{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatStateNotifications, Local: "paused"}, StatePaused{})
 }

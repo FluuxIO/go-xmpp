@@ -38,7 +38,11 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 		},
 		Jid:        viper.GetString("jid"),
 		Credential: xmpp.Password(viper.GetString("password")),
-	}, xmpp.NewRouter())
+	},
+		xmpp.NewRouter(),
+		func(err error) {
+			log.Println(err)
+		})
 
 	if err != nil {
 		log.Errorf("error when starting xmpp client: %s", err)

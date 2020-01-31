@@ -29,10 +29,17 @@ type PubSubGeneric struct {
 	// To use in responses to sub/unsub for instance
 	// Subscription options
 	Unsubscribe *SubInfo `xml:"unsubscribe,omitempty"`
+
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (p *PubSubGeneric) Namespace() string {
 	return p.XMLName.Space
+}
+
+func (p *PubSubGeneric) GetSet() *ResultSet {
+	return p.ResultSet
 }
 
 type Affiliations struct {
@@ -156,12 +163,15 @@ type PubSubOption struct {
 // It's a Set type IQ.
 // Information about the subscription and the requester are separated. subInfo contains information about the subscription.
 // 6.1 Subscribe to a Node
-func NewSubRq(serviceId string, subInfo SubInfo) (IQ, error) {
+func NewSubRq(serviceId string, subInfo SubInfo) (*IQ, error) {
 	if e := subInfo.validate(); e != nil {
-		return IQ{}, e
+		return nil, e
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Subscribe: &subInfo,
 	}
@@ -172,12 +182,15 @@ func NewSubRq(serviceId string, subInfo SubInfo) (IQ, error) {
 // It's a Set type IQ
 // Information about the subscription and the requester are separated. subInfo contains information about the subscription.
 // 6.2 Unsubscribe from a Node
-func NewUnsubRq(serviceId string, subInfo SubInfo) (IQ, error) {
+func NewUnsubRq(serviceId string, subInfo SubInfo) (*IQ, error) {
 	if e := subInfo.validate(); e != nil {
-		return IQ{}, e
+		return nil, e
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Unsubscribe: &subInfo,
 	}
@@ -188,12 +201,15 @@ func NewUnsubRq(serviceId string, subInfo SubInfo) (IQ, error) {
 // It's a Get type IQ
 // Information about the subscription and the requester are separated. subInfo contains information about the subscription.
 // 6.3 Configure Subscription Options
-func NewSubOptsRq(serviceId string, subInfo SubInfo) (IQ, error) {
+func NewSubOptsRq(serviceId string, subInfo SubInfo) (*IQ, error) {
 	if e := subInfo.validate(); e != nil {
-		return IQ{}, e
+		return nil, e
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		SubOptions: &SubOptions{
 			SubInfo: subInfo,
@@ -205,15 +221,18 @@ func NewSubOptsRq(serviceId string, subInfo SubInfo) (IQ, error) {
 // NewFormSubmission builds a form submission pubsub IQ
 // Information about the subscription and the requester are separated. subInfo contains information about the subscription.
 // 6.3.5 Form Submission
-func NewFormSubmission(serviceId string, subInfo SubInfo, form *Form) (IQ, error) {
+func NewFormSubmission(serviceId string, subInfo SubInfo, form *Form) (*IQ, error) {
 	if e := subInfo.validate(); e != nil {
-		return IQ{}, e
+		return nil, e
 	}
 	if form.Type != FormTypeSubmit {
-		return IQ{}, errors.New("form type was expected to be submit but was : " + form.Type)
+		return nil, errors.New("form type was expected to be submit but was : " + form.Type)
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		SubOptions: &SubOptions{
 			SubInfo: subInfo,
@@ -229,14 +248,17 @@ func NewFormSubmission(serviceId string, subInfo SubInfo, form *Form) (IQ, error
 // since the value of the <subscribe/> element's 'node' attribute specifies the desired NodeID and
 // the value of the <subscribe/> element's 'jid' attribute specifies the subscriber's JID
 // 6.3.7 Subscribe and Configure
-func NewSubAndConfig(serviceId string, subInfo SubInfo, form *Form) (IQ, error) {
+func NewSubAndConfig(serviceId string, subInfo SubInfo, form *Form) (*IQ, error) {
 	if e := subInfo.validate(); e != nil {
-		return IQ{}, e
+		return nil, e
 	}
 	if form.Type != FormTypeSubmit {
-		return IQ{}, errors.New("form type was expected to be submit but was : " + form.Type)
+		return nil, errors.New("form type was expected to be submit but was : " + form.Type)
 	}
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Subscribe: &subInfo,
 		SubOptions: &SubOptions{
@@ -251,8 +273,11 @@ func NewSubAndConfig(serviceId string, subInfo SubInfo, form *Form) (IQ, error) 
 // NewItemsRequest creates a request to query existing items from a node.
 // Specify a "maxItems" value to request only the last maxItems items. If 0, requests all items.
 // 6.5.2 Requesting All List AND 6.5.7 Requesting the Most Recent List
-func NewItemsRequest(serviceId string, node string, maxItems int) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewItemsRequest(serviceId string, node string, maxItems int) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Items: &Items{Node: node},
 	}
@@ -266,8 +291,11 @@ func NewItemsRequest(serviceId string, node string, maxItems int) (IQ, error) {
 
 // NewItemsRequest creates a request to get a specific item from a node.
 // 6.5.8 Requesting a Particular Item
-func NewSpecificItemRequest(serviceId, node, itemId string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewSpecificItemRequest(serviceId, node, itemId string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Items: &Items{Node: node,
 			List: []Item{
@@ -281,13 +309,16 @@ func NewSpecificItemRequest(serviceId, node, itemId string) (IQ, error) {
 }
 
 // NewPublishItemRq creates a request to publish a single item to a node identified by its provided ID
-func NewPublishItemRq(serviceId, nodeID, pubItemID string, item Item) (IQ, error) {
+func NewPublishItemRq(serviceId, nodeID, pubItemID string, item Item) (*IQ, error) {
 	// "The <publish/> element MUST possess a 'node' attribute, specifying the NodeID of the node."
 	if strings.TrimSpace(nodeID) == "" {
-		return IQ{}, errors.New("cannot publish without a target node ID")
+		return nil, errors.New("cannot publish without a target node ID")
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Publish: &Publish{Node: nodeID, Items: []Item{item}},
 	}
@@ -306,13 +337,16 @@ func NewPublishItemRq(serviceId, nodeID, pubItemID string, item Item) (IQ, error
 // NewPublishItemOptsRq creates a request to publish items to a node identified by its provided ID, along with configuration options
 // A pubsub service MAY support the ability to specify options along with a publish request
 //(if so, it MUST advertise support for the "http://jabber.org/protocol/pubsub#publish-options" feature).
-func NewPublishItemOptsRq(serviceId, nodeID string, items []Item, options *PublishOptions) (IQ, error) {
+func NewPublishItemOptsRq(serviceId, nodeID string, items []Item, options *PublishOptions) (*IQ, error) {
 	// "The <publish/> element MUST possess a 'node' attribute, specifying the NodeID of the node."
 	if strings.TrimSpace(nodeID) == "" {
-		return IQ{}, errors.New("cannot publish without a target node ID")
+		return nil, errors.New("cannot publish without a target node ID")
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Publish:        &Publish{Node: nodeID, Items: items},
 		PublishOptions: options,
@@ -324,13 +358,16 @@ func NewPublishItemOptsRq(serviceId, nodeID string, items []Item, options *Publi
 // NewDelItemFromNode creates a request to delete and item from a node, given its id.
 // To delete an item, the publisher sends a retract request.
 // This helper function follows 7.2 Delete an Item from a Node
-func NewDelItemFromNode(serviceId, nodeID, itemId string, notify *bool) (IQ, error) {
+func NewDelItemFromNode(serviceId, nodeID, itemId string, notify *bool) (*IQ, error) {
 	// "The <retract/> element MUST possess a 'node' attribute, specifying the NodeID of the node."
 	if strings.TrimSpace(nodeID) == "" {
-		return IQ{}, errors.New("cannot delete item without a target node ID")
+		return nil, errors.New("cannot delete item without a target node ID")
 	}
 
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Retract: &Retract{Node: nodeID, Items: []Item{{Id: itemId}}, Notify: notify},
 	}
@@ -339,8 +376,11 @@ func NewDelItemFromNode(serviceId, nodeID, itemId string, notify *bool) (IQ, err
 
 // NewCreateAndConfigNode makes a request for node creation that has the desired node configuration.
 // See 8.1.3 Create and Configure a Node
-func NewCreateAndConfigNode(serviceId, nodeID string, confForm *Form) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+func NewCreateAndConfigNode(serviceId, nodeID string, confForm *Form) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Create:    &Create{Node: nodeID},
 		Configure: &Configure{Form: confForm},
@@ -350,8 +390,11 @@ func NewCreateAndConfigNode(serviceId, nodeID string, confForm *Form) (IQ, error
 
 // NewCreateNode builds a request to create a node on the service referenced by "serviceId"
 // See 8.1 Create a Node
-func NewCreateNode(serviceId, nodeName string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+func NewCreateNode(serviceId, nodeName string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeSet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Create: &Create{Node: nodeName},
 	}
@@ -361,8 +404,11 @@ func NewCreateNode(serviceId, nodeName string) (IQ, error) {
 // NewRetrieveAllSubsRequest builds a request to retrieve all subscriptions from all nodes
 // In order to make the request, the requesting entity MUST send an IQ-get whose <pubsub/>
 // child contains an empty <subscriptions/> element with no attributes.
-func NewRetrieveAllSubsRequest(serviceId string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewRetrieveAllSubsRequest(serviceId string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Subscriptions: &Subscriptions{},
 	}
@@ -371,8 +417,11 @@ func NewRetrieveAllSubsRequest(serviceId string) (IQ, error) {
 
 // NewRetrieveAllAffilsRequest builds a request to retrieve all affiliations from all nodes
 // In order to make the request of the service, the requesting entity includes an empty <affiliations/> element with no attributes.
-func NewRetrieveAllAffilsRequest(serviceId string) (IQ, error) {
-	iq := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+func NewRetrieveAllAffilsRequest(serviceId string) (*IQ, error) {
+	iq, err := NewIQ(Attrs{Type: IQTypeGet, To: serviceId})
+	if err != nil {
+		return nil, err
+	}
 	iq.Payload = &PubSubGeneric{
 		Affiliations: &Affiliations{},
 	}

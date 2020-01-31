@@ -16,6 +16,9 @@ func TestNewConfigureNode(t *testing.T) {
 		"</pubsub> </iq>"
 
 	subR, err := stanza.NewConfigureNode("pubsub.shakespeare.lit", "princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create a configure node request: %v", err)
+	}
 	subR.Id = "config1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -129,6 +132,9 @@ func TestNewRequestDefaultConfig(t *testing.T) {
 		"<pubsub xmlns=\"http://jabber.org/protocol/pubsub#owner\"> <default></default> </pubsub> </iq>"
 
 	subR, err := stanza.NewRequestDefaultConfig("pubsub.shakespeare.lit")
+	if err != nil {
+		t.Fatalf("failed to create a default config request: %v", err)
+	}
 	subR.Id = "def1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -239,6 +245,9 @@ func TestNewDelNode(t *testing.T) {
 		"<delete node=\"princely_musings\"></delete> </pubsub> </iq>"
 
 	subR, err := stanza.NewDelNode("pubsub.shakespeare.lit", "princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create a node delete request: %v", err)
+	}
 	subR.Id = "delete1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -311,6 +320,9 @@ func TestNewPurgeAllItems(t *testing.T) {
 		"<purge node=\"princely_musings\"></purge> </pubsub> </iq>"
 
 	subR, err := stanza.NewPurgeAllItems("pubsub.shakespeare.lit", "princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create a purge all items request: %v", err)
+	}
 	subR.Id = "purge1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -367,6 +379,9 @@ func TestNewApproveSubRequest(t *testing.T) {
 	}
 
 	subR, err := stanza.NewApproveSubRequest("pubsub.shakespeare.lit", "approve1", apprForm)
+	if err != nil {
+		t.Fatalf("failed to create a sub approval request: %v", err)
+	}
 	subR.Id = "approve1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -404,6 +419,9 @@ func TestNewGetPendingSubRequests(t *testing.T) {
 		"</command> </iq>"
 
 	subR, err := stanza.NewGetPendingSubRequests("pubsub.shakespeare.lit")
+	if err != nil {
+		t.Fatalf("failed to create a get pending subs request: %v", err)
+	}
 	subR.Id = "pending1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -461,12 +479,12 @@ func TestNewGetPendingSubRequestsResp(t *testing.T) {
 
 	_, ok := respIQ.Payload.(*stanza.Command)
 	if !ok {
-		errors.New("this iq payload is not a command")
+		t.Fatal("this iq payload is not a command")
 	}
 
 	fMap, err := respIQ.GetFormFields()
 	if err != nil || len(fMap) != 2 {
-		errors.New("could not parse command form fields")
+		t.Fatal("could not parse command form fields")
 	}
 
 }
@@ -485,6 +503,9 @@ func TestNewApprovePendingSubRequest(t *testing.T) {
 	subR, err := stanza.NewApprovePendingSubRequest("pubsub.shakespeare.lit",
 		"pubsub-get-pending:20031021T150901Z-600",
 		"princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create a approve pending sub request: %v", err)
+	}
 	subR.Id = "pending2"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -524,6 +545,9 @@ func TestNewSubListRqPl(t *testing.T) {
 		"<subscriptions node=\"princely_musings\"></subscriptions> </pubsub> </iq>"
 
 	subR, err := stanza.NewSubListRqPl("pubsub.shakespeare.lit", "princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create a sub list request: %v", err)
+	}
 	subR.Id = "subman1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -575,7 +599,7 @@ func TestNewSubListRqPlResp(t *testing.T) {
 
 	pubsub, ok := respIQ.Payload.(*stanza.PubSubOwner)
 	if !ok {
-		errors.New("this iq payload is not a command")
+		t.Fatal("this iq payload is not a command")
 	}
 
 	subs, ok := pubsub.OwnerUseCase.(*stanza.SubscriptionsOwner)
@@ -599,6 +623,9 @@ func TestNewAffiliationListRequest(t *testing.T) {
 		"<affiliations node=\"princely_musings\"></affiliations> </pubsub> </iq>"
 
 	subR, err := stanza.NewAffiliationListRequest("pubsub.shakespeare.lit", "princely_musings")
+	if err != nil {
+		t.Fatalf("failed to create an affiliations list request: %v", err)
+	}
 	subR.Id = "ent1"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -648,7 +675,7 @@ func TestNewAffiliationListRequestResp(t *testing.T) {
 
 	pubsub, ok := respIQ.Payload.(*stanza.PubSubOwner)
 	if !ok {
-		errors.New("this iq payload is not a command")
+		t.Fatal("this iq payload is not a command")
 	}
 
 	affils, ok := pubsub.OwnerUseCase.(*stanza.AffiliationsOwner)
@@ -690,6 +717,9 @@ func TestNewModifAffiliationRequest(t *testing.T) {
 	}
 
 	subR, err := stanza.NewModifAffiliationRequest("pubsub.shakespeare.lit", "princely_musings", affils)
+	if err != nil {
+		t.Fatalf("failed to create a modif affiliation request: %v", err)
+	}
 	subR.Id = "ent3"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -833,6 +863,10 @@ func TestNewFormSubmissionOwner(t *testing.T) {
 			{Var: "pubsub#access_model", ValuesList: []string{"roster"}},
 			{Var: "pubsub#roster_groups_allowed", ValuesList: []string{"friends", "servants", "courtiers"}},
 		})
+	if err != nil {
+		t.Fatalf("failed to create a form submission request: %v", err)
+	}
+
 	subR.Id = "config2"
 	if err != nil {
 		t.Fatalf("Could not create request : %s", err)
@@ -878,7 +912,7 @@ func getPubSubOwnerPayload(response string) (*stanza.PubSubOwner, error) {
 
 	pubsub, ok := respIQ.Payload.(*stanza.PubSubOwner)
 	if !ok {
-		errors.New("this iq payload is not a pubsub of the owner namespace")
+		return nil, errors.New("this iq payload is not a pubsub of the owner namespace")
 	}
 
 	return pubsub, nil

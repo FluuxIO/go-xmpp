@@ -14,17 +14,18 @@ const (
 // See XEP-0004 and XEP-0068
 // Pointer semantics
 type Form struct {
-	XMLName      xml.Name  `xml:"jabber:x:data x"`
-	Instructions []string  `xml:"instructions"`
-	Title        string    `xml:"title,omitempty"`
-	Fields       []*Field  `xml:"field,omitempty"`
-	Reported     *FormItem `xml:"reported"`
-	Items        []FormItem
-	Type         string `xml:"type,attr"`
+	XMLName      xml.Name   `xml:"jabber:x:data x"`
+	Instructions []string   `xml:"instructions"`
+	Title        string     `xml:"title,omitempty"`
+	Fields       []*Field   `xml:"field,omitempty"`
+	Reported     *FormItem  `xml:"reported"`
+	Items        []FormItem `xml:"item,omitempty"`
+	Type         string     `xml:"type,attr"`
 }
 
 type FormItem struct {
-	Fields []Field
+	XMLName xml.Name
+	Fields  []Field `xml:"field,omitempty"`
 }
 
 type Field struct {

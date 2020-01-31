@@ -16,15 +16,20 @@ const (
 // Namespaces
 
 type DiscoInfo struct {
-	XMLName  xml.Name   `xml:"http://jabber.org/protocol/disco#info query"`
-	Node     string     `xml:"node,attr,omitempty"`
-	Identity []Identity `xml:"identity"`
-	Features []Feature  `xml:"feature"`
+	XMLName   xml.Name   `xml:"http://jabber.org/protocol/disco#info query"`
+	Node      string     `xml:"node,attr,omitempty"`
+	Identity  []Identity `xml:"identity"`
+	Features  []Feature  `xml:"feature"`
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 // Namespace lets DiscoInfo implement the IQPayload interface
 func (d *DiscoInfo) Namespace() string {
 	return d.XMLName.Space
+}
+
+func (d *DiscoInfo) GetSet() *ResultSet {
+	return d.ResultSet
 }
 
 // ---------------
@@ -102,10 +107,17 @@ type DiscoItems struct {
 	XMLName xml.Name    `xml:"http://jabber.org/protocol/disco#items query"`
 	Node    string      `xml:"node,attr,omitempty"`
 	Items   []DiscoItem `xml:"item"`
+
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (d *DiscoItems) Namespace() string {
 	return d.XMLName.Space
+}
+
+func (d *DiscoItems) GetSet() *ResultSet {
+	return d.ResultSet
 }
 
 // ---------------
@@ -146,6 +158,6 @@ type DiscoItem struct {
 // Registry init
 
 func init() {
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoInfo, "query"}, DiscoInfo{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoItems, "query"}, DiscoItems{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: NSDiscoInfo, Local: "query"}, DiscoInfo{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: NSDiscoItems, Local: "query"}, DiscoItems{})
 }

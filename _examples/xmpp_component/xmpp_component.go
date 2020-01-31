@@ -61,12 +61,16 @@ func handleMessage(_ xmpp.Sender, p stanza.Packet) {
 
 func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok || iq.Type != stanza.IQTypeGet {
 		return
 	}
 
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	iqResp, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	// TODO: fix this...
+	if err != nil {
+		return
+	}
 	disco := iqResp.DiscoInfo()
 	disco.AddIdentity(opts.Name, opts.Category, opts.Type)
 	disco.AddFeatures(stanza.NSDiscoInfo, stanza.NSDiscoItems, "jabber:iq:version", "urn:xmpp:delegation:1")
@@ -76,7 +80,7 @@ func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 // TODO: Handle iq error responses
 func discoItems(c xmpp.Sender, p stanza.Packet) {
 	// Type conversion & sanity checks
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok || iq.Type != stanza.IQTypeGet {
 		return
 	}
@@ -86,7 +90,11 @@ func discoItems(c xmpp.Sender, p stanza.Packet) {
 		return
 	}
 
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	// TODO: fix this...
+	iqResp, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	if err != nil {
+		return
+	}
 	items := iqResp.DiscoItems()
 
 	if discoItems.Node == "" {
@@ -97,12 +105,15 @@ func discoItems(c xmpp.Sender, p stanza.Packet) {
 
 func handleVersion(c xmpp.Sender, p stanza.Packet) {
 	// Type conversion & sanity checks
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return
 	}
 
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	iqResp, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id, Lang: "en"})
+	if err != nil {
+		return
+	}
 	iqResp.Version().SetInfo("Fluux XMPP Component", "0.0.1", "")
 	_ = c.Send(iqResp)
 }

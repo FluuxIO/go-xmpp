@@ -185,7 +185,7 @@ func (c *Component) sendWithWriter(writer io.Writer, packet []byte) error {
 //   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
 //   result := <- client.SendIQ(ctx, iq)
 //
-func (c *Component) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
+func (c *Component) SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error) {
 	if iq.Attrs.Type != stanza.IQTypeSet && iq.Attrs.Type != stanza.IQTypeGet {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}

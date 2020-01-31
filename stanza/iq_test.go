@@ -36,24 +36,36 @@ func TestUnmarshalIqs(t *testing.T) {
 
 func TestGenerateIqId(t *testing.T) {
 	t.Parallel()
-	iq := stanza.NewIQ(stanza.Attrs{Id: "1"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Id: "1", Type: "dummy type"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	if iq.Id != "1" {
 		t.Errorf("NewIQ replaced id with %s", iq.Id)
 	}
 
-	iq = stanza.NewIQ(stanza.Attrs{})
+	iq, err = stanza.NewIQ(stanza.Attrs{Type: "dummy type"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	if iq.Id == "" {
 		t.Error("NewIQ did not generate an Id")
 	}
 
-	otherIq := stanza.NewIQ(stanza.Attrs{})
+	otherIq, err := stanza.NewIQ(stanza.Attrs{Type: "dummy type"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	if iq.Id == otherIq.Id {
 		t.Errorf("NewIQ generated two identical ids: %s", iq.Id)
 	}
 }
 
 func TestGenerateIq(t *testing.T) {
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: "admin@localhost", To: "test@localhost", Id: "1"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeResult, From: "admin@localhost", To: "test@localhost", Id: "1"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	payload := stanza.DiscoInfo{
 		Identity: []stanza.Identity{
 			{Name: "Test Gateway",
@@ -111,7 +123,10 @@ func TestErrorTag(t *testing.T) {
 }
 
 func TestDiscoItems(t *testing.T) {
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "romeo@montague.net/orchard", To: "catalog.shakespeare.lit", Id: "items3"})
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeGet, From: "romeo@montague.net/orchard", To: "catalog.shakespeare.lit", Id: "items3"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	payload := stanza.DiscoItems{
 		Node: "music",
 	}
@@ -215,8 +230,9 @@ func TestIsValid(t *testing.T) {
 				t.Errorf("Unmarshal error: %#v (%s)", err, tcase.iq)
 				return
 			}
-			if !parsedIQ.IsValid() && !tcase.shouldErr {
-				t.Errorf("failed iq validation for : %s", tcase.iq)
+			isValid, err := parsedIQ.IsValid()
+			if !isValid && !tcase.shouldErr {
+				t.Errorf("failed validation for iq because: %s\nin test case : %s", err, tcase.iq)
 			}
 		})
 	}

@@ -113,7 +113,7 @@ func (t *XMPPTransport) Ping() error {
 		return err
 	}
 	if n != 1 {
-		return errors.New("Could not write ping")
+		return errors.New("could not write ping")
 	}
 	return nil
 }
