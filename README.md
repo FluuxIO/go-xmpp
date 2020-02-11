@@ -11,7 +11,7 @@ The goal is to make simple to write simple XMPP clients and components:
 - For writing simple chatbot to control a service or a thing,
 - For writing XMPP servers components.
 
-The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
+The library is designed to have minimal dependencies. Currently it requires at least Go 1.13.
 
 ## Configuration and connection
 
