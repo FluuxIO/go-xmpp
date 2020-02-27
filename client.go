@@ -309,6 +309,19 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 
 		// Handle stream errors
 		switch packet := val.(type) {
+		case *stanza.IQ:
+			if val.(*stanza.IQ).Any != nil && val.(*stanza.IQ).Any.XMLName.Local == "ping" {
+				err = c.Send(&stanza.IQ{Attrs: stanza.Attrs{
+					Id:   val.(*stanza.IQ).Id,
+					Type: stanza.IQTypeResult,
+					From: val.(*stanza.IQ).To,
+					To:   val.(*stanza.IQ).From,
+				}})
+				if err != nil {
+					c.ErrorHandler(err)
+				}
+				continue
+			}
 		case stanza.StreamError:
 			c.router.route(c, val)
 			close(keepaliveQuit)
