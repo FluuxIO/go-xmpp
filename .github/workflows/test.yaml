@@ -26,6 +26,24 @@ jobs:
       - name: Run tests
         run: |
           go test ./... -v -race -coverprofile cover.out -covermode=atomic
+      - name: Checkout action if tests failed
+          if: failure()
+          uses: actions/checkout@v2
+          with:
+            repository: processone/xmpp-notifier
+      - name: Tests failed on PR notif
+        if: failure() && github.event_name == 'pull_request'
+        id: test_fail_pr_notif
+        uses: ./
+        with:
+          jid: ${{ secrets.bot_username }}
+          password: ${{ secrets.bot_password }}
+          server_host: ${{ secrets.server_rooms_domain }}
+          recipient: ${{ secrets.room_correspondent }}
+          server_port: ${{ secrets.server_port }}
+          message: |
+            tests for the following PR have failed : ${{ github.event.pull_request.html_url }}
+          recipient_is_room: true
       - name: Convert coverage to lcov
         uses: jandelgado/gcov2lcov-action@v1.0.0
         with:
