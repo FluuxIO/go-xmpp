@@ -93,8 +93,8 @@ func (b *Bind) GetSet() *ResultSet {
 // This is the draft defining how to handle the transition:
 //    https://tools.ietf.org/html/draft-cridland-xmpp-session-01
 type StreamSession struct {
-	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-session session"`
-	Optional bool     // If element does exist, it mean we are not required to open session
+	XMLName  xml.Name  `xml:"urn:ietf:params:xml:ns:xmpp-session session"`
+	Optional *struct{} // If element does exist, it mean we are not required to open session
 	// Result sets
 	ResultSet *ResultSet `xml:"set,omitempty"`
 }
@@ -109,7 +109,7 @@ func (s *StreamSession) GetSet() *ResultSet {
 
 func (s *StreamSession) IsOptional() bool {
 	if s.XMLName.Local == "session" {
-		return s.Optional
+		return s.Optional != nil
 	}
 	// If session element is missing, then we should not use session
 	return true

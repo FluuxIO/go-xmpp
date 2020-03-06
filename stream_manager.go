@@ -25,7 +25,7 @@ import (
 // set callback and trigger reconnection.
 type StreamClient interface {
 	Connect() error
-	Resume(state SMState) error
+	Resume() error
 	Send(packet stanza.Packet) error
 	SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error)
 	SendRaw(packet string) error
@@ -75,9 +75,7 @@ func (sm *StreamManager) Run() error {
 	}
 
 	handler := func(e Event) error {
-		switch e.State {
-		case StateConnected:
-			sm.Metrics.setConnectTime()
+		switch e.State.state {
 		case StateSessionEstablished:
 			sm.Metrics.setLoginTime()
 		case StateDisconnected:
@@ -128,7 +126,7 @@ func (sm *StreamManager) resume(state SMState) error {
 		// TODO: Make it possible to define logger to log disconnect and reconnection attempts
 		sm.Metrics = initMetrics()
 
-		if err = sm.client.Resume(state); err != nil {
+		if err = sm.client.Resume(); err != nil {
 			var actualErr ConnError
 			if xerrors.As(err, &actualErr) {
 				if actualErr.Permanent {
@@ -152,11 +150,6 @@ func (sm *StreamManager) resume(state SMState) error {
 
 type Metrics struct {
 	startTime time.Time
-	// ConnectTime returns the duration between client initiation of the TCP/IP
-	// connection to the server and actual TCP/IP session establishment.
-	// This time includes DNS resolution and can be slightly higher if the DNS
-	// resolution result was not in cache.
-	ConnectTime time.Duration
 	// LoginTime returns the between client initiation of the TCP/IP
 	// connection to the server and the return of the login result.
 	// This includes ConnectTime, but also XMPP level protocol negotiation
@@ -170,10 +163,6 @@ func initMetrics() *Metrics {
 	return &Metrics{
 		startTime: time.Now(),
 	}
-}
-
-func (m *Metrics) setConnectTime() {
-	m.ConnectTime = time.Since(m.startTime)
 }
 
 func (m *Metrics) setLoginTime() {
