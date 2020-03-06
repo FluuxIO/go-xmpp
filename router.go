@@ -42,6 +42,17 @@ func NewRouter() *Router {
 // route is called by the XMPP client to dispatch stanza received using the set up routes.
 // It is also used by test, but is not supposed to be used directly by users of the library.
 func (r *Router) route(s Sender, p stanza.Packet) {
+	a, isA := p.(stanza.SMAnswer)
+	if isA {
+		switch tt := s.(type) {
+		case *Client:
+			lastAcked := a.H
+			SendMissingStz(int(lastAcked), s, tt.Session.SMState.UnAckQueue)
+		case *Component:
+		// TODO
+		default:
+		}
+	}
 	iq, isIq := p.(*stanza.IQ)
 	if isIq {
 		r.IQResultRouteLock.RLock()
@@ -68,6 +79,32 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 	if isIq && (iq.Type == stanza.IQTypeGet || iq.Type == stanza.IQTypeSet) {
 		iqNotImplemented(s, iq)
 	}
+}
+
+func SendMissingStz(lastSent int, s Sender, uaq *stanza.UnAckQueue) error {
+	uaq.RWMutex.Lock()
+	if len(uaq.Uslice) <= 0 {
+		uaq.RWMutex.Unlock()
+		return nil
+	}
+	last := uaq.Uslice[len(uaq.Uslice)-1]
+	if last.Id > lastSent {
+		// Remove sent stanzas from the queue
+		uaq.PopN(lastSent - last.Id)
+		// Re-send non acknowledged stanzas
+		for _, elt := range uaq.PopN(len(uaq.Uslice)) {
+			eltStz := elt.(*stanza.UnAckedStz)
+			err := s.SendRaw(eltStz.Stz)
+			if err != nil {
+				return err
+			}
+
+		}
+		// Ask for updates on stanzas we just sent to the entity
+		s.Send(stanza.SMRequest{})
+	}
+	uaq.RWMutex.Unlock()
+	return nil
 }
 
 func iqNotImplemented(s Sender, iq *stanza.IQ) {

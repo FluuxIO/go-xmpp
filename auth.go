@@ -60,9 +60,20 @@ func authPlain(socket io.ReadWriter, decoder *xml.Decoder, mech string, user str
 	raw := "\x00" + user + "\x00" + secret
 	enc := make([]byte, base64.StdEncoding.EncodedLen(len(raw)))
 	base64.StdEncoding.Encode(enc, []byte(raw))
-	_, err := fmt.Fprintf(socket, "<auth xmlns='%s' mechanism='%s'>%s</auth>", stanza.NSSASL, mech, enc)
+
+	a := stanza.SASLAuth{
+		Mechanism: mech,
+		Value:     string(enc),
+	}
+	data, err := xml.Marshal(a)
 	if err != nil {
 		return err
+	}
+	n, err := socket.Write(data)
+	if err != nil {
+		return err
+	} else if n == 0 {
+		return errors.New("failed to write authSASL nonza to socket : wrote 0 bytes")
 	}
 
 	// Next message should be either success or failure.

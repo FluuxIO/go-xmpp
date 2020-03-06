@@ -118,6 +118,10 @@ type streamManagement struct {
 	XMLName xml.Name `xml:"urn:xmpp:sm:3 sm"`
 }
 
+func (streamManagement) Name() string {
+	return "streamManagement"
+}
+
 func (sf *StreamFeatures) DoesStreamManagement() (isSupported bool) {
 	if sf.StreamManagement.XMLName.Space+" "+sf.StreamManagement.XMLName.Local == "urn:xmpp:sm:3 sm" {
 		return true

@@ -38,7 +38,7 @@ func main() {
 			log.Println("Received a message ! => \n" + string(data))
 		})
 
-	client, err := xmpp.NewClient(config, router, func(err error) { log.Println(err) })
+	client, err := xmpp.NewClient(&config, router, func(err error) { log.Println(err) })
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}

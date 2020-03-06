@@ -36,6 +36,10 @@ const (
 	testClientRawPort
 	testClientIqPort
 	testClientIqFailPort
+	testClientPostConnectHook
+
+	// Client internal tests
+	testClientStreamManagement
 )
 
 // ClientHandler is passed by the test client to provide custom behaviour to

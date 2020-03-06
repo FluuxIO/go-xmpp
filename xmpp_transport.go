@@ -24,7 +24,8 @@ type XMPPTransport struct {
 	readWriter    io.ReadWriter
 	logFile       io.Writer
 	isSecure      bool
-	closeChan     chan stanza.StreamClosePacket
+	// Used to close TCP connection when a stream close message is received from the server
+	closeChan chan stanza.StreamClosePacket
 }
 
 var componentStreamOpen = fmt.Sprintf("<?xml version='1.0'?><stream:stream to='%%s' xmlns='%s' xmlns:stream='%s'>", stanza.NSComponent, stanza.NSStream)
