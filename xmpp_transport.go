@@ -92,6 +92,7 @@ func (t *XMPPTransport) StartTLS() error {
 		return err
 	}
 
+	t.isSecure = false
 	t.conn = tlsConn
 	t.readWriter = newStreamLogger(tlsConn, t.logFile)
 	t.decoder = xml.NewDecoder(bufio.NewReaderSize(t.readWriter, maxPacketSize))
