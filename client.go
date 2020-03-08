@@ -298,11 +298,13 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 
 // Loop: Receive data from server
 func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
+	defer func() {
+		close(keepaliveQuit)
+	}()
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			c.ErrorHandler(err)
-			close(keepaliveQuit)
 			c.disconnected(state)
 			return
 		}
@@ -311,7 +313,6 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) {
 		switch packet := val.(type) {
 		case stanza.StreamError:
 			c.router.route(c, val)
-			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
 			c.ErrorHandler(errors.New("stream error: " + packet.Error.Local))
 			// We don't return here, because we want to wait for the stream close tag from the server, or timeout.
