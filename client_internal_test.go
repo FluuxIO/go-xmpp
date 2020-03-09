@@ -176,6 +176,8 @@ func Test_StreamManagementNoResume(t *testing.T) {
 }
 
 func Test_StreamManagementResume(t *testing.T) {
+	serverDone := make(chan struct{})
+	clientDone := make(chan struct{})
 	// Setup Mock server
 	mock := ServerMock{}
 	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
@@ -190,6 +192,7 @@ func Test_StreamManagementResume(t *testing.T) {
 		bind(t, sc)
 		enableStreamManagement(t, sc, false, true)
 		discardPresence(t, sc)
+		serverDone <- struct{}{}
 	})
 
 	// Test / Check result
@@ -210,11 +213,20 @@ func Test_StreamManagementResume(t *testing.T) {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
-	err = client.Connect()
-	if err != nil {
-		t.Fatalf("could not connect client to mock server: %s", err)
-	}
+	// =================================================================
+	// Connect client, then disconnect it so we can resume the session
+	go func() {
+		err = client.Connect()
+		if err != nil {
+			t.Fatalf("could not connect client to mock server: %s", err)
+		}
+		clientDone <- struct{}{}
+	}()
 
+	waitForEntity(t, clientDone)
+
+	// ===========================================================================================
+	// Check that the client correctly went into "disconnected" state, after being disconnected
 	statusCorrectChan := make(chan struct{})
 	kill := make(chan struct{})
 
@@ -224,9 +236,10 @@ func Test_StreamManagementResume(t *testing.T) {
 	}
 
 	transp.conn.Close()
+
+	waitForEntity(t, serverDone)
 	mock.Stop()
 
-	// Check if status is correctly updated because of the disconnect
 	go checkClientResumeStatus(client, statusCorrectChan, kill)
 	select {
 	case <-statusCorrectChan:
@@ -256,17 +269,27 @@ func Test_StreamManagementResume(t *testing.T) {
 		checkClientOpenStream(t, sc)       // Reset stream
 		sendFeaturesStreamManagment(t, sc) // Send post auth features
 		resumeStream(t, sc)
+		serverDone <- struct{}{}
 	})
 
 	// Reconnect
-	err = client.Resume()
-	if err != nil {
-		t.Fatalf("could not connect client to mock server: %s", err)
-	}
+	go func() {
+		err = client.Resume()
+		if err != nil {
+			t.Fatalf("could not connect client to mock server: %s", err)
+		}
+		clientDone <- struct{}{}
+	}()
+
+	waitForEntity(t, clientDone)
+	waitForEntity(t, serverDone)
+
 	mock2.Stop()
 }
 
 func Test_StreamManagementFail(t *testing.T) {
+	serverDone := make(chan struct{})
+	clientDone := make(chan struct{})
 	// Setup Mock server
 	mock := ServerMock{}
 	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
@@ -280,6 +303,7 @@ func Test_StreamManagementFail(t *testing.T) {
 		sendFeaturesStreamManagment(t, sc) // Send post auth features
 		bind(t, sc)
 		enableStreamManagement(t, sc, true, true)
+		serverDone <- struct{}{}
 	})
 
 	// Test / Check result
@@ -301,26 +325,33 @@ func Test_StreamManagementFail(t *testing.T) {
 	}
 
 	var state SMState
-	_, err = client.transport.Connect()
-	if err != nil {
-		return
-	}
+	go func() {
+		_, err = client.transport.Connect()
+		if err != nil {
+			return
+		}
 
-	// Client is ok, we now open XMPP session
-	if client.Session, err = NewSession(client, state); err == nil {
-		t.Fatalf("test is supposed to err")
-	}
-	if client.Session.SMState.StreamErrorGroup == nil {
-		t.Fatalf("error was not stored correctly in session state")
-	}
+		// Client is ok, we now open XMPP session
+		if client.Session, err = NewSession(client, state); err == nil {
+			t.Fatalf("test is supposed to err")
+		}
+		if client.Session.SMState.StreamErrorGroup == nil {
+			t.Fatalf("error was not stored correctly in session state")
+		}
+		clientDone <- struct{}{}
+	}()
+
+	waitForEntity(t, serverDone)
+	waitForEntity(t, clientDone)
 
 	mock.Stop()
 }
 
 func Test_SendStanzaQueueWithSM(t *testing.T) {
+	serverDone := make(chan struct{})
+	clientDone := make(chan struct{})
 	// Setup Mock server
 	mock := ServerMock{}
-	serverDone := make(chan struct{})
 	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
 		checkClientOpenStream(t, sc)
 
@@ -340,7 +371,8 @@ func Test_SendStanzaQueueWithSM(t *testing.T) {
 		skipPacket(t, sc)
 		// Respond to the client ACK request with a number of processed stanzas of 0. This should trigger a resend
 		// of previously ignored stanza to the server, which this handler element will be expecting.
-		respondWithAck(t, sc, 0, serverDone)
+		respondWithAck(t, sc, 0)
+		serverDone <- struct{}{}
 	})
 
 	// Test / Check result
@@ -361,24 +393,22 @@ func Test_SendStanzaQueueWithSM(t *testing.T) {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
-	err = client.Connect()
+	go func() {
+		err = client.Connect()
 
-	client.SendRaw(`<iq id='ls72g593' type='get'>
+		client.SendRaw(`<iq id='ls72g593' type='get'>
   <query xmlns='jabber:iq:roster'/>
 </iq>
 `)
 
-	// Last stanza was discarded silently by the server. Let's ask an ack for it. This should trigger resend as the server
-	// will respond with an acknowledged number of stanzas of 0.
-	r := stanza.SMRequest{}
-	client.Send(r)
-
-	select {
-	case <-time.After(defaultChannelTimeout):
-		t.Fatalf("server failed to complete the test in time")
-	case <-serverDone:
-		// Test completed successfully
-	}
+		// Last stanza was discarded silently by the server. Let's ask an ack for it. This should trigger resend as the server
+		// will respond with an acknowledged number of stanzas of 0.
+		r := stanza.SMRequest{}
+		client.Send(r)
+		clientDone <- struct{}{}
+	}()
+	waitForEntity(t, serverDone)
+	waitForEntity(t, clientDone)
 
 	mock.Stop()
 }
@@ -400,7 +430,7 @@ func skipPacket(t *testing.T, sc *ServerConn) {
 	}
 }
 
-func respondWithAck(t *testing.T, sc *ServerConn, h int, serverDone chan struct{}) {
+func respondWithAck(t *testing.T, sc *ServerConn, h int) {
 
 	//  Mock server reads the ack request
 	var p stanza.SMRequest
@@ -437,7 +467,6 @@ func respondWithAck(t *testing.T, sc *ServerConn, h int, serverDone chan struct{
 		t.Fatalf("cannot decode packet: %s", err)
 		return
 	}
-	serverDone <- struct{}{}
 }
 
 func sendFeaturesStreamManagment(t *testing.T, sc *ServerConn) {
