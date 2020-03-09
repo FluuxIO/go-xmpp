@@ -8,9 +8,13 @@ import (
 	"time"
 )
 
-// TODO : tests to add
-// - Pop on nil or empty slice
-// - PeekN (normal and too long)
+func TestPopEmptyQueue(t *testing.T) {
+	var uaq stanza.UnAckQueue
+	popped := uaq.Pop()
+	if popped != nil {
+		t.Fatalf("queue is empty but something was popped !")
+	}
+}
 
 func TestPushUnack(t *testing.T) {
 	uaq := initUnAckQueue()
@@ -74,6 +78,41 @@ func TestPeekUnack(t *testing.T) {
 
 	if !reflect.DeepEqual(expectedPeek, *uaq.Uslice[0]) {
 		t.Fatalf("peek failed to return the correct stanza")
+	}
+
+}
+
+func TestPeekNUnack(t *testing.T) {
+	uaq := initUnAckQueue()
+	initLen := len(uaq.Uslice)
+	randPop := rand.Int31n(int32(initLen))
+
+	peeked := uaq.PeekN(int(randPop))
+
+	if len(uaq.Uslice) != initLen {
+		t.Fatalf("queue length changed whith peek n operation : had %d found %d after peek", initLen, len(uaq.Uslice))
+	}
+
+	if len(peeked) != int(randPop) {
+		t.Fatalf("did not peek the correct number of element from queue. Expected %d got %d", randPop, len(peeked))
+	}
+}
+
+func TestPeekNUnackTooLong(t *testing.T) {
+	uaq := initUnAckQueue()
+	initLen := len(uaq.Uslice)
+
+	// Have a random number of elements to peek that's greater than the queue size
+	randPop := rand.Int31n(int32(initLen)) + 1 + int32(initLen)
+
+	peeked := uaq.PeekN(int(randPop))
+
+	if len(uaq.Uslice) != initLen {
+		t.Fatalf("total length changed whith peek n operation : had %d found %d after pop", initLen, len(uaq.Uslice))
+	}
+
+	if len(peeked) != initLen {
+		t.Fatalf("did not peek the correct number of element from queue. Expected %d got %d", initLen, len(peeked))
 	}
 
 }

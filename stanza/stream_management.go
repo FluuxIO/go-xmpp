@@ -51,15 +51,18 @@ func (u *UnAckedStz) QueueableName() string {
 }
 
 func (uaq *UnAckQueue) PeekN(n int) []Queueable {
+	if uaq == nil {
+		return nil
+	}
 	if n <= 0 {
-		return []Queueable{}
+		return nil
 	}
 	if len(uaq.Uslice) < n {
 		n = len(uaq.Uslice)
 	}
 
 	if len(uaq.Uslice) == 0 {
-		return []Queueable{}
+		return nil
 	}
 	var r []Queueable
 	for i := 0; i < n; i++ {
@@ -70,6 +73,9 @@ func (uaq *UnAckQueue) PeekN(n int) []Queueable {
 
 // No guarantee regarding thread safety !
 func (uaq *UnAckQueue) Pop() Queueable {
+	if uaq == nil {
+		return nil
+	}
 	r := uaq.Peek()
 	if r != nil {
 		uaq.Uslice = uaq.Uslice[1:]
@@ -79,12 +85,18 @@ func (uaq *UnAckQueue) Pop() Queueable {
 
 // No guarantee regarding thread safety !
 func (uaq *UnAckQueue) PopN(n int) []Queueable {
+	if uaq == nil {
+		return nil
+	}
 	r := uaq.PeekN(n)
 	uaq.Uslice = uaq.Uslice[len(r):]
 	return r
 }
 
 func (uaq *UnAckQueue) Peek() Queueable {
+	if uaq == nil {
+		return nil
+	}
 	if len(uaq.Uslice) == 0 {
 		return nil
 	}
@@ -93,6 +105,9 @@ func (uaq *UnAckQueue) Peek() Queueable {
 }
 
 func (uaq *UnAckQueue) Push(s Queueable) error {
+	if uaq == nil {
+		return nil
+	}
 	pushIdx := 1
 	if len(uaq.Uslice) != 0 {
 		pushIdx = uaq.Uslice[len(uaq.Uslice)-1].Id + 1
@@ -114,6 +129,9 @@ func (uaq *UnAckQueue) Push(s Queueable) error {
 }
 
 func (uaq *UnAckQueue) Empty() bool {
+	if uaq == nil {
+		return true
+	}
 	r := len(uaq.Uslice)
 	return r == 0
 }
@@ -151,7 +169,7 @@ func (SMResumed) Name() string {
 	return "Stream Management: resumed"
 }
 
-// Resumed as defined in Stream Management spec
+// Resume as defined in Stream Management spec
 // Reference: https://xmpp.org/extensions/xep-0198.html#acking
 type SMResume struct {
 	XMLName xml.Name `xml:"urn:xmpp:sm:3 resume"`
