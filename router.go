@@ -81,6 +81,7 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 	}
 }
 
+// SendMissingStz sends all stanzas that did not reach the server, according to the response to an ack request (see XEP-0198, acks)
 func SendMissingStz(lastSent int, s Sender, uaq *stanza.UnAckQueue) error {
 	uaq.RWMutex.Lock()
 	if len(uaq.Uslice) <= 0 {
@@ -100,7 +101,7 @@ func SendMissingStz(lastSent int, s Sender, uaq *stanza.UnAckQueue) error {
 			}
 
 		}
-		// Ask for updates on stanzas we just sent to the entity
+		// Ask for updates on stanzas we just sent to the entity. Not sure I should leave this. Maybe let users call ack again by themselves ?
 		s.Send(stanza.SMRequest{})
 	}
 	uaq.RWMutex.Unlock()
