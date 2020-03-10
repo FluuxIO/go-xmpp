@@ -417,7 +417,7 @@ func Test_ClientPostConnectHook(t *testing.T) {
 	}
 
 	// The post connection client hook should just write to a channel that we will read later.
-	client.PostFirstConnHook = func() error {
+	client.PostConnectHook = func() error {
 		go func() {
 			hookChan <- struct{}{}
 		}()
@@ -486,7 +486,7 @@ func Test_ClientPostReconnectHook(t *testing.T) {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
-	client.PostReconnectHook = func() error {
+	client.PostResumeHook = func() error {
 		go func() {
 			hookChan <- struct{}{}
 		}()

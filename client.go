@@ -139,10 +139,10 @@ type Client struct {
 	ErrorHandler func(error)
 
 	// Post connection hook. This will be executed on first connection
-	PostFirstConnHook func() error
+	PostConnectHook func() error
 
 	// Post resume hook. This will be executed after the client resumes a lost connection using StreamManagement (XEP-0198)
-	PostReconnectHook func() error
+	PostResumeHook func() error
 }
 
 /*
@@ -213,7 +213,7 @@ func NewClient(config *Config, r *Router, errorHandler func(error)) (c *Client, 
 }
 
 // Connect establishes a first time connection to a XMPP server.
-// It calls the PostFirstConnHook
+// It calls the PostConnectHook
 func (c *Client) Connect() error {
 	err := c.connect()
 	if err != nil {
@@ -223,8 +223,8 @@ func (c *Client) Connect() error {
 	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
 	err = c.sendWithWriter(c.transport, []byte(InitialPresence))
 	// Execute the post first connection hook. Typically this holds "ask for roster" and this type of actions.
-	if c.PostFirstConnHook != nil {
-		err = c.PostFirstConnHook()
+	if c.PostConnectHook != nil {
+		err = c.PostConnectHook()
 		if err != nil {
 			return err
 		}
@@ -287,8 +287,8 @@ func (c *Client) Resume() error {
 	}
 	// Execute post reconnect hook. This can be different from the first connection hook, and not trigger roster retrival
 	// for example.
-	if c.PostReconnectHook != nil {
-		err = c.PostReconnectHook()
+	if c.PostResumeHook != nil {
+		err = c.PostResumeHook()
 	}
 	return err
 }
