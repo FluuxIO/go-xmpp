@@ -21,4 +21,15 @@ type Config struct {
 	// Insecure can be set to true to allow to open a session without TLS. If TLS
 	// is supported on the server, we will still try to use it.
 	Insecure bool
+
+	// Activate stream management process during session
+	StreamManagementEnable bool
+	// Enable stream management resume capability
+	streamManagementResume bool
+}
+
+// IsStreamResumable tells if a stream session is resumable by reading the "config" part of a client.
+// It checks if stream management is enabled, and if stream resumption was set and accepted by the server.
+func IsStreamResumable(c *Client) bool {
+	return c.config.StreamManagementEnable && c.config.streamManagementResume
 }

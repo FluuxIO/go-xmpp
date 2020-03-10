@@ -38,6 +38,8 @@ func TestHandshake(t *testing.T) {
 // Tests connection process with a handshake exchange
 // Tests multiple session IDs. All serverConnections should generate a unique stream ID
 func TestGenerateHandshakeId(t *testing.T) {
+	clientDone := make(chan struct{})
+	serverDone := make(chan struct{})
 	// Using this array with a channel to make a queue of values to test
 	// These are stream IDs that will be used to test the connection process, mixing them with the "secret" to generate
 	// some handshake value
@@ -57,11 +59,10 @@ func TestGenerateHandshakeId(t *testing.T) {
 	// Performs a Component connection with a handshake. It expects to have an ID sent its way through the "uchan"
 	// channel of this file. Otherwise it will hang for ever.
 	h := func(t *testing.T, sc *ServerConn) {
-
 		checkOpenStreamHandshakeID(t, sc, <-uchan)
 		readHandshakeComponent(t, sc.decoder)
 		sc.connection.Write([]byte("<handshake/>")) // That's all the server needs to return (see xep-0114)
-		return
+		serverDone <- struct{}{}
 	}
 
 	// Init mock server
@@ -92,14 +93,45 @@ func TestGenerateHandshakeId(t *testing.T) {
 	}
 
 	// Try connecting, and storing the resulting streamID in a map.
-	m := make(map[string]bool)
-	for range uuidsArray {
-		streamId, _ := c.transport.Connect()
-		m[c.handshake(streamId)] = true
-	}
-	if len(uuidsArray) != len(m) {
-		t.Errorf("Handshake does not produce a unique id. Expected: %d unique ids, got: %d", len(uuidsArray), len(m))
-	}
+	go func() {
+		m := make(map[string]bool)
+		for range uuidsArray {
+			idChan := make(chan string)
+			go func() {
+				streamId, err := c.transport.Connect()
+				if err != nil {
+					t.Fatalf("failed to mock component connection to get a handshake: %s", err)
+				}
+				idChan <- streamId
+			}()
+
+			var streamId string
+			select {
+			case streamId = <-idChan:
+			case <-time.After(defaultTimeout):
+				t.Fatalf("test timed out")
+			}
+
+			hs := stanza.Handshake{
+				Value: c.handshake(streamId),
+			}
+			m[hs.Value] = true
+			hsRaw, err := xml.Marshal(hs)
+			if err != nil {
+				t.Fatalf("could not marshal handshake: %s", err)
+			}
+			c.SendRaw(string(hsRaw))
+			waitForEntity(t, serverDone)
+			c.transport.Close()
+		}
+		if len(uuidsArray) != len(m) {
+			t.Errorf("Handshake does not produce a unique id. Expected: %d unique ids, got: %d", len(uuidsArray), len(m))
+		}
+		clientDone <- struct{}{}
+	}()
+
+	waitForEntity(t, clientDone)
+	mock.Stop()
 }
 
 // Test that NewStreamManager can accept a Component.
@@ -121,10 +153,11 @@ func TestDecoder(t *testing.T) {
 
 // Tests sending an IQ to the server, and getting the response
 func TestSendIq(t *testing.T) {
-	done := make(chan struct{})
+	serverDone := make(chan struct{})
+	clientDone := make(chan struct{})
 	h := func(t *testing.T, sc *ServerConn) {
 		handlerForComponentIQSend(t, sc)
-		done <- struct{}{}
+		serverDone <- struct{}{}
 	}
 
 	//Connecting to a mock server, initialized with given port and handler function
@@ -145,24 +178,23 @@ func TestSendIq(t *testing.T) {
 	}
 	c.ErrorHandler = errorHandler
 
-	var res chan stanza.IQ
-	res, _ = c.SendIQ(ctx, iqReq)
+	go func() {
+		var res chan stanza.IQ
+		res, _ = c.SendIQ(ctx, iqReq)
 
-	select {
-	case <-res:
-	case err := <-errChan:
-		t.Errorf(err.Error())
-	case <-time.After(defaultChannelTimeout):
-		t.Errorf("Failed to receive response, to sent IQ, from mock server")
-	}
+		select {
+		case <-res:
+		case err := <-errChan:
+			t.Fatalf(err.Error())
+		}
+		clientDone <- struct{}{}
+	}()
 
-	select {
-	case <-done:
-		m.Stop()
-	case <-time.After(defaultChannelTimeout):
-		t.Errorf("The mock server failed to finish its job !")
-	}
+	waitForEntity(t, clientDone)
+	waitForEntity(t, serverDone)
+
 	cancel()
+	m.Stop()
 }
 
 // Checking that error handling is done properly client side when an invalid IQ is sent and the server responds in kind.

@@ -32,7 +32,7 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 	msgText := args[1]
 
 	var err error
-	client, err := xmpp.NewClient(xmpp.Config{
+	client, err := xmpp.NewClient(&xmpp.Config{
 		TransportConfiguration: xmpp.TransportConfiguration{
 			Address: viper.GetString("addr"),
 		},

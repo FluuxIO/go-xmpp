@@ -20,18 +20,20 @@ const (
 
 func TestEventManager(t *testing.T) {
 	mgr := EventManager{}
-	mgr.updateState(StateConnected)
-	if mgr.CurrentState != StateConnected {
+	mgr.updateState(StateResuming)
+	if mgr.CurrentState.getState() != StateResuming {
 		t.Fatal("CurrentState not updated by updateState()")
 	}
 
 	mgr.disconnected(SMState{})
-	if mgr.CurrentState != StateDisconnected {
+
+	if mgr.CurrentState.getState() != StateDisconnected {
 		t.Fatalf("CurrentState not reset by disconnected()")
 	}
 
 	mgr.streamError(ErrTLSNotSupported.Error(), "")
-	if mgr.CurrentState != StateStreamError {
+
+	if mgr.CurrentState.getState() != StateStreamError {
 		t.Fatalf("CurrentState not set by streamError()")
 	}
 }
@@ -53,7 +55,7 @@ func TestClient_Connect(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
@@ -84,7 +86,7 @@ func TestClient_NoInsecure(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
@@ -117,7 +119,7 @@ func TestClient_FeaturesTracking(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
@@ -147,7 +149,7 @@ func TestClient_RFC3921Session(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 
@@ -366,7 +368,7 @@ func TestClient_DisconnectStreamManager(t *testing.T) {
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("cannot create XMPP client: %s", err)
 	}
 
@@ -384,6 +386,162 @@ func TestClient_DisconnectStreamManager(t *testing.T) {
 		t.Errorf("should fail as insecure connection is not allowed and server does not support TLS")
 	}
 	mock.Stop()
+}
+
+func Test_ClientPostConnectHook(t *testing.T) {
+	done := make(chan struct{})
+	// Handler for Mock server
+	h := func(t *testing.T, sc *ServerConn) {
+		handlerClientConnectSuccess(t, sc)
+		done <- struct{}{}
+	}
+
+	hookChan := make(chan struct{})
+	mock := &ServerMock{}
+	testServerAddress := fmt.Sprintf("%s:%d", testClientDomain, testClientPostConnectHook)
+
+	mock.Start(t, testServerAddress, h)
+	config := Config{
+		TransportConfiguration: TransportConfiguration{
+			Address: testServerAddress,
+		},
+		Jid:        "test@localhost",
+		Credential: Password("test"),
+		Insecure:   true}
+
+	var client *Client
+	var err error
+	router := NewRouter()
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
+		t.Errorf("connect create XMPP client: %s", err)
+	}
+
+	// The post connection client hook should just write to a channel that we will read later.
+	client.PostConnectHook = func() error {
+		go func() {
+			hookChan <- struct{}{}
+		}()
+		return nil
+	}
+	// Handle a possible error
+	errChan := make(chan error)
+	errorHandler := func(err error) {
+		errChan <- err
+	}
+	client.ErrorHandler = errorHandler
+	if err = client.Connect(); err != nil {
+		t.Errorf("XMPP connection failed: %s", err)
+	}
+
+	// Check if the post connection client hook was correctly called
+	select {
+	case err := <-errChan: // If the server sends an error, or there is a connection error
+		t.Fatal(err.Error())
+	case <-time.After(defaultChannelTimeout): // If we timeout
+		t.Fatal("Failed to call post connection client hook")
+	case <-hookChan:
+		// Test succeeded, channel was written to.
+	}
+
+	select {
+	case <-done:
+		mock.Stop()
+	case <-time.After(defaultChannelTimeout):
+		t.Fatal("The mock server failed to finish its job !")
+	}
+}
+
+func Test_ClientPostReconnectHook(t *testing.T) {
+	hookChan := make(chan struct{})
+	// Setup Mock server
+	mock := ServerMock{}
+	mock.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
+		checkClientOpenStream(t, sc)
+
+		sendStreamFeatures(t, sc) // Send initial features
+		readAuth(t, sc.decoder)
+		sc.connection.Write([]byte("<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>"))
+
+		checkClientOpenStream(t, sc)       // Reset stream
+		sendFeaturesStreamManagment(t, sc) // Send post auth features
+		bind(t, sc)
+		enableStreamManagement(t, sc, false, true)
+	})
+
+	// Test / Check result
+	config := Config{
+		TransportConfiguration: TransportConfiguration{
+			Address: testXMPPAddress,
+		},
+		Jid:                    "test@localhost",
+		Credential:             Password("test"),
+		Insecure:               true,
+		StreamManagementEnable: true,
+		streamManagementResume: true} // Enable stream management
+
+	var client *Client
+	router := NewRouter()
+	client, err := NewClient(&config, router, clientDefaultErrorHandler)
+	if err != nil {
+		t.Errorf("connect create XMPP client: %s", err)
+	}
+
+	client.PostResumeHook = func() error {
+		go func() {
+			hookChan <- struct{}{}
+		}()
+		return nil
+	}
+
+	err = client.Connect()
+	if err != nil {
+		t.Fatalf("could not connect client to mock server: %s", err)
+	}
+
+	transp, ok := client.transport.(*XMPPTransport)
+	if !ok {
+		t.Fatalf("problem with client transport ")
+	}
+
+	transp.conn.Close()
+	mock.Stop()
+
+	// Check if the client can have its connection resumed using its state but also its configuration
+	if !IsStreamResumable(client) {
+		t.Fatalf("should support resumption")
+	}
+
+	// Reboot server. We need to make a new one because (at least for now) the mock server can only have one handler
+	// and they should be different between a first connection and a stream resume since exchanged messages
+	// are different (See XEP-0198)
+	mock2 := ServerMock{}
+	mock2.Start(t, testXMPPAddress, func(t *testing.T, sc *ServerConn) {
+		//	Reconnect
+		checkClientOpenStream(t, sc)
+
+		sendStreamFeatures(t, sc) // Send initial features
+		readAuth(t, sc.decoder)
+		sc.connection.Write([]byte("<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>"))
+
+		checkClientOpenStream(t, sc)       // Reset stream
+		sendFeaturesStreamManagment(t, sc) // Send post auth features
+		resumeStream(t, sc)
+	})
+
+	// Reconnect
+	err = client.Resume()
+	if err != nil {
+		t.Fatalf("could not connect client to mock server: %s", err)
+	}
+
+	select {
+	case <-time.After(defaultChannelTimeout): // If we timeout
+		t.Fatal("Failed to call post connection client hook")
+	case <-hookChan:
+		// Test succeeded, channel was written to.
+	}
+
+	mock2.Stop()
 }
 
 //=============================================================================
@@ -449,7 +607,7 @@ func checkClientOpenStream(t *testing.T, sc *ServerConn) {
 		var token xml.Token
 		token, err := sc.decoder.Token()
 		if err != nil {
-			t.Errorf("cannot read next token: %s", err)
+			t.Fatalf("cannot read next token: %s", err)
 		}
 
 		switch elem := token.(type) {
@@ -464,6 +622,7 @@ func checkClientOpenStream(t *testing.T, sc *ServerConn) {
 			}
 			return
 		}
+
 	}
 }
 
@@ -472,7 +631,6 @@ func mockClientConnection(t *testing.T, serverHandler func(*testing.T, *ServerCo
 	testServerAddress := fmt.Sprintf("%s:%d", testClientDomain, port)
 
 	mock.Start(t, testServerAddress, serverHandler)
-
 	config := Config{
 		TransportConfiguration: TransportConfiguration{
 			Address: testServerAddress,
@@ -484,7 +642,7 @@ func mockClientConnection(t *testing.T, serverHandler func(*testing.T, *ServerCo
 	var client *Client
 	var err error
 	router := NewRouter()
-	if client, err = NewClient(config, router, clientDefaultErrorHandler); err != nil {
+	if client, err = NewClient(&config, router, clientDefaultErrorHandler); err != nil {
 		t.Errorf("connect create XMPP client: %s", err)
 	}
 

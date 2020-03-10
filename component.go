@@ -60,11 +60,10 @@ func NewComponent(opts ComponentOptions, r *Router, errorHandler func(error)) (*
 // Connect triggers component connection to XMPP server component port.
 // TODO: Failed handshake should be a permanent error
 func (c *Component) Connect() error {
-	var state SMState
-	return c.Resume(state)
+	return c.Resume()
 }
 
-func (c *Component) Resume(sm SMState) error {
+func (c *Component) Resume() error {
 	var err error
 	var streamId string
 	if c.ComponentOptions.TransportConfiguration.Domain == "" {
@@ -73,16 +72,13 @@ func (c *Component) Resume(sm SMState) error {
 	c.transport, err = NewComponentTransport(c.ComponentOptions.TransportConfiguration)
 	if err != nil {
 		c.updateState(StatePermanentError)
-
 		return NewConnError(err, true)
 	}
 
 	if streamId, err = c.transport.Connect(); err != nil {
 		c.updateState(StatePermanentError)
-
 		return NewConnError(err, true)
 	}
-	c.updateState(StateConnected)
 
 	// Authentication
 	if err := c.sendWithWriter(c.transport, []byte(fmt.Sprintf("<handshake>%s</handshake>", c.handshake(streamId)))); err != nil {
