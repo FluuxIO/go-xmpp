@@ -379,9 +379,8 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 
 // Loop: Receive data from server
 func (c *Client) recv(keepaliveQuit chan<- struct{}) {
-	defer func() {
-		close(keepaliveQuit)
-	}()
+	defer close(keepaliveQuit)
+
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
