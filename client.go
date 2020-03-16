@@ -42,12 +42,12 @@ func (scs *SyncConnState) setState(cs ConnState) {
 // This is a the list of events happening on the connection that the
 // client can be notified about.
 const (
-	InitialPresence             = "<presence/>"
 	StateDisconnected ConnState = iota
 	StateResuming
 	StateSessionEstablished
 	StateStreamError
 	StatePermanentError
+	InitialPresence = "<presence/>"
 )
 
 // Event is a structure use to convey event changes related to client state. This
@@ -285,7 +285,7 @@ func (c *Client) Resume() error {
 	if err != nil {
 		return err
 	}
-	// Execute post reconnect hook. This can be different from the first connection hook, and not trigger roster retrival
+	// Execute post reconnect hook. This can be different from the first connection hook, and not trigger roster retrieval
 	// for example.
 	if c.PostResumeHook != nil {
 		err = c.PostResumeHook()
