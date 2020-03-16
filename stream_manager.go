@@ -80,13 +80,13 @@ func (sm *StreamManager) Run() error {
 			sm.Metrics.setLoginTime()
 		case StateDisconnected:
 			// Reconnect on disconnection
-			return sm.resume(e.SMState)
+			return sm.resume()
 		case StateStreamError:
 			sm.client.Disconnect()
 			// Only try reconnecting if we have not been kicked by another session to avoid connection loop.
 			// TODO: Make this conflict exception a permanent error
 			if e.StreamError != "conflict" {
-				return sm.connect()
+				return sm.resume()
 			}
 		case StatePermanentError:
 			// Do not attempt to reconnect
@@ -113,19 +113,32 @@ func (sm *StreamManager) Stop() {
 }
 
 func (sm *StreamManager) connect() error {
-	var state SMState
-	return sm.resume(state)
+	if sm.client != nil {
+		if c, ok := sm.client.(*Client); ok {
+			if c.CurrentState.getState() == StateDisconnected {
+				sm.Metrics = initMetrics()
+				err := c.Connect()
+				if err != nil {
+					return err
+				}
+				if sm.PostConnect != nil {
+					sm.PostConnect(sm.client)
+				}
+				return nil
+			}
+		}
+	}
+	return errors.New("client is not disconnected")
 }
 
 // resume manages the reconnection loop and apply the define backoff to avoid overloading the server.
-func (sm *StreamManager) resume(state SMState) error {
+func (sm *StreamManager) resume() error {
 	var backoff backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
 		var err error
 		// TODO: Make it possible to define logger to log disconnect and reconnection attempts
 		sm.Metrics = initMetrics()
-
 		if err = sm.client.Resume(); err != nil {
 			var actualErr ConnError
 			if xerrors.As(err, &actualErr) {
