@@ -16,6 +16,7 @@ type Message struct {
 	Subject    string         `xml:"subject,omitempty"`
 	Body       string         `xml:"body,omitempty"`
 	Thread     string         `xml:"thread,omitempty"`
+	StanzaId   *StanzaId      `xml:"stanza-id"`
 	Error      Err            `xml:"error,omitempty"`
 	Extensions []MsgExtension `xml:",omitempty"`
 }

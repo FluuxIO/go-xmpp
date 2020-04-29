@@ -349,6 +349,25 @@ func (c *Client) SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, err
 	return c.router.NewIQResultRoute(ctx, iq.Attrs.Id), nil
 }
 
+// SendIQ sends an IQ set or get stanza to the server. If a result is received
+// the provided handler function will automatically be called.
+//
+// The provided context should have a timeout to prevent the client from waiting
+// forever for an IQ result. For example:
+//
+//   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
+//   result := <- client.SendIQ(ctx, iq)
+//
+func (c *Client) SendMamRequest(ctx context.Context, iq *stanza.IQ) (chan stanza.Packet, error) {
+	if iq.Attrs.Type != stanza.IQTypeSet && iq.Attrs.Type != stanza.IQTypeGet {
+		return nil, ErrCanOnlySendGetOrSetIq
+	}
+	if err := c.Send(iq); err != nil {
+		return nil, err
+	}
+	return c.router.NewMamResultRoute(ctx, iq.Id), nil
+}
+
 // SendRaw sends an XMPP stanza as a string to the server.
 // It can be invalid XML or XMPP content. In that case, the server will
 // disconnect the client. It is up to the user of this method to

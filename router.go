@@ -30,6 +30,9 @@ type Router struct {
 
 	IQResultRoutes    map[string]*IQResultRoute
 	IQResultRouteLock sync.RWMutex
+
+	MamResultRoutes     map[string]*MamResultRoute
+	MamResultRoutesLock sync.RWMutex
 }
 
 // NewRouter returns a new router instance.
@@ -55,15 +58,43 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 	}
 	iq, isIq := p.(*stanza.IQ)
 	if isIq {
-		r.IQResultRouteLock.RLock()
-		route, ok := r.IQResultRoutes[iq.Id]
-		r.IQResultRouteLock.RUnlock()
+		// Mam IQs (See XEP-0313)
+		if iq.Payload.Namespace() == stanza.NSMam {
+			r.MamResultRoutesLock.RLock()
+			route, ok := r.MamResultRoutes[iq.Id]
+			r.MamResultRoutesLock.RUnlock()
+			if ok {
+				r.MamResultRoutesLock.Lock()
+				delete(r.MamResultRoutes, iq.Id)
+				r.MamResultRoutesLock.Unlock()
+				route.results <- iq
+				close(route.results)
+				return
+			}
+		} else { // "Classic" IQs
+			r.IQResultRouteLock.RLock()
+			route, ok := r.IQResultRoutes[iq.Id]
+			r.IQResultRouteLock.RUnlock()
+			if ok {
+				r.IQResultRouteLock.Lock()
+				delete(r.IQResultRoutes, iq.Id)
+				r.IQResultRouteLock.Unlock()
+				route.result <- *iq
+				close(route.result)
+				return
+			}
+		}
+
+	}
+
+	// If message is part of a response to a Mam query, forward it through the dedicated channel (See XEP-0313)
+	msg, ok := p.(stanza.Message)
+	if ok {
+		r.MamResultRoutesLock.RLock()
+		route, ok := r.MamResultRoutes[iq.Id]
+		r.MamResultRoutesLock.RUnlock()
 		if ok {
-			r.IQResultRouteLock.Lock()
-			delete(r.IQResultRoutes, iq.Id)
-			r.IQResultRouteLock.Unlock()
-			route.result <- *iq
-			close(route.result)
+			route.results <- msg
 			return
 		}
 	}
@@ -147,6 +178,26 @@ func (r *Router) NewIQResultRoute(ctx context.Context, id string) chan stanza.IQ
 	return route.result
 }
 
+// NewIQResultRoute register a route that will catch message stanzas and the closing IQ result attached to the
+// the given queryId. The route will automatically be unregistered.
+func (r *Router) NewMamResultRoute(ctx context.Context, id string) chan stanza.Packet {
+	route := NewMamResultRoute(ctx)
+	r.MamResultRoutesLock.Lock()
+	r.MamResultRoutes[id] = route
+	r.MamResultRoutesLock.Unlock()
+
+	// Start a go function to make sure the route is unregistered when the context
+	// is done.
+	go func() {
+		<-route.context.Done()
+		r.MamResultRoutesLock.Lock()
+		delete(r.IQResultRoutes, id)
+		r.MamResultRoutesLock.Unlock()
+	}()
+
+	return route.results
+}
+
 func (r *Router) Match(p stanza.Packet, match *RouteMatch) bool {
 	for _, route := range r.routes {
 		if route.Match(p, match) {
@@ -184,6 +235,20 @@ func NewIQResultRoute(ctx context.Context) *IQResultRoute {
 	return &IQResultRoute{
 		context: ctx,
 		result:  make(chan stanza.IQ),
+	}
+}
+
+// ==============================================================================
+type MamResultRoute struct {
+	context context.Context
+	results chan stanza.Packet
+}
+
+// NewIQResultRoute creates a new IQResultRoute instance
+func NewMamResultRoute(ctx context.Context) *MamResultRoute {
+	return &MamResultRoute{
+		context: ctx,
+		results: make(chan stanza.Packet),
 	}
 }
 
