@@ -131,7 +131,7 @@ func respondToIQ(t *testing.T, sc *ServerConn) {
 	// Decoder to parse the request
 	iqReq, err := receiveIq(sc)
 	if err != nil {
-		t.Fatalf("failed to receive IQ : %w", err.Error())
+		t.Fatalf("failed to receive IQ : %s", err.Error())
 	}
 
 	if vld, _ := iqReq.IsValid(); !vld {
@@ -183,7 +183,7 @@ func discardPresence(t *testing.T, sc *ServerConn) {
 	err = xml.Unmarshal(recvBuf, &presenceStz)
 
 	if err != nil {
-		t.Errorf("Expected presence but this happened : %w", err.Error())
+		t.Errorf("Expected presence but this happened : %w", err)
 	}
 }
 
