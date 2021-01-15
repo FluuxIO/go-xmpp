@@ -8,13 +8,29 @@ import (
 // ============================================================================
 // Message Packet
 
+// Subject is an element of a message
+type Subject struct {
+	XMLName xml.Name `xml:"subject"`
+
+	Content string `xml:",chardata,omitempty"`
+	Lang    string `xml:"lang,attr,omitempty"`
+}
+
+// Body is an element of a message
+type Body struct {
+	XMLName xml.Name `xml:"body"`
+
+	Content string `xml:",chardata,omitempty"`
+	Lang    string `xml:"lang,attr,omitempty"`
+}
+
 // Message implements RFC 6120 - A.5 Client Namespace (a part)
 type Message struct {
 	XMLName xml.Name `xml:"message"`
 	Attrs
 
-	Subject    string         `xml:"subject,omitempty"`
-	Body       string         `xml:"body,omitempty"`
+	Subject    []Subject      `xml:"subject,omitempty"`
+	Body       []Body         `xml:"body,omitempty"`
 	Thread     string         `xml:"thread,omitempty"`
 	Error      Err            `xml:"error,omitempty"`
 	Extensions []MsgExtension `xml:",omitempty"`
