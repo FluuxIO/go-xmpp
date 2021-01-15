@@ -12,7 +12,7 @@ import (
 type Subject struct {
 	XMLName xml.Name `xml:"subject"`
 
-	Content string `xml:",chardata,omitempty"`
+	Content string `xml:",chardata"`
 	Lang    string `xml:"lang,attr,omitempty"`
 }
 
@@ -20,7 +20,7 @@ type Subject struct {
 type Body struct {
 	XMLName xml.Name `xml:"body"`
 
-	Content string `xml:",chardata,omitempty"`
+	Content string `xml:",chardata"`
 	Lang    string `xml:"lang,attr,omitempty"`
 }
 
