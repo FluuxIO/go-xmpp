@@ -8,18 +8,7 @@ import (
 // ============================================================================
 // Message Packet
 
-// Subject is an element of a message
-type Subject struct {
-	XMLName xml.Name `xml:"subject"`
-
-	Content string `xml:",chardata"`
-	Lang    string `xml:"lang,attr,omitempty"`
-}
-
-// Body is an element of a message
-type Body struct {
-	XMLName xml.Name `xml:"body"`
-
+type LocalizedString struct {
 	Content string `xml:",chardata"`
 	Lang    string `xml:"lang,attr,omitempty"`
 }
@@ -29,11 +18,11 @@ type Message struct {
 	XMLName xml.Name `xml:"message"`
 	Attrs
 
-	Subject    []Subject      `xml:"subject,omitempty"`
-	Body       []Body         `xml:"body,omitempty"`
-	Thread     string         `xml:"thread,omitempty"`
-	Error      Err            `xml:"error,omitempty"`
-	Extensions []MsgExtension `xml:",omitempty"`
+	Subject    []LocalizedString `xml:"subject,omitempty"`
+	Body       []LocalizedString `xml:"body,omitempty"`
+	Thread     string            `xml:"thread,omitempty"`
+	Error      Err               `xml:"error,omitempty"`
+	Extensions []MsgExtension    `xml:",omitempty"`
 }
 
 func (Message) Name() string {
