@@ -8,9 +8,10 @@ import (
 // ============================================================================
 // Message Packet
 
+// LocalizedString is a string node with a language attribute.
 type LocalizedString struct {
 	Content string `xml:",chardata"`
-	Lang    string `xml:"lang,attr,omitempty"`
+	Lang    string `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 }
 
 // Message implements RFC 6120 - A.5 Client Namespace (a part)
