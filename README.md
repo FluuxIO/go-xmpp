@@ -1,6 +1,6 @@
 # Fluux XMPP
 
-[![Codeship Status for FluuxIO/xmpp](https://app.codeship.com/projects/dba7f300-d145-0135-6c51-26e28af241d2/status?branch=master)](https://app.codeship.com/projects/262399) [![GoDoc](https://godoc.org/gosrc.io/xmpp?status.svg)](https://godoc.org/gosrc.io/xmpp) [![GoReportCard](https://goreportcard.com/badge/gosrc.io/xmpp)](https://goreportcard.com/report/fluux.io/xmpp) [![codecov](https://codecov.io/gh/FluuxIO/go-xmpp/branch/master/graph/badge.svg)](https://codecov.io/gh/FluuxIO/go-xmpp)
+[![GoDoc](https://godoc.org/gosrc.io/xmpp?status.svg)](https://godoc.org/gosrc.io/xmpp) [![GoReportCard](https://goreportcard.com/badge/gosrc.io/xmpp)](https://goreportcard.com/report/fluux.io/xmpp) [![Coverage Status](https://coveralls.io/repos/github/FluuxIO/go-xmpp/badge.svg?branch=master)](https://coveralls.io/github/FluuxIO/go-xmpp?branch=master)
 
 Fluux XMPP is a Go XMPP library, focusing on simplicity, simple automation, and IoT.
 
@@ -11,7 +11,7 @@ The goal is to make simple to write simple XMPP clients and components:
 - For writing simple chatbot to control a service or a thing,
 - For writing XMPP servers components.
 
-The library is designed to have minimal dependencies. For now, the library does not depend on any other library.
+The library is designed to have minimal dependencies. Currently it requires at least Go 1.13.
 
 ## Configuration and connection
 
@@ -51,6 +51,13 @@ config := xmpp.Config{
   - [XEP-0114: Jabber Component Protocol](https://xmpp.org/extensions/xep-0114.html)
   - [XEP-0355: Namespace Delegation](https://xmpp.org/extensions/xep-0355.html)
   - [XEP-0356: Privileged Entity](https://xmpp.org/extensions/xep-0356.html)
+
+### Extensions 
+  - [XEP-0060: Publish-Subscribe](https://xmpp.org/extensions/xep-0060.html)  
+    Note : "6.5.4 Returning Some Items" requires support for [XEP-0059: Result Set Management](https://xmpp.org/extensions/xep-0059.html), 
+    and is therefore not supported yet. 
+  - [XEP-0004: Data Forms](https://xmpp.org/extensions/xep-0004.html)
+  - [XEP-0050: Ad-Hoc Commands](https://xmpp.org/extensions/xep-0050.html)
 
 ## Package overview
 
@@ -108,15 +115,16 @@ func main() {
 			Address: "localhost:5222",
 		},
 		Jid:          "test@localhost",
-	    Credential:   xmpp.Password("Test"),
+		Credential:   xmpp.Password("test"),
 		StreamLogger: os.Stdout,
 		Insecure:     true,
+		// TLSConfig: tls.Config{InsecureSkipVerify: true},
 	}
 
 	router := xmpp.NewRouter()
 	router.HandleFunc("message", handleMessage)
 
-	client, err := xmpp.NewClient(config, router)
+	client, err := xmpp.NewClient(config, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -138,6 +146,11 @@ func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	reply := stanza.Message{Attrs: stanza.Attrs{To: msg.From}, Body: msg.Body}
 	_ = s.Send(reply)
 }
+
+func errorHandler(err error) {
+	fmt.Println(err.Error())
+}
+
 ```
 
 ## Reference documentation

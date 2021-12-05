@@ -8,7 +8,9 @@ import "encoding/xml"
 type Stream struct {
 	XMLName xml.Name `xml:"http://etherx.jabber.org/streams stream"`
 	From    string   `xml:"from,attr"`
-	To string `xml:"to,attr"`
+	To      string   `xml:"to,attr"`
 	Id      string   `xml:"id,attr"`
 	Version string   `xml:"version,attr"`
 }
+
+const StreamClose = "</stream:stream>"

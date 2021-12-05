@@ -1,5 +1,7 @@
 package stanza
 
+import "strings"
+
 type StanzaType string
 
 // RFC 6120: part of A.5 Client Namespace and A.6 Server Namespace
@@ -23,3 +25,7 @@ const (
 	PresenceTypeUnsubscribe  StanzaType = "unsubscribe"
 	PresenceTypeUnsubscribed StanzaType = "unsubscribed"
 )
+
+func (s StanzaType) IsEmpty() bool {
+	return len(strings.TrimSpace(string(s))) == 0
+}

@@ -8,6 +8,7 @@ import (
 // Disco Info
 
 const (
+	// NSDiscoInfo defines the namespace for disco IQ stanzas
 	NSDiscoInfo = "http://jabber.org/protocol/disco#info"
 )
 
@@ -15,14 +16,20 @@ const (
 // Namespaces
 
 type DiscoInfo struct {
-	XMLName  xml.Name   `xml:"http://jabber.org/protocol/disco#info query"`
-	Node     string     `xml:"node,attr,omitempty"`
-	Identity []Identity `xml:"identity"`
-	Features []Feature  `xml:"feature"`
+	XMLName   xml.Name   `xml:"http://jabber.org/protocol/disco#info query"`
+	Node      string     `xml:"node,attr,omitempty"`
+	Identity  []Identity `xml:"identity"`
+	Features  []Feature  `xml:"feature"`
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
+// Namespace lets DiscoInfo implement the IQPayload interface
 func (d *DiscoInfo) Namespace() string {
 	return d.XMLName.Space
+}
+
+func (d *DiscoInfo) GetSet() *ResultSet {
+	return d.ResultSet
 }
 
 // ---------------
@@ -100,10 +107,17 @@ type DiscoItems struct {
 	XMLName xml.Name    `xml:"http://jabber.org/protocol/disco#items query"`
 	Node    string      `xml:"node,attr,omitempty"`
 	Items   []DiscoItem `xml:"item"`
+
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (d *DiscoItems) Namespace() string {
 	return d.XMLName.Space
+}
+
+func (d *DiscoItems) GetSet() *ResultSet {
+	return d.ResultSet
 }
 
 // ---------------
@@ -112,7 +126,7 @@ func (d *DiscoItems) Namespace() string {
 // DiscoItems builds a default DiscoItems payload
 func (iq *IQ) DiscoItems() *DiscoItems {
 	d := DiscoItems{
-		XMLName: xml.Name{Space: "http://jabber.org/protocol/disco#items", Local: "query"},
+		XMLName: xml.Name{Space: NSDiscoItems, Local: "query"},
 	}
 	iq.Payload = &d
 	return &d
@@ -144,6 +158,6 @@ type DiscoItem struct {
 // Registry init
 
 func init() {
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoInfo, "query"}, DiscoInfo{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{NSDiscoItems, "query"}, DiscoItems{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: NSDiscoInfo, Local: "query"}, DiscoInfo{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: NSDiscoItems, Local: "query"}, DiscoItems{})
 }

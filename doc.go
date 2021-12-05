@@ -29,7 +29,7 @@ Components
 
 XMPP components can typically be used to extends the features of an XMPP
 server, in a portable way, using component protocol over persistent TCP
-connections.
+serverConnections.
 
 Component protocol is defined in XEP-114 (https://xmpp.org/extensions/xep-0114.html).
 

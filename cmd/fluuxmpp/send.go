@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"gosrc.io/xmpp/stanza"
 	"os"
 	"strings"
 	"sync"
@@ -31,13 +32,17 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 	msgText := args[1]
 
 	var err error
-	client, err := xmpp.NewClient(xmpp.Config{
+	client, err := xmpp.NewClient(&xmpp.Config{
 		TransportConfiguration: xmpp.TransportConfiguration{
 			Address: viper.GetString("addr"),
 		},
 		Jid:        viper.GetString("jid"),
 		Credential: xmpp.Password(viper.GetString("password")),
-	}, xmpp.NewRouter())
+	},
+		xmpp.NewRouter(),
+		func(err error) {
+			log.Println(err)
+		})
 
 	if err != nil {
 		log.Errorf("error when starting xmpp client: %s", err)
@@ -48,7 +53,7 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 	wg.Add(1)
 
 	// FIXME: Remove global variables
-	var mucsToLeave []*xmpp.Jid
+	var mucsToLeave []*stanza.Jid
 
 	cm := xmpp.NewStreamManager(client, func(c xmpp.Sender) {
 		defer wg.Done()
@@ -57,7 +62,7 @@ func sendxmpp(cmd *cobra.Command, args []string) {
 
 		if isMUCRecipient {
 			for _, muc := range receiver {
-				jid, err := xmpp.NewJid(muc)
+				jid, err := stanza.NewJid(muc)
 				if err != nil {
 					log.WithField("muc", muc).Errorf("skipping invalid muc jid: %w", err)
 					continue

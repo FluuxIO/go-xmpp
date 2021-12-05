@@ -23,7 +23,7 @@ func ensurePort(addr string, port int) string {
 		// This is IPV4 without port
 		return addr + ":" + strconv.Itoa(port)
 	case 1:
-		// This is IPV$ with port
+		// This is IPV6 with port
 		return addr
 	default:
 		// This is IPV6 without port, as you need to use bracket with port in IPV6

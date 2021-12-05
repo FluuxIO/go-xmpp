@@ -42,7 +42,18 @@ func NewRouter() *Router {
 // route is called by the XMPP client to dispatch stanza received using the set up routes.
 // It is also used by test, but is not supposed to be used directly by users of the library.
 func (r *Router) route(s Sender, p stanza.Packet) {
-	iq, isIq := p.(stanza.IQ)
+	a, isA := p.(stanza.SMAnswer)
+	if isA {
+		switch tt := s.(type) {
+		case *Client:
+			lastAcked := a.H
+			SendMissingStz(int(lastAcked), s, tt.Session.SMState.UnAckQueue)
+		case *Component:
+		// TODO
+		default:
+		}
+	}
+	iq, isIq := p.(*stanza.IQ)
 	if isIq {
 		r.IQResultRouteLock.RLock()
 		route, ok := r.IQResultRoutes[iq.Id]
@@ -51,7 +62,7 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 			r.IQResultRouteLock.Lock()
 			delete(r.IQResultRoutes, iq.Id)
 			r.IQResultRouteLock.Unlock()
-			route.result <- iq
+			route.result <- *iq
 			close(route.result)
 			return
 		}
@@ -70,7 +81,34 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 	}
 }
 
-func iqNotImplemented(s Sender, iq stanza.IQ) {
+// SendMissingStz sends all stanzas that did not reach the server, according to the response to an ack request (see XEP-0198, acks)
+func SendMissingStz(lastSent int, s Sender, uaq *stanza.UnAckQueue) error {
+	uaq.RWMutex.Lock()
+	if len(uaq.Uslice) <= 0 {
+		uaq.RWMutex.Unlock()
+		return nil
+	}
+	last := uaq.Uslice[len(uaq.Uslice)-1]
+	if last.Id > lastSent {
+		// Remove sent stanzas from the queue
+		uaq.PopN(lastSent - last.Id)
+		// Re-send non acknowledged stanzas
+		for _, elt := range uaq.PopN(len(uaq.Uslice)) {
+			eltStz := elt.(*stanza.UnAckedStz)
+			err := s.SendRaw(eltStz.Stz)
+			if err != nil {
+				return err
+			}
+
+		}
+		// Ask for updates on stanzas we just sent to the entity. Not sure I should leave this. Maybe let users call ack again by themselves ?
+		s.Send(stanza.SMRequest{})
+	}
+	uaq.RWMutex.Unlock()
+	return nil
+}
+
+func iqNotImplemented(s Sender, iq *stanza.IQ) {
 	err := stanza.Err{
 		XMLName: xml.Name{Local: "error"},
 		Code:    501,
@@ -232,7 +270,7 @@ func (n nameMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
 	switch p.(type) {
 	case stanza.Message:
 		name = "message"
-	case stanza.IQ:
+	case *stanza.IQ:
 		name = "iq"
 	case stanza.Presence:
 		name = "presence"
@@ -259,7 +297,7 @@ type nsTypeMatcher []string
 func (m nsTypeMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
 	var stanzaType stanza.StanzaType
 	switch packet := p.(type) {
-	case stanza.IQ:
+	case *stanza.IQ:
 		stanzaType = packet.Type
 	case stanza.Presence:
 		stanzaType = packet.Type
@@ -291,7 +329,7 @@ func (r *Route) StanzaType(types ...string) *Route {
 type nsIQMatcher []string
 
 func (m nsIQMatcher) Match(p stanza.Packet, match *RouteMatch) bool {
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return false
 	}

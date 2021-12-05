@@ -7,9 +7,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
-
 	"gosrc.io/xmpp/stanza"
+	"io"
 )
 
 type ComponentOptions struct {
@@ -49,22 +48,22 @@ type Component struct {
 	transport Transport
 
 	// read / write
-	socketProxy io.ReadWriter // TODO
-	decoder     *xml.Decoder
+	socketProxy  io.ReadWriter // TODO
+	ErrorHandler func(error)
 }
 
-func NewComponent(opts ComponentOptions, r *Router) (*Component, error) {
-	c := Component{ComponentOptions: opts, router: r}
+func NewComponent(opts ComponentOptions, r *Router, errorHandler func(error)) (*Component, error) {
+	c := Component{ComponentOptions: opts, router: r, ErrorHandler: errorHandler}
 	return &c, nil
 }
 
 // Connect triggers component connection to XMPP server component port.
 // TODO: Failed handshake should be a permanent error
 func (c *Component) Connect() error {
-	var state SMState
-	return c.Resume(state)
+	return c.Resume()
 }
-func (c *Component) Resume(sm SMState) error {
+
+func (c *Component) Resume() error {
 	var err error
 	var streamId string
 	if c.ComponentOptions.TransportConfiguration.Domain == "" {
@@ -72,26 +71,26 @@ func (c *Component) Resume(sm SMState) error {
 	}
 	c.transport, err = NewComponentTransport(c.ComponentOptions.TransportConfiguration)
 	if err != nil {
-		c.updateState(StateStreamError)
-		return err
+		c.updateState(StatePermanentError)
+		return NewConnError(err, true)
 	}
 
 	if streamId, err = c.transport.Connect(); err != nil {
-		c.updateState(StateStreamError)
-		return err
+		c.updateState(StatePermanentError)
+		return NewConnError(err, true)
 	}
-	c.updateState(StateConnected)
 
 	// Authentication
-	if _, err := fmt.Fprintf(c.transport, "<handshake>%s</handshake>", c.handshake(streamId)); err != nil {
+	if err := c.sendWithWriter(c.transport, []byte(fmt.Sprintf("<handshake>%s</handshake>", c.handshake(streamId)))); err != nil {
 		c.updateState(StateStreamError)
+
 		return NewConnError(errors.New("cannot send handshake "+err.Error()), false)
 	}
 
 	// Check server response for authentication
-	val, err := stanza.NextPacket(c.decoder)
+	val, err := stanza.NextPacket(c.transport.GetDecoder())
 	if err != nil {
-		c.updateState(StateDisconnected)
+		c.updateState(StatePermanentError)
 		return NewConnError(err, true)
 	}
 
@@ -103,18 +102,20 @@ func (c *Component) Resume(sm SMState) error {
 		// Start the receiver go routine
 		c.updateState(StateSessionEstablished)
 		go c.recv()
-		return nil
+		return err // Should be empty at this point
 	default:
-		c.updateState(StateStreamError)
+		c.updateState(StatePermanentError)
 		return NewConnError(errors.New("expecting handshake result, got "+v.Name()), true)
 	}
 }
 
-func (c *Component) Disconnect() {
+func (c *Component) Disconnect() error {
 	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
 	if c.transport != nil {
-		_ = c.transport.Close()
+		return c.transport.Close()
 	}
+	// No transport so no connection.
+	return nil
 }
 
 func (c *Component) SetHandler(handler EventHandler) {
@@ -122,20 +123,26 @@ func (c *Component) SetHandler(handler EventHandler) {
 }
 
 // Receiver Go routine receiver
-func (c *Component) recv() (err error) {
+func (c *Component) recv() {
 	for {
-		val, err := stanza.NextPacket(c.decoder)
+		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
 			c.updateState(StateDisconnected)
-			return err
+			c.ErrorHandler(err)
+			return
 		}
-
 		// Handle stream errors
 		switch p := val.(type) {
 		case stanza.StreamError:
 			c.router.route(c, val)
 			c.streamError(p.Error.Local, p.Text)
-			return errors.New("stream error: " + p.Error.Local)
+			c.ErrorHandler(errors.New("stream error: " + p.Error.Local))
+			// We don't return here, because we want to wait for the stream close tag from the server, or timeout.
+			c.Disconnect()
+		case stanza.StreamClosePacket:
+			// TCP messages should arrive in order, so we can expect to get nothing more after this occurs
+			c.transport.ReceivedStreamClose()
+			return
 		}
 		c.router.route(c, val)
 	}
@@ -153,10 +160,16 @@ func (c *Component) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
-	if _, err := fmt.Fprintf(transport, string(data)); err != nil {
+	if err := c.sendWithWriter(transport, data); err != nil {
 		return errors.New("cannot send packet " + err.Error())
 	}
 	return nil
+}
+
+func (c *Component) sendWithWriter(writer io.Writer, packet []byte) error {
+	var err error
+	_, err = writer.Write(packet)
+	return err
 }
 
 // SendIQ sends an IQ set or get stanza to the server. If a result is received
@@ -168,8 +181,8 @@ func (c *Component) Send(packet stanza.Packet) error {
 //   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
 //   result := <- client.SendIQ(ctx, iq)
 //
-func (c *Component) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
-	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
+func (c *Component) SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error) {
+	if iq.Attrs.Type != stanza.IQTypeSet && iq.Attrs.Type != stanza.IQTypeGet {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}
 	if err := c.Send(iq); err != nil {
@@ -189,7 +202,7 @@ func (c *Component) SendRaw(packet string) error {
 	}
 
 	var err error
-	_, err = fmt.Fprintf(transport, packet)
+	err = c.sendWithWriter(transport, []byte(packet))
 	return err
 }
 

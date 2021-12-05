@@ -24,6 +24,6 @@ type ReceiptReceived struct {
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgReceipts, "request"}, ReceiptRequest{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgReceipts, "received"}, ReceiptReceived{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgReceipts, Local: "request"}, ReceiptRequest{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgReceipts, Local: "received"}, ReceiptReceived{})
 }

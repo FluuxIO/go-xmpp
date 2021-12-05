@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"gosrc.io/xmpp/stanza"
@@ -15,22 +15,45 @@ import (
 //=============================================================================
 // EventManager
 
-// ConnState represents the current connection state.
+// SyncConnState represents the current connection state.
+type SyncConnState struct {
+	sync.RWMutex
+	// Current state of the client. Please use the dedicated getter and setter for this field as they are thread safe.
+	state ConnState
+}
 type ConnState = uint8
+
+// getState is a thread-safe getter for the current state
+func (scs *SyncConnState) getState() ConnState {
+	var res ConnState
+	scs.RLock()
+	res = scs.state
+	scs.RUnlock()
+	return res
+}
+
+// setState is a thread-safe setter for the current
+func (scs *SyncConnState) setState(cs ConnState) {
+	scs.Lock()
+	scs.state = cs
+	scs.Unlock()
+}
 
 // This is a the list of events happening on the connection that the
 // client can be notified about.
 const (
 	StateDisconnected ConnState = iota
-	StateConnected
+	StateResuming
 	StateSessionEstablished
 	StateStreamError
+	StatePermanentError
+	InitialPresence = "<presence/>"
 )
 
 // Event is a structure use to convey event changes related to client state. This
 // is for example used to notify the client when the client get disconnected.
 type Event struct {
-	State       ConnState
+	State       SyncConnState
 	Description string
 	StreamError string
 	SMState     SMState
@@ -43,38 +66,53 @@ type SMState struct {
 	Id string
 	// Inbound stanza count
 	Inbound uint
-	// TODO Store location for IP affinity
+
+	// IP affinity
+	preferredReconAddr string
+
+	// Error
+	StreamErrorGroup stanza.StanzaErrorGroup
+
+	// Track sent stanzas
+	*stanza.UnAckQueue
+
 	// TODO Store max and timestamp, to check if we should retry resumption or not
 }
 
 // EventHandler is use to pass events about state of the connection to
 // client implementation.
-type EventHandler func(Event)
+type EventHandler func(Event) error
 
 type EventManager struct {
-	// Store current state
-	CurrentState ConnState
+	// Store current state. Please use "getState" and "setState" to access and/or modify this.
+	CurrentState SyncConnState
 
 	// Callback used to propagate connection state changes
 	Handler EventHandler
 }
 
-func (em EventManager) updateState(state ConnState) {
-	em.CurrentState = state
+// updateState changes the CurrentState in the event manager. The state read is threadsafe but there is no guarantee
+// regarding the triggered callback function.
+func (em *EventManager) updateState(state ConnState) {
+	em.CurrentState.setState(state)
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState})
 	}
 }
 
-func (em EventManager) disconnected(state SMState) {
-	em.CurrentState = StateDisconnected
+// disconnected changes the CurrentState in the event manager to "disconnected". The state read is threadsafe but there is no guarantee
+// regarding the triggered callback function.
+func (em *EventManager) disconnected(state SMState) {
+	em.CurrentState.setState(StateDisconnected)
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState, SMState: state})
 	}
 }
 
-func (em EventManager) streamError(error, desc string) {
-	em.CurrentState = StateStreamError
+// streamError changes the CurrentState in the event manager to "streamError". The state read is threadsafe but there is no guarantee
+// regarding the triggered callback function.
+func (em *EventManager) streamError(error, desc string) {
+	em.CurrentState.setState(StateStreamError)
 	if em.Handler != nil {
 		em.Handler(Event{State: em.CurrentState, StreamError: error, Description: desc})
 	}
@@ -89,7 +127,7 @@ var ErrCanOnlySendGetOrSetIq = errors.New("SendIQ can only send get and set IQ s
 // server.
 type Client struct {
 	// Store user defined options and states
-	config Config
+	config *Config
 	// Session gather data that can be accessed by users of this library
 	Session   *Session
 	transport Transport
@@ -97,6 +135,14 @@ type Client struct {
 	router *Router
 	// Track and broadcast connection state
 	EventManager
+	// Handle errors from client execution
+	ErrorHandler func(error)
+
+	// Post connection hook. This will be executed on first connection
+	PostConnectHook func() error
+
+	// Post resume hook. This will be executed after the client resumes a lost connection using StreamManagement (XEP-0198)
+	PostResumeHook func() error
 }
 
 /*
@@ -104,11 +150,14 @@ Setting up the client / Checking the parameters
 */
 
 // NewClient generates a new XMPP client, based on Config passed as parameters.
-// If host is not specified, the DNS SRV should be used to find the host from the domainpart of the JID.
+// If host is not specified, the DNS SRV should be used to find the host from the domain part of the Jid.
 // Default the port to 5222.
-func NewClient(config Config, r *Router) (c *Client, err error) {
-	// Parse JID
-	if config.parsedJid, err = NewJid(config.Jid); err != nil {
+func NewClient(config *Config, r *Router, errorHandler func(error)) (c *Client, err error) {
+	if config.KeepaliveInterval == 0 {
+		config.KeepaliveInterval = time.Second * 30
+	}
+	// Parse Jid
+	if config.parsedJid, err = stanza.NewJid(config.Jid); err != nil {
 		err = errors.New("missing jid")
 		return nil, NewConnError(err, true)
 	}
@@ -136,9 +185,15 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 			}
 		}
 	}
+	if config.Domain == "" {
+		// Fallback to jid domain
+		config.Domain = config.parsedJid.Domain
+	}
+
 	c = new(Client)
 	c.config = config
 	c.router = r
+	c.ErrorHandler = errorHandler
 
 	if c.config.ConnectTimeout == 0 {
 		c.config.ConnectTimeout = 15 // 15 second as default
@@ -147,7 +202,8 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	if config.TransportConfiguration.Domain == "" {
 		config.TransportConfiguration.Domain = config.parsedJid.Domain
 	}
-	c.transport = NewClientTransport(config.TransportConfiguration)
+	c.config.TransportConfiguration.ConnectTimeout = c.config.ConnectTimeout
+	c.transport = NewClientTransport(c.config.TransportConfiguration)
 
 	if config.StreamLogger != nil {
 		c.transport.LogTraffic(config.StreamLogger)
@@ -156,53 +212,94 @@ func NewClient(config Config, r *Router) (c *Client, err error) {
 	return
 }
 
-// Connect triggers actual TCP connection, based on previously defined parameters.
-// Connect simply triggers resumption, with an empty session state.
+// Connect establishes a first time connection to a XMPP server.
+// It calls the PostConnectHook
 func (c *Client) Connect() error {
-	var state SMState
-	return c.Resume(state)
+	err := c.connect()
+	if err != nil {
+		return err
+	}
+	// TODO: Do we always want to send initial presence automatically ?
+	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
+	err = c.sendWithWriter(c.transport, []byte(InitialPresence))
+	// Execute the post first connection hook. Typically this holds "ask for roster" and this type of actions.
+	if c.PostConnectHook != nil {
+		err = c.PostConnectHook()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Start the keepalive go routine
+	keepaliveQuit := make(chan struct{})
+	go keepalive(c.transport, c.config.KeepaliveInterval, keepaliveQuit)
+	// Start the receiver go routine
+	go c.recv(keepaliveQuit)
+	return err
 }
 
-// Resume attempts resuming  a Stream Managed session, based on the provided stream management
-// state.
-func (c *Client) Resume(state SMState) error {
+// connect establishes an actual TCP connection, based on previously defined parameters, as well as a XMPP session
+func (c *Client) connect() error {
+	var state SMState
 	var err error
-
+	// This is the TCP connection
 	streamId, err := c.transport.Connect()
 	if err != nil {
 		return err
 	}
-	c.updateState(StateConnected)
 
-	// Client is ok, we now open XMPP session
-	if c.Session, err = NewSession(c.transport, c.config, state); err != nil {
-		c.transport.Close()
+	// Client is ok, we now open XMPP session with TLS negotiation if possible and session resume or binding
+	// depending on state.
+	if c.Session, err = NewSession(c, state); err != nil {
+		// Try to get the stream close tag from the server.
+		go func() {
+			for {
+				val, err := stanza.NextPacket(c.transport.GetDecoder())
+				if err != nil {
+					c.ErrorHandler(err)
+					c.disconnected(state)
+					return
+				}
+				switch val.(type) {
+				case stanza.StreamClosePacket:
+					// TCP messages should arrive in order, so we can expect to get nothing more after this occurs
+					c.transport.ReceivedStreamClose()
+					return
+				}
+			}
+		}()
+		c.Disconnect()
 		return err
 	}
 	c.Session.StreamId = streamId
 	c.updateState(StateSessionEstablished)
 
-	// Start the keepalive go routine
-	keepaliveQuit := make(chan struct{})
-	go keepalive(c.transport, keepaliveQuit)
-	// Start the receiver go routine
-	state = c.Session.SMState
-	go c.recv(state, keepaliveQuit)
-
-	// We're connected and can now receive and send messages.
-	//fmt.Fprintf(client.conn, "<presence xml:lang='en'><show>%s</show><status>%s</status></presence>", "chat", "Online")
-	// TODO: Do we always want to send initial presence automatically ?
-	// Do we need an option to avoid that or do we rely on client to send the presence itself ?
-	fmt.Fprintf(c.transport, "<presence/>")
-
 	return err
 }
 
-func (c *Client) Disconnect() {
-	// TODO: Add a way to wait for stream close acknowledgement from the server for clean disconnect
-	if c.transport != nil {
-		_ = c.transport.Close()
+// Resume attempts resuming  a Stream Managed session, based on the provided stream management
+// state. See XEP-0198
+func (c *Client) Resume() error {
+	c.EventManager.updateState(StateResuming)
+	err := c.connect()
+	if err != nil {
+		return err
 	}
+	// Execute post reconnect hook. This can be different from the first connection hook, and not trigger roster retrieval
+	// for example.
+	if c.PostResumeHook != nil {
+		err = c.PostResumeHook()
+	}
+	return err
+}
+
+// Disconnect disconnects the client from the server, sending a stream close nonza and closing the TCP connection.
+func (c *Client) Disconnect() error {
+	if c.transport != nil {
+		return c.transport.Close()
+	}
+	// No transport so no connection.
+	return nil
 }
 
 func (c *Client) SetHandler(handler EventHandler) {
@@ -221,6 +318,15 @@ func (c *Client) Send(packet stanza.Packet) error {
 		return errors.New("cannot marshal packet " + err.Error())
 	}
 
+	// Store stanza as non-acked as part of stream management
+	// See https://xmpp.org/extensions/xep-0198.html#scenarios
+	if c.config.StreamManagementEnable {
+		if _, ok := packet.(stanza.SMRequest); !ok {
+			toStore := stanza.UnAckedStz{Stz: string(data)}
+			c.Session.SMState.UnAckQueue.Push(&toStore)
+		}
+	}
+
 	return c.sendWithWriter(c.transport, data)
 }
 
@@ -233,8 +339,8 @@ func (c *Client) Send(packet stanza.Packet) error {
 //   ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
 //   result := <- client.SendIQ(ctx, iq)
 //
-func (c *Client) SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error) {
-	if iq.Attrs.Type != "set" && iq.Attrs.Type != "get" {
+func (c *Client) SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error) {
+	if iq.Attrs.Type != stanza.IQTypeSet && iq.Attrs.Type != stanza.IQTypeGet {
 		return nil, ErrCanOnlySendGetOrSetIq
 	}
 	if err := c.Send(iq); err != nil {
@@ -253,6 +359,12 @@ func (c *Client) SendRaw(packet string) error {
 		return errors.New("client is not connected")
 	}
 
+	// Store stanza as non-acked as part of stream management
+	// See https://xmpp.org/extensions/xep-0198.html#scenarios
+	if c.config.StreamManagementEnable {
+		toStore := stanza.UnAckedStz{Stz: packet}
+		c.Session.SMState.UnAckQueue.Push(&toStore)
+	}
 	return c.sendWithWriter(c.transport, []byte(packet))
 }
 
@@ -266,33 +378,43 @@ func (c *Client) sendWithWriter(writer io.Writer, packet []byte) error {
 // Go routines
 
 // Loop: Receive data from server
-func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) {
+func (c *Client) recv(keepaliveQuit chan<- struct{}) {
+	defer close(keepaliveQuit)
+
 	for {
 		val, err := stanza.NextPacket(c.transport.GetDecoder())
 		if err != nil {
-			close(keepaliveQuit)
-			c.disconnected(state)
-			return err
+			c.ErrorHandler(err)
+			c.disconnected(c.Session.SMState)
+			return
 		}
 
 		// Handle stream errors
 		switch packet := val.(type) {
 		case stanza.StreamError:
 			c.router.route(c, val)
-			close(keepaliveQuit)
 			c.streamError(packet.Error.Local, packet.Text)
-			return errors.New("stream error: " + packet.Error.Local)
+			c.ErrorHandler(errors.New("stream error: " + packet.Error.Local))
+			// We don't return here, because we want to wait for the stream close tag from the server, or timeout.
+			c.Disconnect()
 		// Process Stream management nonzas
 		case stanza.SMRequest:
 			answer := stanza.SMAnswer{XMLName: xml.Name{
 				Space: stanza.NSStreamManagement,
 				Local: "a",
-			}, H: state.Inbound}
-			c.Send(answer)
+			}, H: c.Session.SMState.Inbound}
+			err = c.Send(answer)
+			if err != nil {
+				c.ErrorHandler(err)
+				return
+			}
+		case stanza.StreamClosePacket:
+			// TCP messages should arrive in order, so we can expect to get nothing more after this occurs
+			c.transport.ReceivedStreamClose()
+			return
 		default:
-			state.Inbound++
+			c.Session.SMState.Inbound++
 		}
-
 		// Do normal route processing in a go-routine so we can immediately
 		// start receiving other stanzas. This also allows route handlers to
 		// send and receive more stanzas.
@@ -303,9 +425,8 @@ func (c *Client) recv(state SMState, keepaliveQuit chan<- struct{}) (err error) 
 // Loop: send whitespace keepalive to server
 // This is use to keep the connection open, but also to detect connection loss
 // and trigger proper client connection shutdown.
-func keepalive(transport Transport, quit <-chan struct{}) {
-	// TODO: Make keepalive interval configurable
-	ticker := time.NewTicker(30 * time.Second)
+func keepalive(transport Transport, interval time.Duration, quit <-chan struct{}) {
+	ticker := time.NewTicker(interval)
 	for {
 		select {
 		case <-ticker.C:

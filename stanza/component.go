@@ -12,7 +12,7 @@ import (
 type Handshake struct {
 	XMLName xml.Name `xml:"jabber:component:accept handshake"`
 	// TODO Add handshake value with test for proper serialization
-	// Value string     `xml:",innerxml"`
+	Value string `xml:",innerxml"`
 }
 
 func (Handshake) Name() string {
@@ -42,10 +42,15 @@ type Delegation struct {
 	XMLName   xml.Name   `xml:"urn:xmpp:delegation:1 delegation"`
 	Forwarded *Forwarded // This is used in iq to wrap delegated iqs
 	Delegated *Delegated // This is used in a message to confirm delegated namespace
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (d *Delegation) Namespace() string {
 	return d.XMLName.Space
+}
+func (d *Delegation) GetSet() *ResultSet {
+	return d.ResultSet
 }
 
 // Forwarded is used to wrapped forwarded stanzas.
@@ -86,6 +91,6 @@ type Delegated struct {
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{"urn:xmpp:delegation:1", "delegation"}, Delegation{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:xmpp:delegation:1", "delegation"}, Delegation{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: "urn:xmpp:delegation:1", Local: "delegation"}, Delegation{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: "urn:xmpp:delegation:1", Local: "delegation"}, Delegation{})
 }

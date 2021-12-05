@@ -35,7 +35,9 @@ func main() {
 		IQNamespaces("urn:xmpp:delegation:1").
 		HandlerFunc(handleDelegation)
 
-	component, err := xmpp.NewComponent(opts, router)
+	component, err := xmpp.NewComponent(opts, router, func(err error) {
+		log.Println(err)
+	})
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -78,7 +80,7 @@ const (
 // ctx.Opts
 func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 	// Type conversion & sanity checks
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return
 	}
@@ -87,15 +89,18 @@ func discoInfo(c xmpp.Sender, p stanza.Packet, opts xmpp.ComponentOptions) {
 		return
 	}
 
-	iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
+	iqResp, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
+	if err != nil {
+		log.Fatalf("failed to create IQ response: %v", err)
+	}
 
 	switch info.Node {
 	case "":
-		discoInfoRoot(&iqResp, opts)
+		discoInfoRoot(iqResp, opts)
 	case pubsubNode:
-		discoInfoPubSub(&iqResp)
+		discoInfoPubSub(iqResp)
 	case pepNode:
-		discoInfoPEP(&iqResp)
+		discoInfoPEP(iqResp)
 	}
 
 	_ = c.Send(iqResp)
@@ -155,7 +160,7 @@ func discoInfoPEP(iqResp *stanza.IQ) {
 
 func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 	// Type conversion & sanity checks
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return
 	}
@@ -166,12 +171,12 @@ func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 	}
 	forwardedPacket := delegation.Forwarded.Stanza
 	fmt.Println(forwardedPacket)
-	forwardedIQ, ok := forwardedPacket.(stanza.IQ)
+	forwardedIQ, ok := forwardedPacket.(*stanza.IQ)
 	if !ok {
 		return
 	}
 
-	pubsub, ok := forwardedIQ.Payload.(*stanza.PubSub)
+	pubsub, ok := forwardedIQ.Payload.(*stanza.PubSubGeneric)
 	if !ok {
 		// We only support pubsub delegation
 		return
@@ -179,8 +184,11 @@ func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 
 	if pubsub.Publish.XMLName.Local == "publish" {
 		// Prepare pubsub IQ reply
-		iqResp := stanza.NewIQ(stanza.Attrs{Type: "result", From: forwardedIQ.To, To: forwardedIQ.From, Id: forwardedIQ.Id})
-		payload := stanza.PubSub{
+		iqResp, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: forwardedIQ.To, To: forwardedIQ.From, Id: forwardedIQ.Id})
+		if err != nil {
+			log.Fatalf("failed to create iqResp: %v", err)
+		}
+		payload := stanza.PubSubGeneric{
 			XMLName: xml.Name{
 				Space: "http://jabber.org/protocol/pubsub",
 				Local: "pubsub",
@@ -188,7 +196,10 @@ func handleDelegation(s xmpp.Sender, p stanza.Packet) {
 		}
 		iqResp.Payload = &payload
 		// Wrap the reply in delegation 'forward'
-		iqForward := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
+		iqForward, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: iq.To, To: iq.From, Id: iq.Id})
+		if err != nil {
+			log.Fatalf("failed to create iqForward: %v", err)
+		}
 		delegPayload := stanza.Delegation{
 			XMLName: xml.Name{
 				Space: "urn:xmpp:delegation:1",

@@ -17,5 +17,5 @@ type OOB struct {
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{"jabber:x:oob", "x"}, OOB{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: "jabber:x:oob", Local: "x"}, OOB{})
 }

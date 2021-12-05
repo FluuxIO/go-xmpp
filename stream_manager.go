@@ -25,11 +25,11 @@ import (
 // set callback and trigger reconnection.
 type StreamClient interface {
 	Connect() error
-	Resume(state SMState) error
+	Resume() error
 	Send(packet stanza.Packet) error
-	SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error)
+	SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error)
 	SendRaw(packet string) error
-	Disconnect()
+	Disconnect() error
 	SetHandler(handler EventHandler)
 }
 
@@ -37,7 +37,7 @@ type StreamClient interface {
 // It is mostly use in callback to pass a limited subset of the stream client interface
 type Sender interface {
 	Send(packet stanza.Packet) error
-	SendIQ(ctx context.Context, iq stanza.IQ) (chan stanza.IQ, error)
+	SendIQ(ctx context.Context, iq *stanza.IQ) (chan stanza.IQ, error)
 	SendRaw(packet string) error
 }
 
@@ -74,22 +74,24 @@ func (sm *StreamManager) Run() error {
 		return errors.New("missing stream client")
 	}
 
-	handler := func(e Event) {
-		switch e.State {
-		case StateConnected:
-			sm.Metrics.setConnectTime()
+	handler := func(e Event) error {
+		switch e.State.state {
 		case StateSessionEstablished:
 			sm.Metrics.setLoginTime()
 		case StateDisconnected:
 			// Reconnect on disconnection
-			sm.resume(e.SMState)
+			return sm.resume()
 		case StateStreamError:
 			sm.client.Disconnect()
 			// Only try reconnecting if we have not been kicked by another session to avoid connection loop.
+			// TODO: Make this conflict exception a permanent error
 			if e.StreamError != "conflict" {
-				sm.connect()
+				return sm.resume()
 			}
+		case StatePermanentError:
+			// Do not attempt to reconnect
 		}
+		return nil
 	}
 	sm.client.SetHandler(handler)
 
@@ -111,20 +113,33 @@ func (sm *StreamManager) Stop() {
 }
 
 func (sm *StreamManager) connect() error {
-	var state SMState
-	return sm.resume(state)
+	if sm.client != nil {
+		if c, ok := sm.client.(*Client); ok {
+			if c.CurrentState.getState() == StateDisconnected {
+				sm.Metrics = initMetrics()
+				err := c.Connect()
+				if err != nil {
+					return err
+				}
+				if sm.PostConnect != nil {
+					sm.PostConnect(sm.client)
+				}
+				return nil
+			}
+		}
+	}
+	return errors.New("client is not disconnected")
 }
 
 // resume manages the reconnection loop and apply the define backoff to avoid overloading the server.
-func (sm *StreamManager) resume(state SMState) error {
+func (sm *StreamManager) resume() error {
 	var backoff backoff // TODO: Group backoff calculation features with connection manager?
 
 	for {
 		var err error
 		// TODO: Make it possible to define logger to log disconnect and reconnection attempts
 		sm.Metrics = initMetrics()
-
-		if err = sm.client.Resume(state); err != nil {
+		if err = sm.client.Resume(); err != nil {
 			var actualErr ConnError
 			if xerrors.As(err, &actualErr) {
 				if actualErr.Permanent {
@@ -148,11 +163,6 @@ func (sm *StreamManager) resume(state SMState) error {
 
 type Metrics struct {
 	startTime time.Time
-	// ConnectTime returns the duration between client initiation of the TCP/IP
-	// connection to the server and actual TCP/IP session establishment.
-	// This time includes DNS resolution and can be slightly higher if the DNS
-	// resolution result was not in cache.
-	ConnectTime time.Duration
 	// LoginTime returns the between client initiation of the TCP/IP
 	// connection to the server and the return of the login result.
 	// This includes ConnectTime, but also XMPP level protocol negotiation
@@ -166,10 +176,6 @@ func initMetrics() *Metrics {
 	return &Metrics{
 		startTime: time.Now(),
 	}
-}
-
-func (m *Metrics) setConnectTime() {
-	m.ConnectTime = time.Since(m.startTime)
 }
 
 func (m *Metrics) setLoginTime() {

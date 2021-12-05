@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"log"
@@ -19,7 +20,7 @@ import (
 const scClientID = "dde6a0075614ac4f3bea423863076b22"
 
 func main() {
-	jid := flag.String("jid", "", "jukebok XMPP JID, resource is optional")
+	jid := flag.String("jid", "", "jukebok XMPP Jid, resource is optional")
 	password := flag.String("password", "", "XMPP account password")
 	address := flag.String("address", "", "If needed, XMPP server DNSName or IP and optional port (ie myserver:5222)")
 	flag.Parse()
@@ -48,18 +49,21 @@ func main() {
 			handleMessage(s, p, player)
 		})
 	router.NewRoute().
-		Packet("message").
+		Packet("iq").
 		HandlerFunc(func(s xmpp.Sender, p stanza.Packet) {
 			handleIQ(s, p, player)
 		})
 
-	client, err := xmpp.NewClient(config, router)
+	client, err := xmpp.NewClient(&config, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
 
 	cm := xmpp.NewStreamManager(client, nil)
 	log.Fatal(cm.Run())
+}
+func errorHandler(err error) {
+	fmt.Println(err.Error())
 }
 
 func handleMessage(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
@@ -77,7 +81,7 @@ func handleMessage(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 }
 
 func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
-	iq, ok := p.(stanza.IQ)
+	iq, ok := p.(*stanza.IQ)
 	if !ok {
 		return
 	}
@@ -96,7 +100,7 @@ func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 		setResponse := new(stanza.ControlSetResponse)
 		// FIXME: Broken
 		reply := stanza.IQ{Attrs: stanza.Attrs{To: iq.From, Type: "result", Id: iq.Id}, Payload: setResponse}
-		_ = s.Send(reply)
+		_ = s.Send(&reply)
 		// TODO add Soundclound artist / title retrieval
 		sendUserTune(s, "Radiohead", "Spectre")
 	default:
@@ -105,11 +109,29 @@ func handleIQ(s xmpp.Sender, p stanza.Packet, player *mpg123.Player) {
 }
 
 func sendUserTune(s xmpp.Sender, artist string, title string) {
-	tune := stanza.Tune{Artist: artist, Title: title}
-	iq := stanza.NewIQ(stanza.Attrs{Type: "set", Id: "usertune-1", Lang: "en"})
-	payload := stanza.PubSub{Publish: &stanza.Publish{Node: "http://jabber.org/protocol/tune", Item: stanza.Item{Tune: &tune}}}
-	iq.Payload = &payload
-	_ = s.Send(iq)
+	rq, err := stanza.NewPublishItemRq("localhost",
+		"http://jabber.org/protocol/tune",
+		"",
+		stanza.Item{
+			XMLName: xml.Name{Space: "http://jabber.org/protocol/tune", Local: "tune"},
+			Any: &stanza.Node{
+				Nodes: []stanza.Node{
+					{
+						XMLName: xml.Name{Local: "artist"},
+						Content: artist,
+					},
+					{
+						XMLName: xml.Name{Local: "title"},
+						Content: title,
+					},
+				},
+			},
+		})
+	if err != nil {
+		fmt.Printf("failed to build the publish request : %s", err.Error())
+		return
+	}
+	_ = s.Send(rq)
 }
 
 func playSCURL(p *mpg123.Player, rawURL string) {
@@ -117,7 +139,7 @@ func playSCURL(p *mpg123.Player, rawURL string) {
 	// TODO: Maybe we need to check the track itself to get the stream URL from reply ?
 	url := soundcloud.FormatStreamURL(songID)
 
-	_ = p.Play(url)
+	_ = p.Play(strings.ReplaceAll(url, "YOUR_SOUNDCLOUD_CLIENTID", scClientID))
 }
 
 // TODO

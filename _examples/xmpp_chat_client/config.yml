@@ -1,0 +1,13 @@
+# Sample config for the client
+Server :
+  - full_address: "localhost:5222"
+Client :
+  - jid: "testuser2@localhost"
+  - pass: "pass123" #Password in a config file yay
+
+Contacts : "testuser1@localhost;testuser3@localhost"
+
+LogStanzas:
+  - logger_on: "true"
+  - logfile_path: "./logs"
+

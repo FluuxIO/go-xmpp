@@ -35,8 +35,8 @@ type MarkAcknowledged struct {
 }
 
 func init() {
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatMarkers, "markable"}, Markable{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatMarkers, "received"}, MarkReceived{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatMarkers, "displayed"}, MarkDisplayed{})
-	TypeRegistry.MapExtension(PKTMessage, xml.Name{NSMsgChatMarkers, "acknowledged"}, MarkAcknowledged{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatMarkers, Local: "markable"}, Markable{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatMarkers, Local: "received"}, MarkReceived{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatMarkers, Local: "displayed"}, MarkDisplayed{})
+	TypeRegistry.MapExtension(PKTMessage, xml.Name{Space: NSMsgChatMarkers, Local: "acknowledged"}, MarkAcknowledged{})
 }

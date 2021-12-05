@@ -11,10 +11,16 @@ type Version struct {
 	Name    string   `xml:"name,omitempty"`
 	Version string   `xml:"version,omitempty"`
 	OS      string   `xml:"os,omitempty"`
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (v *Version) Namespace() string {
 	return v.XMLName.Space
+}
+
+func (v *Version) GetSet() *ResultSet {
+	return v.ResultSet
 }
 
 // ---------------
@@ -41,5 +47,5 @@ func (v *Version) SetInfo(name, version, os string) *Version {
 // Registry init
 
 func init() {
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"jabber:iq:version", "query"}, Version{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: "jabber:iq:version", Local: "query"}, Version{})
 }

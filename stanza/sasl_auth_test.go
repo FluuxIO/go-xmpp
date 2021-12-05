@@ -9,7 +9,7 @@ import (
 
 // Check that we can detect optional session from advertised stream features
 func TestSessionFeatures(t *testing.T) {
-	streamFeatures := stanza.StreamFeatures{Session: stanza.StreamSession{Optional: true}}
+	streamFeatures := stanza.StreamFeatures{Session: stanza.StreamSession{Optional: &struct{}{}}}
 
 	data, err := xml.Marshal(streamFeatures)
 	if err != nil {
@@ -28,8 +28,11 @@ func TestSessionFeatures(t *testing.T) {
 
 // Check that the Session tag can be used in IQ decoding
 func TestSessionIQ(t *testing.T) {
-	iq := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, Id: "session"})
-	iq.Payload = &stanza.StreamSession{XMLName: xml.Name{Local: "session"}, Optional: true}
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: stanza.IQTypeSet, Id: "session"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
+	iq.Payload = &stanza.StreamSession{XMLName: xml.Name{Local: "session"}, Optional: &struct{}{}}
 
 	data, err := xml.Marshal(iq)
 	if err != nil {

@@ -12,8 +12,11 @@ func TestVersion_Builder(t *testing.T) {
 	name := "Exodus"
 	version := "0.7.0.4"
 	os := "Windows-XP 5.01.2600"
-	iq := stanza.NewIQ(stanza.Attrs{Type: "result", From: "romeo@montague.net/orchard",
+	iq, err := stanza.NewIQ(stanza.Attrs{Type: "result", From: "romeo@montague.net/orchard",
 		To: "juliet@capulet.com/balcony", Id: "version_1"})
+	if err != nil {
+		t.Fatalf("failed to create IQ: %v", err)
+	}
 	iq.Version().SetInfo(name, version, os)
 
 	parsedIQ, err := checkMarshalling(t, iq)

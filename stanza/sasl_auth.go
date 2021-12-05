@@ -69,10 +69,16 @@ type Bind struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 	Resource string   `xml:"resource,omitempty"`
 	Jid      string   `xml:"jid,omitempty"`
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (b *Bind) Namespace() string {
 	return b.XMLName.Space
+}
+
+func (b *Bind) GetSet() *ResultSet {
+	return b.ResultSet
 }
 
 // ============================================================================
@@ -87,17 +93,23 @@ func (b *Bind) Namespace() string {
 // This is the draft defining how to handle the transition:
 //    https://tools.ietf.org/html/draft-cridland-xmpp-session-01
 type StreamSession struct {
-	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-session session"`
-	Optional bool     // If element does exist, it mean we are not required to open session
+	XMLName  xml.Name  `xml:"urn:ietf:params:xml:ns:xmpp-session session"`
+	Optional *struct{} // If element does exist, it mean we are not required to open session
+	// Result sets
+	ResultSet *ResultSet `xml:"set,omitempty"`
 }
 
 func (s *StreamSession) Namespace() string {
 	return s.XMLName.Space
 }
 
+func (s *StreamSession) GetSet() *ResultSet {
+	return s.ResultSet
+}
+
 func (s *StreamSession) IsOptional() bool {
 	if s.XMLName.Local == "session" {
-		return s.Optional
+		return s.Optional != nil
 	}
 	// If session element is missing, then we should not use session
 	return true
@@ -107,6 +119,6 @@ func (s *StreamSession) IsOptional() bool {
 // Registry init
 
 func init() {
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-bind", "bind"}, Bind{})
-	TypeRegistry.MapExtension(PKTIQ, xml.Name{"urn:ietf:params:xml:ns:xmpp-session", "session"}, StreamSession{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-bind", Local: "bind"}, Bind{})
+	TypeRegistry.MapExtension(PKTIQ, xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-session", Local: "session"}, StreamSession{})
 }

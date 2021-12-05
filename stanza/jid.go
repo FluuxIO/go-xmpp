@@ -1,4 +1,4 @@
-package xmpp
+package stanza
 
 import (
 	"fmt"
@@ -20,9 +20,9 @@ func NewJid(sjid string) (*Jid, error) {
 	}
 
 	s1 := strings.SplitN(sjid, "@", 2)
-	if len(s1) == 1 { // This is a server or component JID
+	if len(s1) == 1 { // This is a server or component Jid
 		jid.Domain = s1[0]
-	} else { // JID has a local username part
+	} else { // Jid has a local username part
 		if s1[0] == "" {
 			return jid, fmt.Errorf("invalid jid '%s", sjid)
 		}
@@ -41,10 +41,10 @@ func NewJid(sjid string) (*Jid, error) {
 	}
 
 	if !isUsernameValid(jid.Node) {
-		return jid, fmt.Errorf("invalid Node in JID '%s'", sjid)
+		return jid, fmt.Errorf("invalid Node in Jid '%s'", sjid)
 	}
 	if !isDomainValid(jid.Domain) {
-		return jid, fmt.Errorf("invalid domain in JID '%s'", sjid)
+		return jid, fmt.Errorf("invalid domain in Jid '%s'", sjid)
 	}
 
 	return jid, nil

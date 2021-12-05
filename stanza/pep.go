@@ -15,7 +15,7 @@ type Tune struct {
 	Uri     string   `xml:"uri,omitempty"`
 }
 
-// Mood defines deta model for XEP-0107 - User Mood
+// Mood defines data model for XEP-0107 - User Mood
 // See: https://xmpp.org/extensions/xep-0107.html
 type Mood struct {
 	MsgExtension          // Mood can be added as a message extension

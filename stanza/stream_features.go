@@ -15,7 +15,7 @@ type StreamFeatures struct {
 	// Server capabilities hash
 	Caps Caps
 	// Stream features
-	StartTLS         tlsStartTLS
+	StartTLS         TlsStartTLS
 	Mechanisms       saslMechanisms
 	Bind             Bind
 	StreamManagement streamManagement
@@ -60,13 +60,13 @@ type Caps struct {
 
 // StartTLS feature
 // Reference: RFC 6120 - https://tools.ietf.org/html/rfc6120#section-5.4
-type tlsStartTLS struct {
+type TlsStartTLS struct {
 	XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 	Required bool
 }
 
 // UnmarshalXML implements custom parsing startTLS required flag
-func (stls *tlsStartTLS) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (stls *TlsStartTLS) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	stls.XMLName = start.Name
 
 	// Check subelements to extract required field as boolean
@@ -98,7 +98,7 @@ func (stls *tlsStartTLS) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 	}
 }
 
-func (sf *StreamFeatures) DoesStartTLS() (feature tlsStartTLS, isSupported bool) {
+func (sf *StreamFeatures) DoesStartTLS() (feature TlsStartTLS, isSupported bool) {
 	if sf.StartTLS.XMLName.Space+" "+sf.StartTLS.XMLName.Local == nsTLS+" starttls" {
 		return sf.StartTLS, true
 	}
@@ -116,6 +116,10 @@ type saslMechanisms struct {
 // Reference: XEP-0198 - https://xmpp.org/extensions/xep-0198.html#feature
 type streamManagement struct {
 	XMLName xml.Name `xml:"urn:xmpp:sm:3 sm"`
+}
+
+func (streamManagement) Name() string {
+	return "streamManagement"
 }
 
 func (sf *StreamFeatures) DoesStreamManagement() (isSupported bool) {
@@ -164,4 +168,22 @@ func (streamErrorDecoder) decode(p *xml.Decoder, se xml.StartElement) (StreamErr
 	var packet StreamError
 	err := p.DecodeElement(&packet, &se)
 	return packet, err
+}
+
+// ============================================================================
+// StreamClose "Packet"
+
+// This is just a closing tag and hold no information
+type StreamClosePacket struct{}
+
+func (StreamClosePacket) Name() string {
+	return "stream:stream"
+}
+
+type streamCloseDecoder struct{}
+
+var streamClose streamCloseDecoder
+
+func (streamCloseDecoder) decode(_ xml.EndElement) StreamClosePacket {
+	return StreamClosePacket{}
 }
