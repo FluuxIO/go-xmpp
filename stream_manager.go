@@ -114,18 +114,23 @@ func (sm *StreamManager) Stop() {
 
 func (sm *StreamManager) connect() error {
 	if sm.client != nil {
-		if c, ok := sm.client.(*Client); ok {
-			if c.CurrentState.getState() == StateDisconnected {
-				sm.Metrics = initMetrics()
-				err := c.Connect()
-				if err != nil {
-					return err
-				}
-				if sm.PostConnect != nil {
-					sm.PostConnect(sm.client)
-				}
-				return nil
+		var scs *SyncConnState
+		if client, ok := sm.client.(*Client); ok {
+			scs = &client.CurrentState
+		}
+		if component, ok := sm.client.(*Component); ok {
+			scs = &component.CurrentState
+		}
+		if scs != nil && scs.getState() == StateDisconnected {
+			sm.Metrics = initMetrics()
+			err := sm.client.Connect()
+			if err != nil {
+				return err
 			}
+			if sm.PostConnect != nil {
+				sm.PostConnect(sm.client)
+			}
+			return nil
 		}
 	}
 	return errors.New("client is not disconnected")
