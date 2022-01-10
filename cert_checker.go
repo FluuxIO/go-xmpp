@@ -65,7 +65,7 @@ func (c *ServerCheck) Check() error {
 	var f stanza.StreamFeatures
 	packet, err := stanza.NextPacket(decoder)
 	if err != nil {
-		err = fmt.Errorf("stream open decode features: %s", err)
+		err = fmt.Errorf("stream open decode features: %w", err)
 		return err
 	}
 
@@ -86,7 +86,7 @@ func (c *ServerCheck) Check() error {
 
 		var k stanza.TLSProceed
 		if err = decoder.DecodeElement(&k, nil); err != nil {
-			return fmt.Errorf("expecting starttls proceed: %s", err)
+			return fmt.Errorf("expecting starttls proceed: %w", err)
 		}
 
 		var tlsConfig tls.Config
