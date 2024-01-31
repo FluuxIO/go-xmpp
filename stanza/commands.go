@@ -56,6 +56,8 @@ type CommandElement interface {
 }
 
 type Actions struct {
+	XMLName xml.Name `xml:"actions"`
+
 	Prev     *struct{} `xml:"prev,omitempty"`
 	Next     *struct{} `xml:"next,omitempty"`
 	Complete *struct{} `xml:"complete,omitempty"`
@@ -68,6 +70,8 @@ func (a *Actions) Ref() string {
 }
 
 type Note struct {
+	XMLName xml.Name `xml:"note"`
+
 	Text string `xml:",cdata"`
 	Type string `xml:"type,attr,omitempty"`
 }
@@ -117,11 +121,11 @@ func (c *Command) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			var err error
 			switch tt.Name.Local {
 
-			case "affiliations":
+			case "actions":
 				a := Actions{}
 				err = d.DecodeElement(&a, &tt)
 				c.CommandElement = &a
-			case "configure":
+			case "note":
 				nt := Note{}
 				err = d.DecodeElement(&nt, &tt)
 				c.CommandElement = &nt
