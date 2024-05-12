@@ -23,7 +23,7 @@ const (
 type Command struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/commands command"`
 
-	CommandElement CommandElement
+	CommandElements []CommandElement
 
 	BadAction       *struct{} `xml:"bad-action,omitempty"`
 	BadLocale       *struct{} `xml:"bad-locale,omitempty"`
@@ -124,19 +124,19 @@ func (c *Command) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			case "actions":
 				a := Actions{}
 				err = d.DecodeElement(&a, &tt)
-				c.CommandElement = &a
+				c.CommandElements = append(c.CommandElements, &a)
 			case "note":
 				nt := Note{}
 				err = d.DecodeElement(&nt, &tt)
-				c.CommandElement = &nt
+				c.CommandElements = append(c.CommandElements, &nt)
 			case "x":
 				f := Form{}
 				err = d.DecodeElement(&f, &tt)
-				c.CommandElement = &f
+				c.CommandElements = append(c.CommandElements, &f)
 			default:
 				n := Node{}
 				err = d.DecodeElement(&n, &tt)
-				c.CommandElement = &n
+				c.CommandElements = append(c.CommandElements, &n)
 				if err != nil {
 					return err
 				}

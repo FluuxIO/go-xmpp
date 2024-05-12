@@ -237,10 +237,10 @@ func NewApprovePendingSubRequest(serviceId, sessionId, nodeId string) (*IQ, erro
 	}
 	iq.Payload = &Command{
 		//  the command name ('node' attribute of the command element) MUST have a value of "http://jabber.org/protocol/pubsub#get-pending"
-		Node:           "http://jabber.org/protocol/pubsub#get-pending",
-		Action:         CommandActionExecute,
-		SessionId:      sessionId,
-		CommandElement: &n,
+		Node:            "http://jabber.org/protocol/pubsub#get-pending",
+		Action:          CommandActionExecute,
+		SessionId:       sessionId,
+		CommandElements: []CommandElement{&n},
 	}
 	return iq, nil
 }
@@ -353,11 +353,18 @@ func (iq *IQ) GetFormFields() (map[string]*Field, error) {
 
 	case *Command:
 		fieldMap := make(map[string]*Field)
-		co, ok := payload.CommandElement.(*Form)
-		if !ok {
+		var form *Form
+		for _, ce := range payload.CommandElements {
+			fo, ok := ce.(*Form)
+			if ok {
+				form = fo
+				break
+			}
+		}
+		if form == nil {
 			return nil, errors.New("this IQ does not contain a command payload with a form")
 		}
-		for _, elt := range co.Fields {
+		for _, elt := range form.Fields {
 			fieldMap[elt.Var] = elt
 		}
 		return fieldMap, nil
