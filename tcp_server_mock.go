@@ -155,7 +155,7 @@ func respondToIQ(t *testing.T, sc *ServerConn) {
 	mResp, err := xml.Marshal(iqResp)
 	_, err = fmt.Fprintln(sc.connection, string(mResp))
 	if err != nil {
-		t.Errorf("Could not send response stanza : %s", err)
+		t.Errorf("Could not send response stanza : %w", err)
 	}
 	return
 }
@@ -175,15 +175,15 @@ func discardPresence(t *testing.T, sc *ServerConn) {
 
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			t.Errorf("read timeout: %s", err)
+			t.Errorf("read timeout: %w", err)
 		} else {
-			t.Errorf("read error: %s", err)
+			t.Errorf("read error: %w", err)
 		}
 	}
 	err = xml.Unmarshal(recvBuf, &presenceStz)
 
 	if err != nil {
-		t.Errorf("Expected presence but this happened : %s", err.Error())
+		t.Errorf("Expected presence but this happened : %w", err)
 	}
 }
 
@@ -223,7 +223,7 @@ func sendStreamFeatures(t *testing.T, sc *ServerConn) {
   </mechanisms>
 </stream:features>`
 	if _, err := fmt.Fprintln(sc.connection, features); err != nil {
-		t.Errorf("cannot send stream feature: %s", err)
+		t.Errorf("cannot send stream feature: %w", err)
 	}
 }
 
@@ -231,7 +231,7 @@ func sendStreamFeatures(t *testing.T, sc *ServerConn) {
 func readAuth(t *testing.T, decoder *xml.Decoder) string {
 	se, err := stanza.NextStart(decoder)
 	if err != nil {
-		t.Errorf("cannot read auth: %s", err)
+		t.Errorf("cannot read auth: %w", err)
 		return ""
 	}
 
@@ -239,7 +239,7 @@ func readAuth(t *testing.T, decoder *xml.Decoder) string {
 	nv = &stanza.SASLAuth{}
 	// Decode element into pointer storage
 	if err = decoder.DecodeElement(nv, &se); err != nil {
-		t.Errorf("cannot decode auth: %s", err)
+		t.Errorf("cannot decode auth: %w", err)
 		return ""
 	}
 
@@ -256,7 +256,7 @@ func sendBindFeature(t *testing.T, sc *ServerConn) {
   <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
 </stream:features>`
 	if _, err := fmt.Fprintln(sc.connection, features); err != nil {
-		t.Errorf("cannot send stream feature: %s", err)
+		t.Errorf("cannot send stream feature: %w", err)
 	}
 }
 
@@ -267,21 +267,21 @@ func sendRFC3921Feature(t *testing.T, sc *ServerConn) {
   <session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>
 </stream:features>`
 	if _, err := fmt.Fprintln(sc.connection, features); err != nil {
-		t.Errorf("cannot send stream feature: %s", err)
+		t.Errorf("cannot send stream feature: %w", err)
 	}
 }
 
 func bind(t *testing.T, sc *ServerConn) {
 	se, err := stanza.NextStart(sc.decoder)
 	if err != nil {
-		t.Errorf("cannot read bind: %s", err)
+		t.Errorf("cannot read bind: %w", err)
 		return
 	}
 
 	iq := &stanza.IQ{}
 	// Decode element into pointer storage
 	if err = sc.decoder.DecodeElement(&iq, &se); err != nil {
-		t.Errorf("cannot decode bind iq: %s", err)
+		t.Errorf("cannot decode bind iq: %w", err)
 		return
 	}
 
@@ -300,14 +300,14 @@ func bind(t *testing.T, sc *ServerConn) {
 func session(t *testing.T, sc *ServerConn) {
 	se, err := stanza.NextStart(sc.decoder)
 	if err != nil {
-		t.Errorf("cannot read session: %s", err)
+		t.Errorf("cannot read session: %w", err)
 		return
 	}
 
 	iq := &stanza.IQ{}
 	// Decode element into pointer storage
 	if err = sc.decoder.DecodeElement(&iq, &se); err != nil {
-		t.Errorf("cannot decode session iq: %s", err)
+		t.Errorf("cannot decode session iq: %w", err)
 		return
 	}
 

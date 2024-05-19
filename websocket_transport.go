@@ -168,7 +168,7 @@ func (t *WebsocketTransport) cleanup(code websocket.StatusCode) error {
 		t.queue = nil
 	}
 	if t.wsConn != nil {
-		err = t.wsConn.Close(websocket.StatusGoingAway, "Done")
+		err = t.wsConn.Close(code, "Done")
 		t.wsConn = nil
 	}
 	if t.closeFunc != nil {

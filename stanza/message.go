@@ -8,16 +8,22 @@ import (
 // ============================================================================
 // Message Packet
 
+// LocalizedString is a string node with a language attribute.
+type LocalizedString struct {
+	Content string `xml:",chardata"`
+	Lang    string `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
+}
+
 // Message implements RFC 6120 - A.5 Client Namespace (a part)
 type Message struct {
 	XMLName xml.Name `xml:"message"`
 	Attrs
 
-	Subject    string         `xml:"subject,omitempty"`
-	Body       string         `xml:"body,omitempty"`
-	Thread     string         `xml:"thread,omitempty"`
-	Error      Err            `xml:"error,omitempty"`
-	Extensions []MsgExtension `xml:",omitempty"`
+	Subject    []LocalizedString `xml:"subject,omitempty"`
+	Body       []LocalizedString `xml:"body,omitempty"`
+	Thread     string            `xml:"thread,omitempty"`
+	Error      Err               `xml:"error,omitempty"`
+	Extensions []MsgExtension    `xml:",omitempty"`
 }
 
 func (Message) Name() string {

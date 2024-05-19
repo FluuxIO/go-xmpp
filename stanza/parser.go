@@ -91,7 +91,7 @@ func NextXmppToken(p *xml.Decoder) (xml.Token, error) {
 			return xml.StartElement{}, errors.New("connection closed")
 		}
 		if err != nil {
-			return xml.StartElement{}, fmt.Errorf("NextStart %s", err)
+			return xml.StartElement{}, fmt.Errorf("NextStart: %w", err)
 		}
 		switch t := t.(type) {
 		case xml.StartElement:
@@ -112,7 +112,7 @@ func NextStart(p *xml.Decoder) (xml.StartElement, error) {
 			return xml.StartElement{}, errors.New("connection closed")
 		}
 		if err != nil {
-			return xml.StartElement{}, fmt.Errorf("NextStart %s", err)
+			return xml.StartElement{}, fmt.Errorf("NextStart: %w", err)
 		}
 		switch t := t.(type) {
 		case xml.StartElement:
