@@ -298,6 +298,7 @@ func (c *Client) Disconnect() error {
 	if c.transport != nil {
 		return c.transport.Close()
 	}
+	c.CurrentState.setState(StateDisconnected)
 	// No transport so no connection.
 	return nil
 }
