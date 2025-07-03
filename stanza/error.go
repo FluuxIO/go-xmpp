@@ -99,6 +99,9 @@ func (x Err) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 		start.Attr = append(start.Attr, typ)
 	}
 	err = e.EncodeToken(start)
+	if err != nil {
+		return err
+	}
 
 	// SubTags
 	// Reason
