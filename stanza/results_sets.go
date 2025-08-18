@@ -24,6 +24,6 @@ type ResultSet struct {
 
 type First struct {
 	XMLName xml.Name `xml:"first"`
-	Content string
-	Index   *int `xml:"index,attr,omitempty"`
+	Content string   `xml:",cdata"`
+	Index   *int     `xml:"index,attr,omitempty"`
 }
