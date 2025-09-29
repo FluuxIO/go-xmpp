@@ -3,9 +3,10 @@ package stanza_test
 import (
 	"encoding/xml"
 	"errors"
-	"gosrc.io/xmpp/stanza"
 	"strings"
 	"testing"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 var submitFormExample = stanza.NewForm([]*stanza.Field{
@@ -51,7 +52,7 @@ func TestNewSubRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 }
@@ -68,7 +69,7 @@ func TestNewSubResp(t *testing.T) {
 
 	pubsub, err := getPubSubGenericPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if pubsub.Subscription == nil {
@@ -114,7 +115,7 @@ func TestNewUnSubRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -130,7 +131,7 @@ func TestNewUnsubResp(t *testing.T) {
 
 	pubsub, err := getPubSubGenericPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if pubsub.Subscription == nil {
@@ -175,7 +176,7 @@ func TestNewSubOptsRq(t *testing.T) {
 	}
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -228,7 +229,7 @@ func TestNewNewConfOptsRsp(t *testing.T) {
 
 	pubsub, err := getPubSubGenericPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if pubsub.SubOptions == nil {
@@ -286,7 +287,7 @@ func TestNewFormSubmission(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -343,7 +344,7 @@ func TestNewSubAndConfig(t *testing.T) {
 	}
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -381,7 +382,7 @@ func TestNewSubAndConfigResp(t *testing.T) {
 
 	pubsub, err := getPubSubGenericPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	if pubsub.Subscription == nil {
 		t.Fatalf("sub node is nil")
@@ -459,7 +460,7 @@ func TestNewItemsResp(t *testing.T) {
 
 	pubsub, err := getPubSubGenericPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	if pubsub.Items == nil {
 		t.Fatalf("sub options node is nil")
@@ -500,7 +501,7 @@ func TestNewSpecificItemRequest(t *testing.T) {
 	}
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -664,7 +665,7 @@ func TestNewDelItemFromNode(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -700,7 +701,7 @@ func TestNewCreateNode(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -714,7 +715,7 @@ func TestNewCreateNodeResp(t *testing.T) {
 `
 	pubsub, err := getPubSubGenericPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	if pubsub.Create == nil {
 		t.Fatalf("create segment is nil")
@@ -783,7 +784,7 @@ func TestNewCreateAndConfigNode(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 }
@@ -808,7 +809,7 @@ func TestNewRetrieveAllSubsRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expected, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -868,7 +869,7 @@ func TestNewRetrieveAllAffilsRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expected, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 

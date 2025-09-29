@@ -21,7 +21,7 @@ func TestDateToStringOracle(t *testing.T) {
 	expected := "2009-11-10"
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t1 := JabberDate{value: time.Date(2009, time.November, 10, 23, 3, 22, 89, loc)}
 
@@ -47,7 +47,7 @@ func TestDateTimeToStringOracle(t *testing.T) {
 	expected := "2009-11-10T23:03:22+08:00"
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t1 := JabberDate{value: time.Date(2009, time.November, 10, 23, 3, 22, 89, loc)}
 
@@ -74,7 +74,7 @@ func TestDateTimeToStringNanosOracle(t *testing.T) {
 	expected := "2009-11-10T23:03:22.000000089+08:00"
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t1 := JabberDate{value: time.Date(2009, time.November, 10, 23, 3, 22, 89, loc)}
 
@@ -90,11 +90,11 @@ func TestTimeToString(t *testing.T) {
 
 	t1Str, err := t1.TimeToString(false)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t2Str, err := t2.TimeToString(false)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if t1Str == t2Str {
@@ -106,13 +106,13 @@ func TestTimeToStringOracle(t *testing.T) {
 	expected := "23:03:22+08:00"
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t1 := JabberDate{value: time.Date(2009, time.November, 10, 23, 3, 22, 89, loc)}
 
 	t1Str, err := t1.TimeToString(false)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if t1Str != expected {
@@ -122,16 +122,16 @@ func TestTimeToStringOracle(t *testing.T) {
 
 func TestTimeToStringNanos(t *testing.T) {
 	t1 := JabberDate{value: time.Now()}
-	time.After(10 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	t2 := JabberDate{value: time.Now()}
 
 	t1Str, err := t1.TimeToString(true)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t2Str, err := t2.TimeToString(true)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if t1Str == t2Str {
@@ -142,13 +142,13 @@ func TestTimeToStringNanosOracle(t *testing.T) {
 	expected := "23:03:22.000000089+08:00"
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	t1 := JabberDate{value: time.Date(2009, time.November, 10, 23, 3, 22, 89, loc)}
 
 	t1Str, err := t1.TimeToString(true)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	if t1Str != expected {
@@ -160,19 +160,19 @@ func TestJabberDateParsing(t *testing.T) {
 	date := "2009-11-10"
 	_, err := NewJabberDateFromString(date)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	dateTime := "2009-11-10T23:03:22+08:00"
 	_, err = NewJabberDateFromString(dateTime)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	dateTimeNanos := "2009-11-10T23:03:22.000000089+08:00"
 	_, err = NewJabberDateFromString(dateTimeNanos)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	// TODO : fix these. Parsing a time with an offset doesn't work

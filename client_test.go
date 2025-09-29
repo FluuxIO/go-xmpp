@@ -189,7 +189,7 @@ func TestClient_SendIQ(t *testing.T) {
 	client.ErrorHandler = errorHandler
 	res, err := client.SendIQ(ctx, iqReq)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 
 	select {

@@ -185,7 +185,7 @@ func TestSendIq(t *testing.T) {
 		select {
 		case <-res:
 		case err := <-errChan:
-			t.Fatalf(err.Error())
+			t.Fatal(err)
 		}
 		clientDone <- struct{}{}
 	}()
@@ -367,7 +367,7 @@ func TestStreamManagerDisconnect(t *testing.T) {
 //=============================================================================
 // Basic XMPP Server Mock Handlers.
 
-//===============================
+// ===============================
 // Init mock server and connection
 // Creating a mock server and connecting a Component to it. Initialized with given port and handler function
 // The Component and mock are both returned

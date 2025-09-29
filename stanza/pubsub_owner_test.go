@@ -3,8 +3,9 @@ package stanza_test
 import (
 	"encoding/xml"
 	"errors"
-	"gosrc.io/xmpp/stanza"
 	"testing"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 // ******************************
@@ -45,7 +46,7 @@ func TestNewConfigureNode(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -100,7 +101,7 @@ func TestNewConfigureNodeResp(t *testing.T) {
 
 	pubsub, err := getPubSubOwnerPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	if pubsub.OwnerUseCase == nil {
 		t.Fatalf("owner use case is nil")
@@ -154,7 +155,7 @@ func TestNewRequestDefaultConfig(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -209,7 +210,7 @@ func TestNewRequestDefaultConfigResp(t *testing.T) {
 
 	pubsub, err := getPubSubOwnerPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	if pubsub.OwnerUseCase == nil {
 		t.Fatalf("owner use case is nil")
@@ -264,7 +265,7 @@ func TestNewDelNode(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -281,7 +282,7 @@ func TestNewDelNodeResp(t *testing.T) {
 
 	pubsub, err := getPubSubOwnerPayload(response)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	if pubsub.OwnerUseCase == nil {
 		t.Fatalf("owner use case is nil")
@@ -340,7 +341,7 @@ func TestNewPurgeAllItems(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -390,7 +391,7 @@ func TestNewApproveSubRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -428,7 +429,7 @@ func TestNewGetPendingSubRequests(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -510,7 +511,7 @@ func TestNewApprovePendingSubRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -549,7 +550,7 @@ func TestNewSubListRqPl(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -624,7 +625,7 @@ func TestNewAffiliationListRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -718,7 +719,7 @@ func TestNewModifAffiliationRequest(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -864,7 +865,7 @@ func TestNewFormSubmissionOwner(t *testing.T) {
 
 	data, err := xml.Marshal(subR)
 	if err := compareMarshal(expectedReq, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 

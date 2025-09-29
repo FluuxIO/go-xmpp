@@ -2,8 +2,9 @@ package stanza_test
 
 import (
 	"encoding/xml"
-	"gosrc.io/xmpp/stanza"
 	"testing"
+
+	"gosrc.io/xmpp/stanza"
 )
 
 func TestMarshalCommands(t *testing.T) {
@@ -35,6 +36,6 @@ func TestMarshalCommands(t *testing.T) {
 	}
 
 	if err := compareMarshal(input, string(data)); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
