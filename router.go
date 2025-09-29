@@ -66,6 +66,15 @@ func (r *Router) route(s Sender, p stanza.Packet) {
 			close(route.result)
 			return
 		}
+		if iq.Any != nil && iq.Any.XMLName.Local == "ping" {
+			_ = s.Send(&stanza.IQ{Attrs: stanza.Attrs{
+				Id:   iq.Id,
+				Type: stanza.IQTypeResult,
+				From: iq.To,
+				To:   iq.From,
+			}})
+			return
+		}
 	}
 
 	var match RouteMatch
