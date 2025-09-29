@@ -54,7 +54,7 @@ func (j *Jid) Full() string {
 	if j.Resource == "" {
 		return j.Bare()
 	} else if j.Node == "" {
-		return j.Node + "/" + j.Resource
+		return j.Domain + "/" + j.Resource
 	} else {
 		return j.Node + "@" + j.Domain + "/" + j.Resource
 	}

@@ -63,6 +63,7 @@ func TestIncorrectJids(t *testing.T) {
 func TestFull(t *testing.T) {
 	fullJids := []string{
 		"test@domain.com/my resource",
+		"domain.com/my resource",
 		"test@domain.com",
 		"domain.com",
 	}
