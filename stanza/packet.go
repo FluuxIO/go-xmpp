@@ -10,7 +10,7 @@ type Attrs struct {
 	Id   string     `xml:"id,attr,omitempty"`
 	From string     `xml:"from,attr,omitempty"`
 	To   string     `xml:"to,attr,omitempty"`
-	Lang string     `xml:"lang,attr,omitempty"`
+	Lang string     `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 }
 
 type packetFormatter interface {
