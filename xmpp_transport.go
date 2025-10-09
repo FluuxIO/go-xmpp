@@ -35,6 +35,9 @@ var clientStreamOpen = fmt.Sprintf("<?xml version='1.0'?><stream:stream to='%%s'
 func (t *XMPPTransport) Connect() (string, error) {
 	var err error
 
+	// Since we're starting a new connection, reset the encryption status
+	t.isSecure = false
+
 	t.conn, err = net.DialTimeout("tcp", t.Config.Address, time.Duration(t.Config.ConnectTimeout)*time.Second)
 	if err != nil {
 		return "", NewConnError(err, true)
