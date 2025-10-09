@@ -43,7 +43,7 @@ func (t *XMPPTransport) Connect() (string, error) {
 		return "", NewConnError(err, true)
 	}
 
-	t.closeChan = make(chan stanza.StreamClosePacket)
+	t.closeChan = make(chan stanza.StreamClosePacket, 1)
 	t.readWriter = newStreamLogger(t.conn, t.logFile)
 	t.decoder = xml.NewDecoder(bufio.NewReaderSize(t.readWriter, maxPacketSize))
 	t.decoder.CharsetReader = t.Config.CharsetReader
