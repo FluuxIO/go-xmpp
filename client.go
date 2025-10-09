@@ -296,7 +296,11 @@ func (c *Client) Resume() error {
 // Disconnect disconnects the client from the server, sending a stream close nonza and closing the TCP connection.
 func (c *Client) Disconnect() error {
 	if c.transport != nil {
-		return c.transport.Close()
+		err := c.transport.Close()
+		if c.Session != nil {
+			c.disconnected(c.Session.SMState)
+		}
+		return err
 	}
 	// No transport so no connection.
 	return nil
